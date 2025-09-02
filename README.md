@@ -1,0 +1,3 @@
+- Guide de structure : [README_SQUELETTE_EBOOK.md](./README_SQUELETTE_EBOOK.md)
+- Paiement CinetPay : [docs/PAYMENT_CINETPAY.md](./docs/PAYMENT_CINETPAY.md)
+- Déploiement : [docs/DEPLOY.md](./docs/DEPLOY.md)

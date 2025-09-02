@@ -1,0 +1,32 @@
+{% extends "store/base.html" %}
+{% block title %}Accueil{% endblock %}
+{% block content %}
+<section class="py-16">
+  <div class="max-w-5xl mx-auto px-4 text-center">
+    <h1 class="text-3xl md:text-5xl font-bold tracking-tight">Préparez votre structure à l’audit — sans stress.</h1>
+    <p class="mt-4 text-gray-600">Un ebook concret, des offres personnalisées, des exemples réels.</p>
+    <div class="mt-8 flex items-center justify-center gap-3">
+      {% if product %}
+        <a href="{% url 'store:product_detail' product.slug %}" class="px-6 py-3 rounded-2xl bg-blue-600 text-white">Voir le livre</a>
+      {% endif %}
+      <a href="{% url 'store:offers' %}" class="px-6 py-3 rounded-2xl border">Voir les offres</a>
+    </div>
+  </div>
+</section>
+
+<section class="py-10 bg-gray-50">
+  <div class="max-w-6xl mx-auto px-4">
+    <h2 class="text-xl font-semibold mb-6">Exemples d’irrégularités</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      {% for ex in examples %}
+      <article class="rounded-2xl border bg-white p-4">
+        <h3 class="font-semibold">{{ ex.title }}</h3>
+        <p class="text-sm mt-2"><strong>Irrégularité :</strong> {{ ex.irregularity }}</p>
+        <p class="text-sm mt-1"><strong>Traitement :</strong> {{ ex.remedy }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="mt-6"><a href="{% url 'store:examples' %}" class="text-blue-700">Voir plus →</a></div>
+  </div>
+</section>
+{% endblock %}

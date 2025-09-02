@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Boutique{% endblock %} – Audit des services publics</title>
+  <meta name="description" content="Ebook et offres personnalisées pour se préparer aux missions d'audit." />
+
+  <!-- Tailwind CDN (dev). En prod, passer au build CLI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { borderRadius: { '2xl': '1rem' }}}}</script>
+
+
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- htmx -->
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <!-- Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
+    // CSRF pour htmx
+    document.addEventListener('htmx:configRequest', (event) => {
+      const csrftoken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+      if (csrftoken) event.detail.headers['X-CSRFToken'] = csrftoken;
+    });
+  </script>
+</head>
+<body class="min-h-full bg-white text-gray-900">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="font-bold">Audit Ebooks</a>
+      <nav class="flex items-center gap-4 text-sm">
+        <a href="{% url 'store:offers' %}" class="hover:text-blue-700">Offres</a>
+        <a href="{% url 'store:examples' %}" class="hover:text-blue-700">Exemples</a>
+        <a href="{% url 'core:about' %}" class="hover:text-blue-700">À propos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="min-h-[70vh]">{% block content %}{% endblock %}</main>
+
+  <footer class="border-t mt-16">
+    <div class="max-w-6xl mx-auto px-4 py-8 grid md:grid-cols-3 gap-6 text-sm text-gray-600">
+      <div>
+        <div class="font-semibold">Audit Ebooks</div>
+        <p class="mt-2">Préparez-vous efficacement aux missions d’audit.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Liens</div>
+        <ul class="mt-2 space-y-1">
+          <li><a href="{% url 'core:policy' %}" class="hover:text-blue-700">Politique</a></li>
+          <li><a href="{% url 'core:cgv' %}" class="hover:text-blue-700">CGV</a></li>
+          <li><a href="{% url 'core:contact' %}" class="hover:text-blue-700">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Confiance</div>
+        <ul class="mt-2 space-y-1">
+          <li class="flex items-center gap-2"><i data-lucide="shield"></i> Paiement sécurisé (CinetPay)</li>
+          <li class="flex items-center gap-2"><i data-lucide="check-circle"></i> Garantie 7 jours</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends "store/base.html" %}
+{% block title %}Merci{% endblock %}
+{% block content %}
+<section class="py-14">
+  <div class="max-w-md mx-auto px-4 text-center">
+    {% if ok %}
+      <h1 class="text-2xl font-bold">Merci pour votre achat !</h1>
+      <p class="mt-2 text-gray-600">Votre paiement est confirmé.</p>
+      <a href="{% url 'store:download' token.token %}" class="mt-6 inline-block px-6 py-3 rounded-2xl bg-blue-600 text-white">Télécharger l’ebook</a>
+    {% else %}
+      <h1 class="text-2xl font-bold">Paiement non confirmé</h1>
+      <p class="mt-2 text-gray-600">{{ message }}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

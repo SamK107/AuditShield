@@ -1,0 +1,39 @@
+docs/DEPLOY.md
+# Python / Django
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.log
+
+# Environnement / secrets
+.env
+.env.* 
+*.sqlite3
+db.sqlite3
+
+# Virtual env
+.venv/
+venv/
+
+# Static & media (sorties générées)
+staticfiles/
+media/
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Frontend
+node_modules/
+dist/
+
+echo "# AuditShield
+
+Première version (draft) : structure de base sans design final." > README.md

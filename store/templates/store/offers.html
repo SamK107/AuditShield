@@ -1,0 +1,32 @@
+{% extends "store/base.html" %}
+{% block title %}Offres{% endblock %}
+{% block content %}
+<section class="py-14">
+  <div class="max-w-6xl mx-auto px-4">
+    <h1 class="text-3xl font-bold">Nos offres</h1>
+    <div class="mt-8 grid md:grid-cols-3 gap-6">
+      {% for t in tiers %}
+      <div class="rounded-2xl border p-6">
+        <div class="text-sm text-gray-500">{{ t.get_kind_display }}</div>
+        <div class="mt-2 font-semibold">{{ product.title }}</div>
+        {% if t.price_fcfa %}
+          <div class="mt-2 text-2xl font-bold">{{ t.price_fcfa }} FCFA</div>
+        {% else %}
+          <div class="mt-2 text-2xl font-bold">Sur devis</div>
+        {% endif %}
+        <div class="prose prose-sm mt-4">{{ t.description_md|linebreaks }}</div>
+        <div class="mt-6">
+          {% if t.cta_type == 'BUY' %}
+            <form hx-post="{% url 'store:buy' product.slug %}"><button class="px-5 py-3 rounded-xl bg-blue-600 text-white w-full">Acheter</button></form>
+          {% elif t.cta_type == 'QUOTE' %}
+            <a href="{% url 'core:contact' %}" class="px-5 py-3 rounded-xl border w-full inline-flex justify-center">Demander un devis</a>
+          {% else %}
+            <a href="{% url 'core:contact' %}" class="px-5 py-3 rounded-xl border w-full inline-flex justify-center">Planifier un appel</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
