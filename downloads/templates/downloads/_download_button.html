@@ -1,0 +1,12 @@
+@'
+<div class="inline-flex items-center gap-2">
+  <a
+    href="{% url 'downloads:asset_download' slug=asset.slug %}?utm_source=ebook&utm_medium=link&utm_campaign={{ asset.chapter_code|default:'global' }}"
+    class="px-4 py-2 rounded-xl ring-1 ring-slate-200 hover:bg-slate-50 text-sm font-medium inline-flex items-center gap-2"
+  >
+    <i data-lucide="download" class="w-4 h-4"></i>
+    Télécharger
+  </a>
+  <span class="text-xs text-slate-500">v{{ asset.version }}</span>
+</div>
+'@ | Set-Content downloads\templates\downloads\_download_button.html

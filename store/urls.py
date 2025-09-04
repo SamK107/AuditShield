@@ -9,6 +9,9 @@ urlpatterns = [
     path("offres/", views.offers, name="offers"),
     path("exemples/", views.examples, name="examples"),
 
+    # Cadre central alimenté via HTMX
+    path("exemples/block", views.examples_block, name="examples_block"),
+
     path("buy/<slug:slug>/", views.buy, name="buy"),
     path("payment/return/", views.payment_return, name="payment_return"),
     path("payment/callback/", views.payment_callback, name="payment_callback"),

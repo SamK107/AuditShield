@@ -22,9 +22,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('', include('downloads.urls')),
     path("admin/", admin.site.urls),
     path("", include(("core.urls", "core"), namespace="core")),
     path("", include(("store.urls", "store"), namespace="store")),
+    # path("", include(('downloads.urls', "downloads"), namespace="downloads")),
 ]
 
 # Servir les fichiers médias en dev (PDF, images, etc.)
@@ -32,4 +34,5 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     # Optionnel : servir aussi les statiques via Django en dev (en prod, Whitenoise s'en charge)
     # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
 

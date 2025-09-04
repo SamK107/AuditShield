@@ -4,25 +4,39 @@
 <section class="py-14">
   <div class="max-w-5xl mx-auto px-4">
     <h1 class="text-3xl font-bold">Exemples d’irrégularités & traitements</h1>
-    <div x-data="{i:0, n: {{ slides|length }}}" class="mt-8">
-      <div class="relative rounded-2xl border p-6 bg-white">
-        {% for s in slides %}
+  <div x-data="{i:0, n: {{ slides|length }}}" class="mt-8">
+  <div class="relative rounded-2xl border p-6 bg-white shadow-sm">
+    {% if slides %}
+      {% for s in slides %}
         <div x-show="i==={{ forloop.counter0 }}" x-transition>
           <h2 class="text-xl font-semibold">{{ s.title }}</h2>
           <p class="mt-2 text-sm"><strong>Irrégularité :</strong> {{ s.irregularity }}</p>
           {% if s.indicators %}<p class="mt-1 text-sm"><strong>Indicateurs :</strong> {{ s.indicators }}</p>{% endif %}
           {% if s.legal_ref %}<p class="mt-1 text-sm"><strong>Référence :</strong> {{ s.legal_ref }}</p>{% endif %}
-          <p class="mt-1 text-sm"><strong>Traitement recommandé :</strong> {{ s.remedy }}</p>
+          <p class="mt-1 text-sm"><strong>Traitement :</strong> {{ s.remedy }}</p>
           {% if s.risks %}<p class="mt-1 text-sm"><strong>Risques :</strong> {{ s.risks }}</p>{% endif %}
-          {% if s.sample_doc_url %}<a class="mt-2 inline-block text-blue-700 text-sm" href="{{ s.sample_doc_url }}" target="_blank">Voir un exemple de pièce →</a>{% endif %}
+          {% if s.sample_doc_url %}<a class="mt-2 inline-block text-blue-700 text-sm" href="{{ s.sample_doc_url }}" target="_blank">Voir une pièce →</a>{% endif %}
         </div>
-        {% endfor %}
-        <div class="mt-6 flex items-center gap-2">
-          <button @click="i=(i-1+n)%n" class="px-3 py-2 rounded-lg border">Préc.</button>
-          <button @click="i=(i+1)%n" class="px-3 py-2 rounded-lg border">Suiv.</button>
-        </div>
+      {% endfor %}
+    {% else %}
+      <div class="py-8 text-center text-slate-500">Aucun exemple enregistré pour le moment.</div>
+    {% endif %}
+
+    <div class="mt-6 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button @click="i=(i-1+n)%n" class="px-3 py-2 rounded-lg border hover:bg-slate-50">Préc.</button>
+        <button @click="i=(i+1)%n" class="px-3 py-2 rounded-lg border hover:bg-slate-50">Suiv.</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <template x-for="idx in [...Array(n).keys()]" :key="idx">
+          <button @click="i=idx" class="h-2.5 w-2.5 rounded-full transition"
+                  :class="i===idx ? 'bg-blue-600' : 'bg-slate-300'"></button>
+        </template>
       </div>
     </div>
+  </div>
+</div>
+
     <div class="mt-8 flex gap-3">
       {% if product %}<a href="{% url 'store:product_detail' product.slug %}" class="px-5 py-3 rounded-xl bg-blue-600 text-white">Voir le livre</a>{% endif %}
       <a href="{% url 'store:offers' %}" class="px-5 py-3 rounded-xl border">Demander une personnalisation</a>

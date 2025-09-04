@@ -1,0 +1,25 @@
+<div id="rowsTable" class="mt-4 overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2">Irrégularité</th>
+          <th class="px-3 py-2">Référence</th>
+          <th class="px-3 py-2">Acteurs concernés</th>
+          <th class="px-3 py-2">Dispositions pratiques</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for r in rows %}
+        <tr class="align-top">
+          <td class="px-3 py-2 font-medium text-slate-900">{{ r.irregularity }}</td>
+          <td class="px-3 py-2 text-slate-700">{{ r.reference }}</td>
+          <td class="px-3 py-2 text-slate-700">{{ r.actors }}</td>
+          <td class="px-3 py-2 text-slate-700">{{ r.dispositions }}</td>
+        </tr>
+        {% empty %}
+        <tr><td class="px-3 py-4 text-slate-500" colspan="4">Aucune ligne pour cette version.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  

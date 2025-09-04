@@ -1,18 +1,53 @@
 {% extends "store/base.html" %}
 {% block title %}Accueil{% endblock %}
 {% block content %}
-<section class="py-16">
-  <div class="max-w-5xl mx-auto px-4 text-center">
-    <h1 class="text-3xl md:text-5xl font-bold tracking-tight">Préparez votre structure à l’audit — sans stress.</h1>
-    <p class="mt-4 text-gray-600">Un ebook concret, des offres personnalisées, des exemples réels.</p>
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-b from-blue-50/80 to-white"></div>
+  <div class="relative max-w-7xl mx-auto px-4 py-20 text-center">
+    <span class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full bg-blue-600/10 text-blue-700 ring-1 ring-blue-600/20">
+      <i data-lucide="shield-check" class="h-4 w-4"></i> Prêt pour l’audit en 7 étapes
+    </span>
+    <h1 class="mt-5 text-4xl md:text-6xl font-extrabold tracking-tight">
+      Préparez votre structure à l’audit<br>
+      <span class="bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">sans stress ni surprises</span>
+    </h1>
+    <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+      Ebook concret + dossier d’irrégularités personnalisé + guide 7 étapes. Clair, actionnable, immédiatement utile.
+    </p>
     <div class="mt-8 flex items-center justify-center gap-3">
-      {% if product %}
-        <a href="{% url 'store:product_detail' product.slug %}" class="px-6 py-3 rounded-2xl bg-blue-600 text-white">Voir le livre</a>
-      {% endif %}
-      <a href="{% url 'store:offers' %}" class="px-6 py-3 rounded-2xl border">Voir les offres</a>
+      {% if product %}<a href="{% url 'store:product_detail' product.slug %}" class="px-6 py-3 rounded-2xl bg-blue-600 text-white shadow hover:shadow-lg transition">Voir le livre</a>{% endif %}
+      <a href="{% url 'store:offers' %}" class="px-6 py-3 rounded-2xl border shadow-sm hover:shadow transition">Voir les offres</a>
+    </div>
+    <div class="mt-6 flex items-center justify-center gap-4 text-sm text-slate-600">
+      <div class="flex items-center gap-1">
+        <i data-lucide="star" class="h-4 w-4 text-amber-500"></i>
+        <i data-lucide="star" class="h-4 w-4 text-amber-500"></i>
+        <i data-lucide="star" class="h-4 w-4 text-amber-500"></i>
+        <i data-lucide="star" class="h-4 w-4 text-amber-500"></i>
+        <i data-lucide="star" class="h-4 w-4 text-amber-500"></i>
+      </div>
+      <span>Approuvé par des responsables publics & auditeurs</span>
     </div>
   </div>
 </section>
+
+<section class="py-10">
+  <div class="max-w-7xl mx-auto px-4 grid md:grid-cols-3 gap-4">
+    <div class="rounded-2xl border p-5 bg-white/80 hover:shadow-sm transition">
+      <div class="flex items-center gap-2 font-semibold"><i data-lucide="check-circle" class="text-blue-600"></i> Résultats rapides</div>
+      <p class="mt-2 text-sm text-slate-600">Checklists prêtes, modèles éprouvés, application immédiate.</p>
+    </div>
+    <div class="rounded-2xl border p-5 bg-white/80 hover:shadow-sm transition">
+      <div class="flex items-center gap-2 font-semibold"><i data-lucide="file-check" class="text-blue-600"></i> Conforme & clair</div>
+      <p class="mt-2 text-sm text-slate-600">Références (UEMOA, textes nationaux) expliquées simplement.</p>
+    </div>
+    <div class="rounded-2xl border p-5 bg-white/80 hover:shadow-sm transition">
+      <div class="flex items-center gap-2 font-semibold"><i data-lucide="lock" class="text-blue-600"></i> Achat sécurisé</div>
+      <p class="mt-2 text-sm text-slate-600">CinetPay • lien de téléchargement sécurisé 72h.</p>
+    </div>
+  </div>
+</section>
+
 
 <section class="py-10 bg-gray-50">
   <div class="max-w-6xl mx-auto px-4">

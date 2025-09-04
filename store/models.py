@@ -98,3 +98,46 @@ class DownloadToken(models.Model):
 
     def __str__(self):
         return f"Token for {self.order.order_id}"
+
+# --- NOUVEAU : Catégories (par fonction/structure) ---
+class IrregularityCategory(models.Model):
+    FUNCTION = "FUNCTION"
+    STRUCTURE = "STRUCTURE"
+    GROUP_CHOICES = [(FUNCTION, "Fonction"), (STRUCTURE, "Structure")]
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="ir_categories")
+    title = models.CharField(max_length=200)
+    slug = models.SlugField()
+    group = models.CharField(max_length=16, choices=GROUP_CHOICES, default=STRUCTURE)
+    order = models.PositiveSmallIntegerField(default=0)
+    description = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("product", "slug")
+        ordering = ("order", "title")
+
+    def __str__(self):
+        return f"{self.title} ({self.get_group_display()})"
+
+# --- Adapté : lignes du tableau rattachées à une catégorie ---
+class IrregularityRow(models.Model):
+    EBOOK = "EBOOK"
+    PLUS = "PLUS"
+    VERSION_CHOICES = [(EBOOK, "Version ebook"), (PLUS, "Version améliorée")]
+
+    # (optionnel) héritage legacy : on garde product nullable pour compat
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="irregularity_rows", null=True, blank=True)
+    category = models.ForeignKey(IrregularityCategory, on_delete=models.CASCADE, related_name="rows", null=True, blank=True)
+
+    version = models.CharField(max_length=10, choices=VERSION_CHOICES, default=EBOOK)
+    irregularity = models.TextField(help_text="Irrégularité constatée")
+    reference = models.CharField(max_length=255, blank=True, help_text="Référence juridique/texte")
+    actors = models.CharField(max_length=255, blank=True, help_text="Acteurs concernés")
+    dispositions = models.TextField(help_text="Dispositions pratiques/recommandations")
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ("order", "id")
+
+    def __str__(self):
+        return f"[{self.version}] {self.category.title} – {self.irregularity[:40]}..."

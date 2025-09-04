@@ -6,6 +6,10 @@
   <title>{% block title %}Boutique{% endblock %} – Audit des services publics</title>
   <meta name="description" content="Ebook et offres personnalisées pour se préparer aux missions d'audit." />
 
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>html{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";}</style>
+
   <!-- Tailwind CDN (dev). En prod, passer au build CLI -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { borderRadius: { '2xl': '1rem' }}}}</script>
@@ -26,18 +30,31 @@
       if (csrftoken) event.detail.headers['X-CSRFToken'] = csrftoken;
     });
   </script>
+
+  <style>
+    /* Evite le FOUC Alpine */
+    [x-cloak]{display:none!important}
+  </style>
+  
 </head>
 <body class="min-h-full bg-white text-gray-900">
-  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="font-bold">Audit Ebooks</a>
-      <nav class="flex items-center gap-4 text-sm">
+  <header class="sticky top-0 z-50 bg-white/70 backdrop-blur border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <span class="inline-flex h-9 w-9 rounded-xl bg-blue-600 text-white items-center justify-center font-extrabold">AE</span>
+        <span class="font-semibold">Audit Ebooks</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
         <a href="{% url 'store:offers' %}" class="hover:text-blue-700">Offres</a>
         <a href="{% url 'store:examples' %}" class="hover:text-blue-700">Exemples</a>
         <a href="{% url 'core:about' %}" class="hover:text-blue-700">À propos</a>
       </nav>
+      <a href="{% url 'store:offers' %}" class="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm hover:shadow transition">
+        <i data-lucide="shopping-bag"></i> Obtenir l’ebook
+      </a>
     </div>
   </header>
+  
 
   <main class="min-h-[70vh]">{% block content %}{% endblock %}</main>
 

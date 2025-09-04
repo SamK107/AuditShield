@@ -3,9 +3,11 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpResponse, FileResponse, Http404
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from .models import Product, OfferTier, ExampleSlide, MediaAsset, Order, DownloadToken
+from .models import Product, OfferTier, ExampleSlide, MediaAsset, Order, DownloadToken, IrregularityCategory
 from .services import cinetpay
 import uuid, os, hmac, hashlib
+from .models import Product, ExampleSlide, IrregularityRow
+from django.db.models import Prefetch  # <— AJOUT ICI
 
 # ---- Pages ----
 
@@ -24,9 +26,19 @@ def offers(request):
     return render(request, "store/offers.html", {"product": product, "tiers": tiers})
 
 def examples(request):
+    """Page /exemples/ : cadre central avec carrousel 'Exemples' par défaut."""
     product = Product.objects.filter(is_published=True).first()
     slides = ExampleSlide.objects.filter(product=product) if product else []
-    return render(request, "store/examples.html", {"slides": slides, "product": product})
+    return render(request, "store/examples.html", {"product": product, "slides": slides})
+
+# ---- Partial HTMX : tableau selon version ----
+@require_http_methods(["GET"])
+def irregularities_table(request):
+    version = request.GET.get("version", "EBOOK")
+    product = Product.objects.filter(is_published=True).first()
+    rows = IrregularityRow.objects.filter(product=product, version=version).order_by("order")[:5] if product else []
+    return render(request, "store/partials/irregularities_table.html", {"rows": rows, "version": version})
+
 
 # ---- Paiement ----
 
@@ -125,3 +137,56 @@ def download(request, token):
     if not f:
         raise Http404("Fichier non disponible.")
     return FileResponse(f.open("rb"), as_attachment=True, filename=f.name.split("/")[-1])
+
+@require_http_methods(["GET"])
+def examples_block(request):
+    """
+    Fragment HTMX pour la zone centrale des exemples.
+    
+    - mode=carousel → affiche les slides (ExampleSlide) du produit courant
+    - mode=table    → affiche les tableaux d'irrégularités par catégorie
+                      avec au plus 5 lignes par catégorie
+                      
+      Paramètres :
+        - version = "EBOOK" (par défaut) ou "PRINT"
+    """
+
+    mode = request.GET.get("mode", "carousel")
+    version = request.GET.get("version", "EBOOK")
+
+    # Produit courant (le premier publié)
+    product = Product.objects.filter(is_published=True).first()
+
+    if mode == "table":
+        # Préfetch des lignes filtrées par version
+        prefetch_rows = Prefetch(
+            "rows",
+            queryset=IrregularityRow.objects.filter(version=version).order_by("order", "id")[:5],
+            to_attr="rows_for_version",
+        )
+
+        categories = (
+            IrregularityCategory.objects.filter(product=product)
+            .order_by("order", "title")
+            .prefetch_related(prefetch_rows)
+        )
+
+        return render(
+            request,
+            "store/partials/examples_block_table_carousel.html",
+            {
+                "product": product,
+                "version": version,
+                "categories": categories,
+            },
+        )
+
+    # Par défaut → mode carousel
+    slides = ExampleSlide.objects.filter(product=product).order_by("order", "id") if product else []
+    return render(
+        request,
+        "store/partials/examples_block_carousel.html",
+        {
+            "slides": slides,
+        },
+    )

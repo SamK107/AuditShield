@@ -1,0 +1,30 @@
+<div x-data="{i:0, n: {{ slides|length }}}" x-cloak class="text-slate-800">
+  {% if slides %}
+    {% for s in slides %}
+    <div x-show="i==={{ forloop.counter0 }}" x-transition.opacity.duration.200ms>
+      <h2 class="text-lg font-semibold text-slate-900">{{ s.title }}</h2>
+      <p class="mt-1 text-sm"><span class="font-semibold">Irrégularité :</span> {{ s.irregularity }}</p>
+      {% if s.indicators %}<p class="mt-0.5 text-sm"><span class="font-semibold">Indicateurs :</span> {{ s.indicators }}</p>{% endif %}
+      {% if s.legal_ref %}<p class="mt-0.5 text-sm"><span class="font-semibold">Référence :</span> {{ s.legal_ref }}</p>{% endif %}
+      <p class="mt-0.5 text-sm"><span class="font-semibold">Traitement :</span> {{ s.remedy }}</p>
+      {% if s.risks %}<p class="mt-0.5 text-sm"><span class="font-semibold">Risques :</span> {{ s.risks }}</p>{% endif %}
+      {% if s.sample_doc_url %}<a class="mt-1 inline-block text-blue-700 text-sm underline" href="{{ s.sample_doc_url }}" target="_blank">Voir une pièce →</a>{% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- Nav -->
+    <div class="mt-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <button @click="i=(i-1+n)%n" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">Préc.</button>
+        <button @click="i=(i+1)%n" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">Suiv.</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <template x-for="idx in [...Array(n).keys()]" :key="idx">
+          <button @click="i=idx" class="h-2.5 w-2.5 rounded-full transition" :class="i===idx ? 'bg-blue-600' : 'bg-slate-300'"></button>
+        </template>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-sm text-slate-600">Aucun exemple enregistré pour le moment.</p>
+  {% endif %}
+</div>

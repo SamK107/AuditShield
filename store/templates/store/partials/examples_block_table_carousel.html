@@ -1,0 +1,79 @@
+{# store/templates/store/partials/examples_block_table_carousel.html #}
+{# Contexte attendu : version ('EBOOK' ou 'PRINT'), categories (QS/list), product (optionnel) #}
+
+<div class="space-y-3">
+
+  {# Barre d'actions : switch de version #}
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <div class="inline-flex rounded-full border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <button
+        type="button"
+        class="px-3 py-1.5 text-sm transition
+               {% if version == 'EBOOK' %}bg-emerald-600 text-white shadow{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+        hx-get="{% url 'store:examples_block' %}?mode=table&version=EBOOK"
+        hx-target="#examplesBlock"
+        hx-swap="innerHTML settle:150ms"
+        hx-indicator="#exIndicator">
+        Version Ebook
+      </button>
+      <button
+        type="button"
+        class="px-3 py-1.5 text-sm transition
+               {% if version == 'PRINT' %}bg-emerald-600 text-white shadow{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+        hx-get="{% url 'store:examples_block' %}?mode=table&version=PRINT"
+        hx-target="#examplesBlock"
+        hx-swap="innerHTML settle:150ms"
+        hx-indicator="#exIndicator">
+        Version Print
+      </button>
+    </div>
+
+    {# Lien vers le produit (optionnel) #}
+    {% if product %}
+      <a href="{% url 'store:product_detail' product.slug %}"
+         class="px-3 py-1.5 text-sm rounded-xl bg-blue-600 text-white shadow hover:shadow-md transition">
+        Voir le livre
+      </a>
+    {% endif %}
+  </div>
+
+  {# Résumé de la version active #}
+  <p class="text-xs text-slate-500">
+    {% if version == 'EBOOK' %}
+      Affichage optimisé pour la lecture numérique (extrait).
+    {% else %}
+      Affichage optimisé pour impression (extrait).
+    {% endif %}
+  </p>
+
+  {# Liste / tables par catégorie #}
+  {% if categories %}
+  <div class="space-y-6">
+    {% for category in categories %}
+      <section class="bg-white rounded-xl ring-1 ring-slate-200/70 shadow-sm overflow-hidden">
+        <header class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-800">
+            {% if category.name %}{{ category.name }}{% else %}Catégorie #{{ forloop.counter }}{% endif %}
+          </h3>
+          <span class="text-xs text-slate-500">
+            {% if version == 'EBOOK' %}Ebook{% else %}Print{% endif %}
+          </span>
+        </header>
+
+        <div class="p-3 overflow-x-auto">
+          {# Réutilise votre table existante #}
+          {% include "store/partials/irregularities_table.html" with category=category version=version only %}
+        </div>
+      </section>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="grid place-items-center h-40 text-center">
+    <div>
+      <p class="text-slate-600 text-sm">Aucune catégorie disponible pour le moment.</p>
+      <p class="text-slate-400 text-xs">Ajoutez des données côté vue pour alimenter ce bloc.</p>
+    </div>
+  </div>
+{% endif %}
+
+</div>
