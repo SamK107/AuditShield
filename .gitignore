@@ -7,9 +7,7 @@ __pycache__/
 *.pyd
 *.log
 
-__pycache__/
-*.pyc
-db.sqlite3
+
 
 
 # DB locale
@@ -41,3 +39,7 @@ git rm -r --cached config/__pycache__/ store/__pycache__/ 2>$null
 git rm --cached db.sqlite3 2>$null
 
 git status
+
+__pycache__/
+*.pyc
+db.sqlite3
