@@ -54,9 +54,13 @@ class ExampleSlide(models.Model):
     risks = models.TextField(blank=True)
     sample_doc_url = models.URLField(blank=True)
     image = models.ImageField(upload_to="examples/", blank=True, null=True)
+    order = models.PositiveSmallIntegerField(default=0, db_index=True)
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ("order", "id")
 
 class MediaAsset(models.Model):
     PDF_EXTRACT = "PDF_EXTRACT"
@@ -141,3 +145,49 @@ class IrregularityRow(models.Model):
 
     def __str__(self):
         return f"[{self.version}] {self.category.title} – {self.irregularity[:40]}..."
+
+
+# --- Analyses préliminaires (tables -> lignes) ---
+
+class PreliminaryTable(models.Model):
+    STRUCTURE = "STRUCTURE"
+    FONCTION = "FONCTION"
+    GROUP_CHOICES = [
+        (STRUCTURE, "Structure"),
+        (FONCTION, "Fonction"),
+    ]
+
+    product = models.ForeignKey("store.Product", on_delete=models.CASCADE, related_name="prelim_tables", null=True, blank=True)
+    slug = models.SlugField(max_length=80)
+    title = models.CharField(max_length=200)
+    group = models.CharField(max_length=12, choices=GROUP_CHOICES, default=STRUCTURE)
+    description = models.TextField(blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("product", "slug")
+        ordering = ("order", "title")
+        verbose_name = "Table d'analyse préliminaire"
+        verbose_name_plural = "Tables d'analyse préliminaire"
+
+    def __str__(self):
+        return self.title
+
+
+class PreliminaryRow(models.Model):
+    table = models.ForeignKey(PreliminaryTable, on_delete=models.CASCADE, related_name="rows")
+    order = models.PositiveSmallIntegerField(default=0)
+    irregularity = models.CharField("Irrégularité", max_length=255)
+    reference = models.CharField("Référence", max_length=255, blank=True)
+    actors = models.CharField("Acteurs concernés", max_length=255, blank=True)
+    dispositions = models.TextField("Dispositions pratiques")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("order", "id")
+        verbose_name = "Ligne d'analyse préliminaire"
+        verbose_name_plural = "Lignes d'analyse préliminaire"
+
+    def __str__(self):
+        return self.irregularity[:80]

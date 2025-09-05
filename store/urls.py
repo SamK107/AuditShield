@@ -11,6 +11,11 @@ urlpatterns = [
 
     # Cadre central alimenté via HTMX
     path("exemples/block", views.examples_block, name="examples_block"),
+    
+    # ⬇️ nouvelle page dédiée
+    path("exemples/preliminaires/", views.examples_prelim, name="examples_prelim"),
+
+
 
     path("buy/<slug:slug>/", views.buy, name="buy"),
     path("payment/return/", views.payment_return, name="payment_return"),

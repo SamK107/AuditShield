@@ -8,6 +8,7 @@ from .services import cinetpay
 import uuid, os, hmac, hashlib
 from .models import Product, ExampleSlide, IrregularityRow
 from django.db.models import Prefetch  # <— AJOUT ICI
+from .models import PreliminaryTable, PreliminaryRow
 
 # ---- Pages ----
 
@@ -138,55 +139,60 @@ def download(request, token):
         raise Http404("Fichier non disponible.")
     return FileResponse(f.open("rb"), as_attachment=True, filename=f.name.split("/")[-1])
 
-@require_http_methods(["GET"])
 def examples_block(request):
     """
     Fragment HTMX pour la zone centrale des exemples.
-    
-    - mode=carousel → affiche les slides (ExampleSlide) du produit courant
-    - mode=table    → affiche les tableaux d'irrégularités par catégorie
-                      avec au plus 5 lignes par catégorie
-                      
-      Paramètres :
-        - version = "EBOOK" (par défaut) ou "PRINT"
-    """
 
+    - mode=carousel → slides "Exemples d'irrégularités"
+    - mode=table    → tableaux (catégories IrregularityCategory) 5 lignes max
+    - mode=prelim   → carrousel de tables d'analyses préliminaires (5 lignes max)
+    """
     mode = request.GET.get("mode", "carousel")
     version = request.GET.get("version", "EBOOK")
-
-    # Produit courant (le premier publié)
     product = Product.objects.filter(is_published=True).first()
 
     if mode == "table":
-        # Préfetch des lignes filtrées par version
         prefetch_rows = Prefetch(
             "rows",
             queryset=IrregularityRow.objects.filter(version=version).order_by("order", "id")[:5],
             to_attr="rows_for_version",
         )
-
         categories = (
             IrregularityCategory.objects.filter(product=product)
             .order_by("order", "title")
             .prefetch_related(prefetch_rows)
         )
-
         return render(
             request,
             "store/partials/examples_block_table_carousel.html",
-            {
-                "product": product,
-                "version": version,
-                "categories": categories,
-            },
+            {"product": product, "version": version, "categories": categories},
         )
 
-    # Par défaut → mode carousel
+    if mode == "prelim":
+        tables = (
+            PreliminaryTable.objects.filter(product=product)
+            .order_by("order", "title")
+            .prefetch_related("rows")
+        )
+        return render(
+            request,
+            "store/partials/examples_block_prelim_carousel.html",
+            {"tables": tables},
+        )
+
+    # par défaut: carousel des ExampleSlide
     slides = ExampleSlide.objects.filter(product=product).order_by("order", "id") if product else []
-    return render(
-        request,
-        "store/partials/examples_block_carousel.html",
-        {
-            "slides": slides,
-        },
+    return render(request, "store/partials/examples_block_carousel.html", {"slides": slides})
+
+
+# Page dédiée SEO/partage pour les analyses préliminaires
+@require_http_methods(["GET"])
+def examples_prelim(request):
+    product = Product.objects.filter(is_published=True).first()
+    tables = (
+        PreliminaryTable.objects.filter(product=product)
+        .order_by("order", "title")
+        .prefetch_related("rows")
     )
+    return render(request, "store/examples_prelim.html", {"product": product, "tables": tables})
+

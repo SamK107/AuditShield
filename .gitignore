@@ -1,39 +1,43 @@
-docs/DEPLOY.md
+# 1) Écrire un .gitignore propre (écrase si existant)
+
 # Python / Django
 __pycache__/
 *.py[cod]
-*.egg-info/
+*.pyo
+*.pyd
 *.log
 
-# Environnement / secrets
-.env
-.env.* 
-*.sqlite3
+__pycache__/
+*.pyc
 db.sqlite3
 
-# Virtual env
+
+# DB locale
+db.sqlite3
+
+# Env
 .venv/
 venv/
+env/
+*.env
 
-# Static & media (sorties générées)
+# Django collectstatic (prod)
 staticfiles/
-media/
 
-# Tests / coverage
-.pytest_cache/
-.coverage
-htmlcov/
+# Node / builds (si tu ajoutes Tailwind CLI plus tard)
+node_modules/
+dist/
+build/
 
 # IDE / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+'@ | Set-Content -Path .gitignore
 
-# Frontend
-node_modules/
-dist/
+# 2) Retirer du suivi Git les fichiers déjà indexés mais ignorés désormais
+git rm -r --cached config/__pycache__/ store/__pycache__/ 2>$null
+git rm --cached db.sqlite3 2>$null
 
-echo "# AuditShield
-
-Première version (draft) : structure de base sans design final." > README.md
+git status

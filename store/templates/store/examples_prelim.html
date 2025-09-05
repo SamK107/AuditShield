@@ -1,0 +1,40 @@
+{% extends "store/base.html" %}
+{% block title %}Analyses préliminaires{% endblock %}
+{% block content %}
+<section class="pt-4 pb-6">
+  <div class="max-w-6xl mx-auto px-4">
+
+    <!-- Barre d'action -->
+    <div class="flex items-center justify-between">
+      <a href="{% url 'store:examples' %}"
+         class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+         aria-label="Retour aux exemples">
+        <i data-lucide="arrow-left"></i>
+        <span class="text-sm font-medium">Retour aux exemples</span>
+      </a>
+
+      <!-- (Optionnel) CTA -->
+      <a href="{% url 'store:offers' %}"
+         class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm hover:shadow transition">
+        <i data-lucide="shopping-bag"></i> Obtenir l’ebook
+      </a>
+    </div>
+
+    <!-- Titre de page -->
+    <div class="mt-3 text-center">
+      <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-slate-900">
+        Analyses préliminaires des irrégularités
+      </h1>
+      <p class="mt-1 text-slate-600 text-sm">
+        Extraits de l’ebook par type de structure (5 lignes max par tableau).
+      </p>
+    </div>
+
+    <!-- Contenu -->
+    <div class="mt-4">
+      {% include "store/partials/examples_block_prelim_carousel.html" with tables=tables only %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

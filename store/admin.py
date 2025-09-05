@@ -37,3 +37,29 @@ admin.site.register(OfferTier)
 admin.site.register(MediaAsset)
 admin.site.register(Order)
 admin.site.register(DownloadToken)
+
+
+from .models import PreliminaryTable, PreliminaryRow
+
+class PreliminaryRowInline(admin.TabularInline):
+    model = PreliminaryRow
+    extra = 1
+    fields = ("order", "irregularity", "reference", "actors", "dispositions")
+    show_change_link = True
+
+@admin.register(PreliminaryTable)
+class PreliminaryTableAdmin(admin.ModelAdmin):
+    list_display = ("title", "product", "group", "order")
+    list_filter = ("product", "group")
+    search_fields = ("title", "slug", "description")
+    prepopulated_fields = {"slug": ("title",)}
+    inlines = [PreliminaryRowInline]
+
+@admin.register(ExampleSlide)
+class ExampleSlideAdmin(admin.ModelAdmin):
+    list_display = ("title", "product", "order")
+    list_filter = ("product",)
+    search_fields = ("title", "irregularity", "legal_ref")
+    list_editable = ("order",)
+    ordering = ("product", "order", "id")
+
