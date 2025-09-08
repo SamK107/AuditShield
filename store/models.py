@@ -19,6 +19,7 @@ class Product(models.Model):
     deliverable_file = models.FileField(upload_to="deliverables/", blank=True, null=True)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    download_slug = models.SlugField(null=True, blank=True, help_text="Slug de l'asset à télécharger (app 'downloads').")
 
     def __str__(self):
         return self.title
@@ -76,21 +77,39 @@ class MediaAsset(models.Model):
         return f"{self.product.title} - {self.kind}: {self.title}"
 
 class Order(models.Model):
-    PENDING = "pending"
-    PAID = "paid"
-    FAILED = "failed"
-    STATUS_CHOICES = [(PENDING, "En attente"), (PAID, "Payé"), (FAILED, "Échec")]
+    STATUS_CHOICES = [
+        ("CREATED", "Créée"),
+        ("PENDING", "En attente"),
+        ("PAID", "Payée"),
+        ("FAILED", "Échouée"),
+        ("CANCELED", "Annulée"),
+    ]
 
-    order_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="orders")
+    tier_id = models.IntegerField(null=True, blank=True)  # Pour compatibilité, à remplacer par tier FK si Tier existe
     email = models.EmailField()
+    first_name = models.CharField(max_length=120, blank=True)
+    last_name = models.CharField(max_length=120, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+
     amount_fcfa = models.PositiveIntegerField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
+    currency = models.CharField(max_length=8, default="XOF")
+
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="CREATED")
+
     cinetpay_payment_id = models.CharField(max_length=100, blank=True)
+    provider_ref = models.CharField(max_length=64, unique=True, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Order {self.order_id} - {self.status}"
+        return f"Order#{self.pk} - {self.product} - {self.email}"
+
+    @property
+    def amount_xof(self) -> int:
+        """Compat pour anciens appels CinetPay qui lisaient amount_xof."""
+        return self.amount_fcfa
 
 class DownloadToken(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE)

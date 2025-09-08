@@ -20,5 +20,10 @@ urlpatterns = [
     path("buy/<slug:slug>/", views.buy, name="buy"),
     path("payment/return/", views.payment_return, name="payment_return"),
     path("payment/callback/", views.payment_callback, name="payment_callback"),
+    path("offres/acheter/<slug:slug>/", views.buy, name="buy"),
+    path("offres/retour/", views.payment_return, name="payment_return"),
+    path("offres/notify/", views.payment_notify, name="payment_notify"),
+    path("offres/success/<int:order_id>/", views.payment_success, name="payment_success"),
     path("telecharger/<uuid:token>/", views.download, name="download"),
+    path("mes-achats/", views.user_orders, name="user_orders"),
 ]

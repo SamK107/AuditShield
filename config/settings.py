@@ -12,6 +12,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from environs import Env
+from dotenv import load_dotenv
+
+# Charger le fichier .env
+load_dotenv()
+
+env = Env()
+env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,15 +29,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-key")
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["*"]
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+DEBUG = env.bool("DJANGO_DEBUG", default=True)
+# ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 
+ALLOWED_HOSTS = [
+    "127.0.0.1", "localhost",
+    "f14af32db061.ngrok-free.app",  # <- ton domaine ngrok actuel
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://f14af32db061.ngrok-free.app",
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -56,9 +72,7 @@ MIDDLEWARE = [
 "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
 ROOT_URLCONF = "config.urls"
-
 
 TEMPLATES = [
     {
@@ -109,4 +123,15 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+
+CINETPAY_SITE_ID = os.getenv("CINETPAY_SITE_ID")
+CINETPAY_API_KEY = os.getenv("CINETPAY_API_KEY")
+CINETPAY_SECRET_KEY = os.getenv("CINETPAY_SECRET_KEY")
+CINETPAY_ENV = os.getenv("CINETPAY_ENV", "sandbox")
+CINETPAY_BASE_URL = os.getenv("CINETPAY_BASE_URL", "https://api-checkout.cinetpay.com/v2/payment") 
+# URLs publiques de ton site
+CINETPAY_RETURN_URL = os.getenv("CINETPAY_RETURN_URL", "https://tondomaine/offres/retour/")
+CINETPAY_NOTIFY_URL = os.getenv("CINETPAY_NOTIFY_URL", "https://tondomaine/offres/notify/")
 
