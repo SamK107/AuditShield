@@ -1,0 +1,54 @@
+{% load static %}
+<div class="md:sticky md:top-6 md:w-[460px] md:ml-auto h-full">
+  <div class="flex flex-col h-full">
+    <div
+      x-data="{
+        i: 0,
+        slides: [
+          { type: 'cover' },
+          { type: 'text', title: 'Transformez l’audit', text: 'Passez de la peur à la maîtrise avec une préparation claire en 7 étapes.', href: '#pourquoi', cta: 'Pourquoi ce guide' },
+          { type: 'text', title: 'Boîte à outils prête', text: 'Check-lists, modèles Word/Excel, mini-cas (avant/pendant/après).', href: '#media', cta: 'Voir l’extrait' },
+          { type: 'text', title: 'Preuves & auteur', text: 'Expérience terrain (administrations, EPIC, ONG, bailleurs).', href: '#auteur', cta: 'À propos' }
+        ]
+      }"
+      class="flex-1 flex flex-col justify-center"
+      x-cloak
+    >
+      <!-- Carrousel occupe tout l'espace -->
+      <div class="relative flex-1 flex flex-col justify-center overflow-hidden rounded-xl bg-slate-50 h-full">
+        <!-- Slide 0 : Couverture -->
+        <div x-show="i===0" x-transition class="absolute inset-0 flex items-center justify-center">
+          {% if product.hero_image %}
+            <img src="{{ product.hero_image.url }}" alt="Couverture du livre {{ product.title }}" class="w-full h-full object-cover" />
+          {% else %}
+            <img src="{% static 'brand/audit-sans-peur-cover.svg' %}" alt="Couverture du livre {{ product.title }}" class="w-full h-full object-cover" />
+          {% endif %}
+        </div>
+        <!-- Slides texte -->
+        <template x-for="(s, idx) in slides.filter((x, k) => k>0)" :key="'slide-'+idx">
+          <div x-show="i===idx+1" x-transition class="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+            <div class="text-base md:text-lg uppercase tracking-wide text-blue-700 font-semibold mb-2" x-text="s.title"></div>
+            <p class="text-slate-800 text-base md:text-lg leading-relaxed" x-text="s.text"></p>
+            <div class="mt-6">
+              <a :href="s.href" class="inline-flex items-center text-blue-700 hover:underline text-base font-medium" x-text="s.cta + ' →'" tabindex="0"></a>
+            </div>
+          </div>
+        </template>
+      </div>
+      <!-- Dots (navigation uniquement par points) -->
+      <div class="mt-4 flex items-center justify-center gap-2">
+        <template x-for="(s, idx) in slides" :key="'dot-'+idx">
+          <button
+            @click="i=idx"
+            :class="i===idx ? 'w-6 h-2 bg-blue-600 rounded-full' : 'w-2 h-2 bg-slate-300 rounded-full'"
+            aria-label="Aller à la slide"
+          ></button>
+        </template>
+      </div>
+    </div>
+    <!-- Rassurance toujours en bas -->
+    <div class="mt-4 rounded-xl bg-slate-50 border p-3 text-xs text-slate-600">
+      Téléchargement immédiat. Garantie 7 jours. Support par email en cas de besoin.
+    </div>
+  </div>
+</div>

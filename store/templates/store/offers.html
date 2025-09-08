@@ -31,7 +31,9 @@
     
         <div class="mt-6">
           {% if t.cta_type == 'BUY' %}
-            <form hx-post="{% url 'store:buy' product.slug %}">
+            <form method="post" action="{% url 'store:buy' product.slug %}">
+              {% csrf_token %}
+              <input type="hidden" name="tier_id" value="{{ t.id }}">
               <button class="w-full px-5 py-3 rounded-xl bg-blue-600 text-white shadow hover:shadow-lg transition flex items-center justify-center gap-2">
                 <i data-lucide="credit-card"></i> Acheter maintenant
               </button>
