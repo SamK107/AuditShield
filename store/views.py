@@ -1,27 +1,43 @@
 # store/views.py
-from django.shortcuts import get_object_or_404, render, redirect
-from django.http import HttpResponse, FileResponse, Http404
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+import hashlib
+import hmac
+import logging
+import os
+import uuid
+
 from django.contrib.auth.decorators import login_required
+from django.db.models import Prefetch  # <— AJOUT ICI
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
 
 # --- CINETPAY FLOW ---
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import Product, OfferTier, ExampleSlide, MediaAsset, Order, DownloadToken, IrregularityCategory
 import store.services.cinetpay as cinetpay
-import uuid, os, hmac, hashlib
-from .models import Product, ExampleSlide, IrregularityRow
-from django.db.models import Prefetch  # <— AJOUT ICI
-from .models import PreliminaryTable, PreliminaryRow
-import logging
+
+from .models import (
+    DownloadToken,
+    ExampleSlide,
+    IrregularityCategory,
+    IrregularityRow,
+    MediaAsset,
+    OfferTier,
+    Order,
+    PreliminaryTable,
+    Product,
+)
+
 logger = logging.getLogger("cinetpay")
 
-from .forms import CheckoutForm
+from django.contrib import messages
+from django.core.mail import EmailMessage, send_mail
 from django.urls import reverse
-from django.core.mail import send_mail
+
 from downloads.models import DownloadableAsset
+
+from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
+from .models import InquiryDocument
 from .seeds.ebook_irregularities import SEED_IRREGULARITIES  # <-- add
 
 # ---- Pages ----
@@ -47,8 +63,177 @@ def product_detail(request, slug):
 
 def offers(request):
     product = Product.objects.filter(is_published=True).first()
-    tiers = OfferTier.objects.filter(product=product) if product else []
-    return render(request, "store/offers.html", {"product": product, "tiers": tiers})
+    tiers_qs = OfferTier.objects.filter(product=product) if product else OfferTier.objects.none()
+
+    standard = kit = formation = None
+    for t in tiers_qs:
+        label = (getattr(t, "get_kind_display", lambda: "")() or t.title or "").lower()
+        combo = " ".join([getattr(t, "slug", "") or "", t.title or "", label])
+        if "ebook" in combo or "standard" in combo:
+            standard = t
+        elif "personnalis" in combo or "kit" in combo or "adapt" in combo:
+            kit = t
+        elif "formation" in combo or "assistance" in combo:
+            formation = t
+    if standard is None and tiers_qs.exists(): standard = tiers_qs.order_by("order","id").first()
+    if kit is None and tiers_qs.count() >= 2: kit = tiers_qs.order_by("order","id")[1]
+    if formation is None and tiers_qs.count() >= 3: formation = tiers_qs.order_by("order","id")[2]
+
+    return render(request, "store/offers.html", {
+        "product": product, "standard": standard, "kit": kit, "formation": formation
+    })
+
+@require_http_methods(["GET","POST"])
+def kit_inquiry(request):
+    MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
+    MAX_FILES = 10
+    MAX_FILE_SIZE = 10 * 1024 * 1024
+    ALLOWED_EXTS = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".gif"]
+    INQUIRY_TO = ["contact@ton-domaine.com"]
+    def _total_size(files):
+        return sum(getattr(f, "size", 0) for f in files)
+
+    if request.method == "POST":
+        form = KitInquiryForm(request.POST)
+        files = request.FILES.getlist("documents")
+        file_errors = []
+        if files:
+            if len(files) > MAX_FILES:
+                file_errors.append(f"Limité à {MAX_FILES} fichiers.")
+            import os
+            for f in files:
+                ext = os.path.splitext(f.name)[1].lower()
+                if ext not in ALLOWED_EXTS:
+                    file_errors.append(f"Type non autorisé : {ext}")
+                if f.size > MAX_FILE_SIZE:
+                    file_errors.append(f"{f.name} dépasse 10 Mo.")
+        if file_errors:
+            for err in file_errors:
+                form.add_error("documents", err)
+        if form.is_valid() and not file_errors:
+            inquiry = form.save()
+            for f in files:
+                InquiryDocument.objects.create(inquiry=inquiry, file=f, original_name=f.name)
+            # Email
+            data = form.cleaned_data
+            subject = "Demande – Kit personnalisé"
+            lines = [
+                "Nouvelle demande de Kit personnalisé :",
+                f"- Nom          : {data['contact_name']}",
+                f"- Email        : {data['email']}",
+                f"- Organisation : {data['organization_name']}",
+                f"- Téléphone    : {data.get('phone') or '—'}",
+                f"- Statut       : {data.get('statut_juridique') or '—'}",
+                f"- Localisation : {data.get('location') or '—'}",
+                f"- Secteur      : {data.get('sector') or '—'}",
+                f"- Budget       : {data.get('budget_range') or '—'}",
+                f"- Missions     : {data.get('mission_text') or '—'}",
+                "",
+                "DÉTAILS (optionnels) :",
+                f"- Financement  : {', '.join(data.get('funding_sources', [])) or '—'}",
+                f"- Audits       : {', '.join(data.get('audits_types', [])) or '—'}",
+                f"- Fréquence    : {data.get('audits_frequency') or '—'}",
+                f"- Taille       : {data.get('staff_size') or '—'}",
+                f"- Organigramme : {data.get('org_chart_text') or '—'}",
+                f"- Notes        : {data.get('notes_text') or '—'}",
+            ]
+            body = "\n".join(lines)
+            try:
+                email = EmailMessage(subject=subject, body=body, to=INQUIRY_TO, reply_to=[data["email"]])
+                if _total_size(files) <= MAX_ATTACH_TOTAL:
+                    for f in files:
+                        email.attach(f.name, f.read(), f.content_type or "application/octet-stream")
+                else:
+                    if files:
+                        names = "\n".join(f"- {f.name}" for f in files)
+                        email.body += "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
+                email.send(fail_silently=True)
+                messages.success(request, "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h avec une proposition adaptée.")
+            except Exception:
+                logger.exception("Erreur d'envoi email (kit)")
+                messages.info(request, "Votre demande est enregistrée. Un souci d'email est survenu ; nous vous recontactons vite.")
+            return redirect(reverse("store:kit_inquiry_success"))
+    else:
+        form = KitInquiryForm()
+    return render(request, "store/forms/kit_inquiry.html", {"form": form})
+
+def kit_inquiry_success(request):
+    return render(request, "store/forms/kit_inquiry_success.html")
+
+MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
+MAX_FILES = 10  # Nouvelle constante pour le nombre de fichiers
+MAX_FILE_SIZE = 10 * 1024 * 1024  # Nouvelle constante pour la taille maximale d'un fichier
+ALLOWED_EXTS = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".gif"] # Nouvelle constante pour les extensions autorisées
+
+def total_size(files):
+    return sum(getattr(f, "size", 0) for f in files)
+
+INQUIRY_TO = ["contact@ton-domaine.com"]  # à adapter
+MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
+
+def _total_size(files):
+    return sum(getattr(f, "size", 0) for f in files)
+
+def training_inquiry_view(request):
+    if request.method == "POST":
+        form = TrainingInquiryForm(request.POST, request.FILES)
+        if form.is_valid():
+            data = form.cleaned_data
+            files = request.FILES.getlist("documents")
+            program = data.get("program_title") or "Programme de formation (Audit Sans Peur)"
+
+            subject = f"Demande – Formation & Assistance — {program}"
+            lines = [
+                "Nouvelle demande de formation :",
+                f"- Programme    : {program}",
+                f"- Nom          : {data['contact_name']}",
+                f"- Email        : {data['email']}",
+                f"- Organisation : {data['organization_name']}",
+                "",
+                "Contexte & objectifs :",
+                f"{data['message']}",
+                "",
+                "DÉTAILS (optionnels) :",
+                f"- Téléphone    : {data.get('phone') or '—'}",
+                f"- Participants : {data.get('participants_count') or '—'}",
+                f"- Format       : {dict(form.fields['delivery_mode'].choices).get(data.get('delivery_mode'), '—')}",
+                f"- Période      : {data.get('preferred_dates') or '—'}",
+            ]
+            body = "\n".join(lines)
+
+            try:
+                email = EmailMessage(subject=subject, body=body, to=["contact@exemple.com"], reply_to=[data["email"]])
+                # … attach if needed …
+                email.send(fail_silently=False)
+                messages.success(request, "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h.")
+            except Exception:
+                logger.exception("Erreur d'envoi email")
+                messages.info(request, "Votre demande est enregistrée. Un souci d'email est survenu ; nous vous recontactons vite.")
+
+            if _total_size(files) <= MAX_ATTACH_TOTAL:
+                for f in files:
+                    email.attach(f.name, f.read(), f.content_type or "application/octet-stream")
+            else:
+                if files:
+                    names = "\n".join(f"- {f.name}" for f in files)
+                    email.body += "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
+
+            email.send(fail_silently=False)
+
+            messages.success(
+                request,
+                "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h avec une proposition adaptée."
+            )
+            return redirect(reverse("store:training_inquiry_success"))
+    else:
+        form = TrainingInquiryForm()
+
+    return render(request, "store/training_inquiry.html", {"form": form})
+
+def training_inquiry_success(request):
+    # Page simple de remerciement
+    return render(request, "store/training_inquiry_success.html")
+
 
 def examples(request):
     """Page /exemples/ : cadre central avec carrousel 'Exemples' par défaut."""
@@ -76,7 +261,7 @@ def buy(request, slug):
         form = CheckoutForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            tier_id = data.get("tier_id") or (standard_tier.id if standard_tier else None)
+            tier_id = standard_tier.id if standard_tier else None
             if not tier_id:
                 return render(request, "store/payment_error.html", {"message": "Offre invalide."}, status=400)
             tier = get_object_or_404(OfferTier, id=tier_id, product=product)
@@ -85,9 +270,9 @@ def buy(request, slug):
                 product=product,
                 tier_id=tier.id,
                 email=data["email"],
-                first_name=data["first_name"],
-                last_name=data["last_name"],
-                phone=data["phone"],
+                first_name=data.get("first_name", ""),
+                last_name=data.get("last_name", ""),
+                phone=data.get("phone", ""),
                 amount_fcfa=tier.price_fcfa or product.price_fcfa,
                 status="PENDING",
                 cinetpay_payment_id=transaction_id,
@@ -96,12 +281,12 @@ def buy(request, slug):
             )
             try:
                 payment_url = cinetpay.init_payment_auto(order=order, request=request)
-            except Exception as e:
+            except Exception:
                 order.delete()
                 return render(request, "store/payment_error.html", {"message": "Erreur lors de l'initialisation du paiement."}, status=500)
             return redirect(payment_url)
     else:
-        form = CheckoutForm(initial={"tier_id": standard_tier.id if standard_tier else None})
+        form = CheckoutForm()
     return render(request, "store/checkout.html", {"form": form, "product": product, "tier": tier or standard_tier})
 
 
@@ -125,8 +310,7 @@ def payment_return(request):
 @require_POST
 def payment_notify(request):
     import json
-    from django.views.decorators.csrf import csrf_exempt
-    from django.http import JsonResponse
+
     from store.services import deliver_order
     try:
         # Parse JSON
@@ -298,7 +482,7 @@ def send_download_email(order):
         message = f"Bonjour {order.first_name},\n\nMerci pour votre achat !\n\nVous pouvez télécharger votre ebook ici : {download_url}\n\nCe lien est personnel et réservé à votre usage.\n\nBonne lecture !\nL'équipe AuditShield"
         send_mail(subject, message, None, [order.email])
     else:
-        subject = f"Votre achat sur AuditShield"
+        subject = "Votre achat sur AuditShield"
         message = f"Bonjour {order.first_name},\n\nMerci pour votre achat ! Nous vous enverrons votre lien de téléchargement dès que possible.\n\nL'équipe AuditShield"
         send_mail(subject, message, None, [order.email])
 

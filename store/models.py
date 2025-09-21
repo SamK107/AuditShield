@@ -1,7 +1,9 @@
 # store/models.py
+import uuid
+
 from django.db import models
 from django.utils import timezone
-import uuid
+
 
 def get_expires_at():
     # 72h par défaut
@@ -35,6 +37,7 @@ class OfferTier(models.Model):
     ]
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    title = models.CharField(max_length=200, blank=True)  # Ajouté pour affichage/seed
     price_fcfa = models.PositiveIntegerField(blank=True, null=True)
     description_md = models.TextField(blank=True)
     cta_type = models.CharField(max_length=10, default="BUY")  # BUY|QUOTE|CALL
@@ -210,3 +213,70 @@ class PreliminaryRow(models.Model):
 
     def __str__(self):
         return self.irregularity[:80]
+
+# --- AJOUTS : demandes clients (Kit / Formation) ---
+from django.core.validators import EmailValidator
+
+try:
+    from django.db.models import JSONField  # Django 3.1+
+except Exception:
+    from django.contrib.postgres.fields import JSONField  # fallback
+
+class ClientInquiry(models.Model):
+    KIND_KIT = "KIT"
+    KIND_TRAINING = "TRAINING"
+    KIND_CHOICES = (
+        (KIND_KIT, "Kit personnalisé"),
+        (KIND_TRAINING, "Formation & Assistance"),
+    )
+
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=24, default="new")
+
+    # Contact
+    contact_name = models.CharField(max_length=120, blank=True)
+    email = models.EmailField(validators=[EmailValidator()], blank=True)
+    phone = models.CharField(max_length=64, blank=True)
+
+    # Structure
+    organization_name = models.CharField(max_length=180, blank=True)
+    statut_juridique = models.CharField(max_length=48, blank=True)
+    location = models.CharField(max_length=120, blank=True)
+    sector = models.CharField(max_length=64, blank=True)
+    mission_text = models.TextField(blank=True)
+
+    # Ressources / budget
+    budget_range = models.CharField(max_length=64, blank=True)
+    funding_sources = JSONField(default=list, blank=True)
+
+    # Audits / contrôles
+    audits_types = JSONField(default=list, blank=True)
+    audits_frequency = models.CharField(max_length=64, blank=True)
+
+    # Organisation
+    staff_size = models.CharField(max_length=32, blank=True)
+    org_chart_text = models.TextField(blank=True)
+
+    # Notes diverses
+    notes_text = models.TextField(blank=True)
+
+    # Payload brut du formulaire
+    payload = JSONField(default=dict, blank=True)
+
+    def __str__(self):
+        who = self.organization_name or self.contact_name or self.email or str(self.pk)
+        return f"{self.get_kind_display()} – {who}"
+
+
+def upload_inquiry_doc(instance, filename):
+    return f"inquiries/{instance.inquiry_id}/{filename}"
+
+class InquiryDocument(models.Model):
+    inquiry = models.ForeignKey(ClientInquiry, on_delete=models.CASCADE, related_name="documents")
+    file = models.FileField(upload_to=upload_inquiry_doc)
+    original_name = models.CharField(max_length=255, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.original_name or (self.file.name.split('/')[-1])

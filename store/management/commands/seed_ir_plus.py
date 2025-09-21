@@ -1,7 +1,8 @@
 # store/management/commands/seed_ir_plus.py
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from store.models import Product, IrregularityCategory, IrregularityRow
+
+from store.models import IrregularityCategory, IrregularityRow, Product
 
 DATA_PLUS = {
     # 1) DFM
@@ -336,7 +337,7 @@ class Command(BaseCommand):
             product, _ = Product.objects.get_or_create(
                 slug="audit-services-publics",
                 defaults=dict(
-                    title="Audit des services publics",
+                    title="Ebook - Audit Sans Peur",
                     subtitle="Le guide concret pour éviter les mauvaises surprises.",
                     price_fcfa=15000,
                     is_published=True,

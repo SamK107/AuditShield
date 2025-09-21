@@ -1,122 +1,127 @@
+from datetime import datetime
+from pathlib import Path
+
+from django.conf import settings
 from django.db import models
-from django.utils.text import slugify
-from django.contrib.auth import get_user_model
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 
 
-class AssetCategory(models.Model):
-    name = models.CharField(max_length=120, unique=True)
-    slug = models.SlugField(max_length=140, unique=True, blank=True)
+def upload_to(instance, filename):
+    dt = instance.created_at or datetime.now()
+    return f"downloads/{dt:%Y/%m}/{filename}"
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
-        return super().save(*args, **kwargs)
+
+class DownloadCategory(models.Model):
+    """
+    Catégories publiques liées à des pages racines :
+    /checklists, /bonus, /outils-pratiques, /irregularites
+    """
+    slug = models.SlugField(
+        primary_key=True,
+        max_length=50,
+        help_text=(
+            "Ex: checklists, bonus, irregularites, outils-pratiques"
+        ),
+    )
+    title = models.CharField(max_length=150)
+    subtitle = models.CharField(max_length=200, blank=True)
+    page_path = models.CharField(
+        max_length=80,
+        unique=True,
+        help_text="Chemin public (commence par /), ex: /checklists"
+    )
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    # Protection d'accès
+    is_protected = models.BooleanField(default=False)
+    required_sku = models.CharField(
+        max_length=64, blank=True,
+        help_text="Code produit requis (ex: EBOOK_ASP)"
+    )
+
+    class Meta:
+        ordering = ["order", "slug"]
 
     def __str__(self):
-        return self.name
+        return f"{self.title} ({self.page_path})"
 
-
-class Tag(models.Model):
-    name = models.CharField(max_length=60, unique=True)
-
-    def __str__(self):
-        return self.name
+    def get_absolute_url(self):
+        return self.page_path
 
 
 class DownloadableAsset(models.Model):
-    VISIBILITY = (
-        ("PUBLIC", "Public"),
-        ("CUSTOMER_ONLY", "Clients seulement"),
-        ("INTERNAL", "Interne"),
-    )
-
-    # --- Métadonnées
-    title = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=240, unique=True, blank=True)
+    """
+    Fichiers téléchargeables (PDF/DOCX/XLSX/ZIP...) affichés en carte sur la
+    page d'une catégorie.
+    """
     category = models.ForeignKey(
-        AssetCategory, on_delete=models.SET_NULL, null=True, blank=True
+        DownloadCategory,
+        related_name="assets",
+        on_delete=models.CASCADE
     )
-    description = models.TextField(blank=True)
-
-    # --- Placement éditorial (immédiat)
-    ebook_code = models.CharField(max_length=80, default="AUDIT_SANS_PEUR")
-    part_code = models.CharField(max_length=80, blank=True)
-    chapter_code = models.CharField(max_length=80, blank=True)
-
-    # --- Lien générique optionnel (Chapter/Section/Article)
-    content_type = models.ForeignKey(
-        ContentType, on_delete=models.SET_NULL, null=True, blank=True
+    slug = models.SlugField(
+        max_length=120,
+        unique=True,
+        help_text="Slug unique pour l'URL ex: plan-action-correctif"
     )
-    object_id = models.CharField(max_length=64, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
-
-    # --- Fichier
-    file = models.FileField(upload_to="downloads/%Y/%m/")
-    mime_type = models.CharField(max_length=120, blank=True)
-    size_bytes = models.BigIntegerField(default=0)
-
-    # --- Qualité & sécurité
-    sha256 = models.CharField(max_length=64, blank=True)
-    antivirus_ok = models.BooleanField(default=True)
-
-    # --- Cycle de vie
-    version = models.CharField(max_length=40, default="1.0.0")
-    is_deprecated = models.BooleanField(default=False)
-    # replaced_by supprimé définitivement
-
-    # --- Accès & statut
-    visibility = models.CharField(
-        max_length=20, choices=VISIBILITY, default="PUBLIC"
+    title = models.CharField(max_length=200)
+    short_desc = models.CharField(
+        "Description courte (1 phrase)", max_length=200, blank=True
     )
-    is_active = models.BooleanField(default=True)
-
-    # --- Traçabilité
-    download_count = models.PositiveIntegerField(default=0)
-    last_download_at = models.DateTimeField(null=True, blank=True)
+    file = models.FileField(upload_to=upload_to)
+    is_published = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    tags = models.ManyToManyField(Tag, blank=True)
+    class Meta:
+        ordering = ["order", "-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def extension(self) -> str:
+        return (Path(self.file.name).suffix or "").lstrip(".").upper()
+
+    def get_download_url(self):
+        return reverse("downloads:asset_download", kwargs={"slug": self.slug})
+
+
+class DownloadEntitlement(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE
+    )
+    email = models.EmailField()
+    category = models.ForeignKey(DownloadCategory, on_delete=models.CASCADE)
+    source = models.CharField(
+        max_length=16,
+        choices=[("SITE", "SITE"), ("EXT", "EXTERNAL"), ("MANUAL", "MANUAL")],
+        default="SITE"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [
-            models.Index(fields=["ebook_code", "part_code", "chapter_code", "is_active"]),
-            models.Index(fields=["content_type", "object_id"]),
-        ]
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)
-        return super().save(*args, **kwargs)
-
-    # def clean(self):
-    #     # Validation pour éviter qu'un asset ne se remplace lui-même (champ supprimé)
+        unique_together = [("email", "category")]
 
     def __str__(self):
-        return f"{self.title} (v{self.version})"
+        return f"{self.email} → {self.category.slug} ({self.source})"
 
 
-
-class AssetEvent(models.Model):
-    asset = models.ForeignKey(
-        DownloadableAsset, on_delete=models.CASCADE, related_name="events"
+class PurchaseClaim(models.Model):
+    email = models.EmailField()
+    platform = models.CharField(max_length=40)  # SITE, AMAZON, KOBO, APPLE, OTHER
+    order_ref = models.CharField(max_length=80, blank=True)
+    category = models.ForeignKey(DownloadCategory, on_delete=models.CASCADE)
+    proof = models.FileField(upload_to="claims/%Y/%m/", blank=True)
+    status = models.CharField(
+        max_length=16,
+        choices=[("NEW", "NEW"), ("APPROVED", "APPROVED"), ("REJECTED", "REJECTED")],
+        default="NEW"
     )
-    kind = models.CharField(
-        max_length=40  # CLICK, DOWNLOAD, ERROR, VIRUS, REPLACED
-    )
-    at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(
-        get_user_model(), null=True, blank=True, on_delete=models.SET_NULL
-    )
-    ip = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True)
-    utm_source = models.CharField(max_length=80, blank=True)
-    utm_medium = models.CharField(max_length=80, blank=True)
-    utm_campaign = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.asset} - {self.kind} - {self.at}"
+        return f"Claim {self.email} [{self.platform}] {self.category.slug} ({self.status})"
 

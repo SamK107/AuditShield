@@ -1,8 +1,9 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from .models import DownloadableAsset, AssetCategory
+from django.test import TestCase
+from django.urls import reverse
+
+from .models import AssetCategory, DownloadableAsset
 
 # Create your tests here.
 

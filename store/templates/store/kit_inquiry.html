@@ -1,0 +1,60 @@
+{% extends "store/base.html" %}
+{% block title %}Demande – Kit personnalisé{% endblock %}
+{% block content %}
+<section class="py-10 bg-gradient-to-br from-blue-50/60 to-emerald-50/40 min-h-[80vh]">
+  <div class="max-w-2xl mx-auto px-4">
+    <a href="{% url 'store:offers' %}#kit" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-blue-700 transition">
+      <i data-lucide="arrow-left"></i> Retour aux offres
+    </a>
+    <div class="flex items-center gap-3 mt-6 mb-2">
+      <div class="bg-emerald-100 text-emerald-600 rounded-full p-2"><i data-lucide="package"></i></div>
+      <h1 class="text-3xl font-extrabold tracking-tight">Demander mon Kit personnalisé</h1>
+    </div>
+    <p class="text-slate-600 mb-6 flex items-center gap-2"><i data-lucide="info"></i> Formulaire basé sur votre contexte (saisie + upload). Formats <span class="font-semibold">Word/Excel/PDF</span> acceptés.</p>
+    <form method="post" enctype="multipart/form-data" class="bg-white/90 shadow-xl rounded-2xl p-8 space-y-8 border border-slate-100">
+      {% csrf_token %}
+      <div class="grid md:grid-cols-3 gap-4">
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_contact_name"><i data-lucide="user"></i>Nom</label>{{ form.contact_name }}</div>
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_email"><i data-lucide="mail"></i>Email</label>{{ form.email }}</div>
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_phone"><i data-lucide="phone"></i>Téléphone</label>{{ form.phone }}</div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_organization_name"><i data-lucide="building"></i>Structure</label>{{ form.organization_name }}</div>
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_statut_juridique"><i data-lucide="file-text"></i>Statut juridique</label>{{ form.statut_juridique }}</div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_location"><i data-lucide="map-pin"></i>Localisation</label>{{ form.location }}</div>
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_sector"><i data-lucide="briefcase"></i>Secteur</label>{{ form.sector }}</div>
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_budget_range"><i data-lucide="credit-card"></i>Budget</label>{{ form.budget_range }}</div>
+      </div>
+      <div><label class="text-sm font-semibold flex items-center gap-1" for="id_mission_text"><i data-lucide="target"></i>Missions principales</label>{{ form.mission_text }}</div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <div class="text-sm font-semibold flex items-center gap-1"><i data-lucide="dollar-sign"></i>Sources de financement</div>
+          <div class="mt-2 space-y-1 text-sm">{{ form.funding_sources }}</div>
+        </div>
+        <div>
+          <div class="text-sm font-semibold flex items-center gap-1"><i data-lucide="shield-check"></i>Types d’audit/contrôle</div>
+          <div class="mt-2 space-y-1 text-sm">{{ form.audits_types }}</div>
+          <div class="mt-2"><label class="text-sm font-semibold flex items-center gap-1" for="id_audits_frequency"><i data-lucide="repeat"></i>Fréquence</label>{{ form.audits_frequency }}</div>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_staff_size"><i data-lucide="users"></i>Taille de la structure</label>{{ form.staff_size }}</div>
+        <div><label class="text-sm font-semibold flex items-center gap-1" for="id_org_chart_text"><i data-lucide="git-branch"></i>Organigramme (texte)</label>{{ form.org_chart_text }}</div>
+      </div>
+      <div><label class="text-sm font-semibold flex items-center gap-1" for="id_notes_text"><i data-lucide="sticky-note"></i>Notes complémentaires</label>{{ form.notes_text }}</div>
+      <div>
+        <label class="text-sm font-semibold flex items-center gap-1" for="id_documents"><i data-lucide="upload"></i>Uploader vos documents (Word, Excel, PDF)</label>
+        <input type="file" name="documents" id="id_documents" multiple accept=".doc,.docx,.xls,.xlsx,.pdf" class="mt-1 w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500 bg-white focus:ring-2 focus:ring-blue-200">
+        <p class="mt-1 text-xs text-slate-500 flex items-center gap-1"><i data-lucide="info"></i>Upload multiple autorisé.</p>
+      </div>
+      <div class="pt-3 flex justify-end">
+        <button class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-bold shadow-lg hover:bg-emerald-700 hover:shadow-xl transition text-lg">
+          <i data-lucide="send"></i> Envoyer ma demande
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

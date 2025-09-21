@@ -1,10 +1,134 @@
 {% extends "store/base.html" %}
 {% block title %}À propos{% endblock %}
+
 {% block content %}
-<section class="py-14">
-  <div class="max-w-3xl mx-auto px-4">
-    <h1 class="text-3xl font-bold">À propos</h1>
-    <p class="mt-4 text-gray-700">Notre mission : aider les structures publiques à se préparer efficacement aux audits, avec des contenus concrets et adaptés au contexte local.</p>
+<section class="py-16">
+  <div class="max-w-5xl mx-auto px-4">
+
+    <!-- En-tête -->
+    <header class="text-center">
+      <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight">À propos</h1>
+      <p class="mt-4 text-lg text-gray-600">Transformer chaque audit en opportunité de progrès.</p>
+    </header>
+
+    <!-- Introduction -->
+    <div class="mt-10 grid md:grid-cols-[1.2fr_.8fr] gap-8 items-start">
+      <article class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6 md:p-8">
+        <p class="text-gray-800 leading-relaxed">
+          <span class="font-semibold">Chaque mission d’audit est un tournant.</span>
+          Pour certains, c’est un cauchemar : stress, dossiers éparpillés, peur des sanctions.
+          Pour d’autres, c’est une chance unique de prouver leur rigueur et de renforcer leur crédibilité.
+        </p>
+
+        <div class="mt-6 border-l-4 border-blue-600 pl-5">
+          <p class="text-gray-800 leading-relaxed">
+            Je m’appelle <span class="font-semibold">Alex H.</span> Depuis plus de 20 ans, j’accompagne des administrations publiques,
+            des collectivités territoriales, des EPIC, des ONG et des projets financés par des bailleurs internationaux tels que
+            <span class="font-semibold">la Banque mondiale, la Banque africaine de développement (BAD) et l’Union européenne</span>.
+            J’ai vu des équipes s’effondrer faute de préparation… mais aussi des institutions transformer l’audit en levier de progrès
+            simplement parce qu’elles avaient anticipé.
+          </p>
+        </div>
+
+        <h2 class="mt-8 text-2xl font-bold">Pourquoi <em>Audit Sans Peur</em> ?</h2>
+        <p class="mt-3 text-gray-800 leading-relaxed">
+          C’est cette conviction qui m’a poussé à écrire <span class="font-semibold">Audit Sans Peur</span> :
+          un guide clair, concret, et accessible à tous. Pas de jargon inutile, mais des <span class="font-semibold">outils pratiques</span> :
+          check-lists, modèles Word et Excel, cas réels, scripts de réponses…
+        </p>
+
+        <ul class="mt-5 space-y-3">
+          <li class="flex gap-3">
+            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-blue-600 shrink-0"></span>
+            <span class="text-gray-800">Préparer vos documents à l’avance</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-blue-600 shrink-0"></span>
+            <span class="text-gray-800">Répondre avec assurance aux auditeurs</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-blue-600 shrink-0"></span>
+            <span class="text-gray-800">Réduire vos risques d’irrégularités</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-blue-600 shrink-0"></span>
+            <span class="text-gray-800">Transformer l’audit en opportunité de crédibilité</span>
+          </li>
+        </ul>
+
+        <p class="mt-6 text-gray-800 leading-relaxed">
+          Mais ce livre va plus loin qu’une simple préparation.
+          C’est une <span class="font-semibold">méthode de protection professionnelle</span> : protéger votre carrière, sécuriser vos financements,
+          rassurer vos partenaires, et surtout reprendre le contrôle de chaque mission.
+        </p>
+
+        <div class="mt-6 p-5 rounded-2xl bg-blue-50 border border-blue-100">
+          <p class="text-blue-900 leading-relaxed">
+            <span class="font-semibold">👉 <em>Audit Sans Peur</em> n’est pas seulement un livre.</span>
+            C’est une <span class="font-semibold">boîte à outils</span> et une <span class="font-semibold">stratégie</span> pour que vous ne subissiez plus l’audit,
+            mais que vous en fassiez un tremplin.
+          </p>
+        </div>
+
+        <h2 class="mt-8 text-2xl font-bold">Et demain ?</h2>
+        <p class="mt-3 text-gray-800 leading-relaxed">
+          Nous continuons d’aller plus loin avec des <span class="font-semibold">kits personnalisés</span>,
+          des <span class="font-semibold">formations ciblées</span> et une <span class="font-semibold">communauté</span> dédiée à celles et ceux qui veulent faire
+          de la transparence et de la rigueur un véritable avantage.
+        </p>
+
+        <p class="mt-6 text-gray-900 font-semibold">
+          Votre prochaine mission d’audit peut être une opportunité, pas une épreuve.<br>
+          <span class="font-normal">Ce guide est la première étape pour y arriver.</span>
+        </p>
+
+        <!-- CTA -->
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="/offres/" class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition">
+            Découvrir les offres
+          </a>
+          <a href="/bonus/" class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white text-blue-700 font-medium ring-1 ring-blue-200 hover:bg-blue-50 transition">
+            Guide des réponses à l’audit (Bonus)
+          </a>
+        </div>
+      </article>
+
+      <!-- Carte Auteur -->
+    <!-- Carte Auteur -->
+<aside class="md:sticky md:top-24">
+  <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6">
+    <div class="flex items-center gap-4">
+      <div class="h-16 w-16 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500"></div>
+      <div>
+        <p class="text-sm uppercase tracking-wider text-gray-500">Auteur</p>
+        <h3 class="text-lg font-bold">Alex H.</h3>
+      </div>
+    </div>
+    <p class="mt-4 text-gray-700 leading-relaxed">
+      20+ ans d’accompagnement d’administrations, EPIC, ONG et projets financés par
+      <span class="font-semibold">des bailleurs internationaux</span>.
+      Conviction : <span class="font-semibold">l’audit est un allié quand on l’anticipe.</span>
+    </p>
+    <div class="mt-5 grid grid-cols-2 gap-3">
+      <div class="rounded-xl bg-gray-50 p-3">
+        <p class="text-xs text-gray-500">Expérience</p>
+        <p class="text-sm font-semibold text-gray-900">20+ ans</p>
+      </div>
+      <div class="rounded-xl bg-gray-50 p-3">
+        <p class="text-xs text-gray-500">Spécialités</p>
+        <p class="text-sm font-semibold text-gray-900">
+          Audit, conformité, performance,<br>contrôle de gestion
+        </p>
+      </div>
+    </div>
+    <a href="/offres/" class="mt-6 inline-flex w-full items-center justify-center px-4 py-2.5 rounded-xl bg-gray-900 text-white font-medium hover:bg-black transition">
+      Obtenir l’ebook
+    </a>
+  </div>
+</aside>
+
+    </div>
+
   </div>
 </section>
 {% endblock %}

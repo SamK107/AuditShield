@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
-from store.models import Product, OfferTier, ExampleSlide, MediaAsset
+
+from store.models import OfferTier, Product
+
 
 class Command(BaseCommand):
     help = "Seed produit/tiers/exemples"
@@ -8,7 +10,7 @@ class Command(BaseCommand):
         product, _ = Product.objects.get_or_create(
             slug="audit-services-publics",
             defaults=dict(
-                title="Audit des services publics",
+                title="Ebook - Audit Sans Peur",
                 subtitle="Le guide concret pour éviter les mauvaises surprises.",
                 price_fcfa=15000,
                 guarantee_text="Satisfait ou remboursé 7 jours.",

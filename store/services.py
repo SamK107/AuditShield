@@ -1,5 +1,6 @@
 from .models import DownloadToken
 
+
 def deliver_order(order):
     """
     Active la livraison de l'actif après paiement réussi.

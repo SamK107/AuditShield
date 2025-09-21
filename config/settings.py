@@ -10,10 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
-from environs import Env
+from pathlib import Path
+
 from dotenv import load_dotenv
+from environs import Env
 
 # Charger le fichier .env
 load_dotenv()
@@ -23,6 +24,7 @@ env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+DB_SUFFIX = os.getenv("DB_SUFFIX", "dev")
 
 
 # Quick-start development settings - unsuitable for production
@@ -98,10 +100,13 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
         "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+         "NAME": BASE_DIR / f"db_{DB_SUFFIX}.sqlite3",
     }
 }
 
+# (optionnel) log rapide du fichier DB en dev
+if os.getenv("PRINT_DB_PATH") == "1":
+    print(f"[settings] Using DB file: {DATABASES['default']['NAME']}")
 
 AUTH_PASSWORD_VALIDATORS = []
 
@@ -135,3 +140,6 @@ CINETPAY_BASE_URL = os.getenv("CINETPAY_BASE_URL", "https://api-checkout.cinetpa
 CINETPAY_RETURN_URL = os.getenv("CINETPAY_RETURN_URL", "https://tondomaine/offres/retour/")
 CINETPAY_NOTIFY_URL = os.getenv("CINETPAY_NOTIFY_URL", "https://tondomaine/offres/notify/")
 
+
+# settings.py (dev)
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

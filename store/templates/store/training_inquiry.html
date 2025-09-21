@@ -1,0 +1,87 @@
+{# templates/store/training_inquiry.html #}
+{% extends "store/base.html" %}
+{% block title %}Demande – Formation & Assistance{% endblock %}
+{% block content %}
+<section class="py-10">
+  <div class="max-w-3xl mx-auto px-4">
+    <a href="{% url 'store:offers' %}#formation" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800">
+      <i data-lucide="arrow-left"></i> Retour aux offres
+    </a>
+
+    <h1 class="mt-3 text-2xl font-extrabold">Formation & Assistance — Demande</h1>
+    <p class="text-slate-600">Formulaire court : 1 minute. Les détails sont facultatifs.</p>
+
+    <form method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      {# Programme figé #}
+      <div class="rounded-2xl border p-4 bg-white">
+        {{ form.program_title }} {# hidden input #}
+        <div class="text-sm text-slate-600">Programme :</div>
+        <div class="mt-1 font-semibold">
+          Comprendre l’audit, se préparer à recevoir les missions d’audit, et transformer l’audit en opportunité de progrès — méthodes & outils pratiques
+        </div>
+        <ul class="mt-2 text-sm list-disc pl-5 text-slate-600">
+          <li>Comprendre les objectifs, acteurs et exigences d’une mission d’audit</li>
+          <li>Se préparer efficacement : documents, pièces, registres et preuves</li>
+          <li>Mises en situation & cas réels adaptés à votre contexte</li>
+          <li>Transformer l’audit en opportunité d’amélioration continue</li>
+        </ul>
+      </div>
+
+      <!-- Étape 1 — Essentiel -->
+      <div class="rounded-2xl border p-4 bg-white space-y-4">
+        <h2 class="text-lg font-semibold">Vos coordonnées (obligatoire)</h2>
+        <div class="grid md:grid-cols-3 gap-3">
+          <div>{{ form.contact_name.label_tag }}<input type="text" name="contact_name" value="{{ form.contact_name.value|default_if_none:'' }}" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500" required>{{ form.contact_name.errors }}</div>
+          <div>{{ form.email.label_tag }}<input type="email" name="email" value="{{ form.email.value|default_if_none:'' }}" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500" required>{{ form.email.errors }}</div>
+          <div>{{ form.organization_name.label_tag }}<input type="text" name="organization_name" value="{{ form.organization_name.value|default_if_none:'' }}" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500" required>{{ form.organization_name.errors }}</div>
+        </div>
+        <div>
+          <label for="id_message" class="block text-sm font-medium">Votre contexte & objectifs (en quelques phrases)</label>
+          <textarea name="message" id="id_message" rows="4" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500" required>{{ form.message.value|default_if_none:'' }}</textarea>
+          {{ form.message.errors }}
+          <p class="text-xs text-slate-500">
+            Décrivez brièvement votre contexte (type d’entité, contrôles attendus, échéances) et vos priorités.
+          </p>
+        </div>
+      </div>
+
+      <!-- Étape 2 — Plus de détails (optionnel) -->
+      <details class="group rounded-2xl border p-4 bg-white">
+        <summary class="cursor-pointer text-sm text-slate-700">
+          Plus de détails (optionnel) — participants, format, période, fichiers
+        </summary>
+        <div class="mt-4 space-y-4">
+          <div class="grid md:grid-cols-4 gap-3">
+            <div>{{ form.phone.label_tag }}<input type="text" name="phone" value="{{ form.phone.value|default_if_none:'' }}" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500">{{ form.phone.errors }}</div>
+            <div>{{ form.participants_count.label_tag }}<input type="number" name="participants_count" value="{{ form.participants_count.value|default_if_none:'' }}" min="1" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500">{{ form.participants_count.errors }}</div>
+            <div>{{ form.delivery_mode.label_tag }}<select name="delivery_mode" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500">{% for val, label in form.delivery_mode.field.choices %}<option value="{{ val }}" {% if form.delivery_mode.value == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{{ form.delivery_mode.errors }}</div>
+            <div>{{ form.preferred_dates.label_tag }}<input type="text" name="preferred_dates" value="{{ form.preferred_dates.value|default_if_none:'' }}" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500">{{ form.preferred_dates.errors }}</div>
+          </div>
+
+          <div class="flex items-center gap-4 mt-4">
+            <label class="text-sm font-medium mb-0">Uploader des documents (Word, Excel, PDF)</label>
+            <input type="file" name="documents" id="id_documents" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" class="px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+          </div>
+          <p class="mt-1 text-xs text-slate-500">Max 5 fichiers, 10 Mo/fichier.</p>
+          {% if form.errors.documents %}<div class="text-xs text-red-600">{{ form.errors.documents }}</div>{% endif %}
+        </div>
+      </details>
+
+      <div class="hidden">{{ form.website }}</div>
+
+      <div class="pt-3">
+        <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:shadow">
+          <i data-lucide="send"></i> Envoyer ma demande
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        En envoyant, vous acceptez d’être contacté par email pour une proposition personnalisée. Aucune diffusion de vos données.
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}
