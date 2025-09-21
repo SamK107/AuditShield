@@ -12,6 +12,9 @@ __pycache__/
 
 # DB locale
 db.sqlite3
+echo db_stable.sqlite3 >> .gitignore
+git rm --cached db_stable.sqlite3
+git commit -m "ignore db_stable.sqlite3"
 
 # Env
 .venv/
