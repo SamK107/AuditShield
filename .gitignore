@@ -47,3 +47,6 @@ backups/
 *.sqlite3
 '@ | Add-Content .gitignore
 '@ | Set-Content -Encoding UTF8 .gitignore
+
+# Test artifacts
+/tmp_test_media/

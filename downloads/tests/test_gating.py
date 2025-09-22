@@ -1,5 +1,6 @@
 import pytest
 
+
 def _url(slug: str) -> str:
     return f"/downloads/{slug}/"
 

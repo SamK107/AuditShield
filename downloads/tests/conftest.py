@@ -1,5 +1,7 @@
 import pytest
+
 from downloads.models import DownloadCategory
+
 
 @pytest.fixture
 def cat_checklists(db):

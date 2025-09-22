@@ -21,7 +21,19 @@ urlpatterns = [
     path("payment/callback/", views.payment_callback, name="payment_callback"),
     path("telecharger/<uuid:token>/", views.download, name="download"),
 
-    path("formation-assistance/demande/", views.training_inquiry_view, name="training_inquiry"),
-    path("formation-assistance/merci/", views.training_inquiry_success, name="training_inquiry_success"),
-    path("offres/kit/merci/", views.kit_inquiry_success, name="kit_inquiry_success"),
+    path(
+        "formation-assistance/demande/",
+        views.training_inquiry_view,
+        name="training_inquiry",
+    ),
+    path(
+        "formation-assistance/merci/",
+        views.training_inquiry_success,
+        name="training_inquiry_success",
+    ),
+    path(
+        "offres/kit/merci/",
+        views.kit_inquiry_success,
+        name="kit_inquiry_success",
+    ),
 ]

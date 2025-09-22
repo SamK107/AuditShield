@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import DownloadCategory, DownloadableAsset
+from .models import DownloadableAsset, DownloadCategory
 
 # Create your tests here.
 

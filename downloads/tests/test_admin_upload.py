@@ -1,10 +1,13 @@
 import os
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+
 from downloads.models import DownloadableAsset, DownloadCategory
+
 
 @override_settings(
     MEDIA_ROOT=os.path.join(os.getcwd(), "tmp_test_media"),

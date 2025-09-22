@@ -5,20 +5,24 @@ import logging
 import os
 import uuid
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Prefetch  # <— AJOUT ICI
+from django.core.mail import EmailMessage, send_mail
+from django.db.models import Prefetch
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-
-# --- CINETPAY FLOW ---
 from django.views.decorators.http import require_http_methods, require_POST
 
 import store.services.cinetpay as cinetpay
+from downloads.models import DownloadableAsset
 
+from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
 from .models import (
     DownloadToken,
     ExampleSlide,
+    InquiryDocument,
     IrregularityCategory,
     IrregularityRow,
     MediaAsset,
@@ -27,18 +31,9 @@ from .models import (
     PreliminaryTable,
     Product,
 )
+from .seeds.ebook_irregularities import SEED_IRREGULARITIES
 
 logger = logging.getLogger("cinetpay")
-
-from django.contrib import messages
-from django.core.mail import EmailMessage, send_mail
-from django.urls import reverse
-
-from downloads.models import DownloadableAsset
-
-from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
-from .models import InquiryDocument
-from .seeds.ebook_irregularities import SEED_IRREGULARITIES  # <-- add
 
 # ---- Pages ----
 
@@ -75,9 +70,12 @@ def offers(request):
             kit = t
         elif "formation" in combo or "assistance" in combo:
             formation = t
-    if standard is None and tiers_qs.exists(): standard = tiers_qs.order_by("order","id").first()
-    if kit is None and tiers_qs.count() >= 2: kit = tiers_qs.order_by("order","id")[1]
-    if formation is None and tiers_qs.count() >= 3: formation = tiers_qs.order_by("order","id")[2]
+    if standard is None and tiers_qs.exists():
+        standard = tiers_qs.order_by("order", "id").first()
+    if kit is None and tiers_qs.count() >= 2:
+        kit = tiers_qs.order_by("order", "id")[1]
+    if formation is None and tiers_qs.count() >= 3:
+        formation = tiers_qs.order_by("order", "id")[2]
 
     return render(request, "store/offers.html", {
         "product": product, "standard": standard, "kit": kit, "formation": formation
@@ -113,7 +111,9 @@ def kit_inquiry(request):
         if form.is_valid() and not file_errors:
             inquiry = form.save()
             for f in files:
-                InquiryDocument.objects.create(inquiry=inquiry, file=f, original_name=f.name)
+                InquiryDocument.objects.create(
+                    inquiry=inquiry, file=f, original_name=f.name
+                )
             # Email
             data = form.cleaned_data
             subject = "Demande – Kit personnalisé"
@@ -139,19 +139,36 @@ def kit_inquiry(request):
             ]
             body = "\n".join(lines)
             try:
-                email = EmailMessage(subject=subject, body=body, to=INQUIRY_TO, reply_to=[data["email"]])
+                email = EmailMessage(
+                    subject=subject,
+                    body=body,
+                    to=INQUIRY_TO,
+                    reply_to=[data["email"]],
+                )
                 if _total_size(files) <= MAX_ATTACH_TOTAL:
                     for f in files:
-                        email.attach(f.name, f.read(), f.content_type or "application/octet-stream")
+                        email.attach(
+                            f.name,
+                            f.read(),
+                            f.content_type or "application/octet-stream",
+                        )
                 else:
                     if files:
                         names = "\n".join(f"- {f.name}" for f in files)
-                        email.body += "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
+                        email.body += (
+                            "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
+                        )
                 email.send(fail_silently=True)
-                messages.success(request, "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h avec une proposition adaptée.")
+                messages.success(
+                    request,
+                    "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h avec une proposition adaptée."
+                )
             except Exception:
                 logger.exception("Erreur d'envoi email (kit)")
-                messages.info(request, "Votre demande est enregistrée. Un souci d'email est survenu ; nous vous recontactons vite.")
+                messages.info(
+                    request,
+                    "Votre demande est enregistrée. Un souci d'email est survenu ; nous vous recontactons vite."
+                )
             return redirect(reverse("store:kit_inquiry_success"))
     else:
         form = KitInquiryForm()
@@ -328,7 +345,9 @@ def payment_notify(request):
         # Retrouver l'Order
         order = Order.objects.filter(provider_ref=transaction_id).first()
         if not order:
-            logger.warning(f"[CinetPay][notify] Order not found for transaction_id={transaction_id}")
+            logger.warning(
+                f"[CinetPay][notify] Order not found for transaction_id={transaction_id}"
+            )
             return JsonResponse({"detail": "Order not found"}, status=404)
         # Re-check côté serveur
         try:
@@ -349,7 +368,9 @@ def payment_notify(request):
         # Sinon, laisser PENDING
         return JsonResponse({"detail": "OK"})
     except Exception as e:
-        logger.error(f"[CinetPay][notify] Unexpected error: {str(e)}")
+        logger.error(
+            f"[CinetPay][notify] Unexpected error: {str(e)}"
+        )
         return JsonResponse({"detail": "Unexpected error"}, status=500)
 
 # Webhook HMAC (structure + check API si besoin)
