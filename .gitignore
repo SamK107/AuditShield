@@ -32,4 +32,18 @@ Thumbs.db
 /tools/*.log
 /tools/*.tmp
 /tools/_diag.txt
+
+@'
+# Coverage
+.coverage
+
+# Uploads / médias (utiliser un storage ou Git LFS si besoin)
+media/
+
+# Backups / dumps
+backups/
+
+# SQLite (si local)
+*.sqlite3
+'@ | Add-Content .gitignore
 '@ | Set-Content -Encoding UTF8 .gitignore
