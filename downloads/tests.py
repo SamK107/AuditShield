@@ -35,6 +35,7 @@ class AdminDownloadableAssetUploadTest(TestCase):
             'visibility': 'PUBLIC',
             'is_active': True,
             'version': '1.0.0',
+            'order': 1,
         }
         response = self.client.post(url, data, follow=True)
         if hasattr(response, 'context') and response.context and 'adminform' in response.context:
