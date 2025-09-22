@@ -17,11 +17,14 @@ class DownloadableAssetAdmin(admin.ModelAdmin):
     list_display = (
         "title", "category", "get_ext", "is_published", "order", "updated_at"
     )
+    exclude = ("order",)  # on ne demande pas 'order' dans le formulaire
     list_filter = ("category", "is_published")
     search_fields = ("title", "slug", "short_desc")
     ordering = ("category", "order", "-updated_at")
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ("updated_at", "created_at")
+
+    
 
     def get_ext(self, obj):
         return obj.extension
