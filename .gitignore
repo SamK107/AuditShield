@@ -27,4 +27,9 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Tools: ignorer les fichiers temporaires, garder les scripts utiles
+/tools/*.log
+/tools/*.tmp
+/tools/_diag.txt
 '@ | Set-Content -Encoding UTF8 .gitignore
