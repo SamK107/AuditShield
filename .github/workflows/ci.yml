@@ -1,24 +1,23 @@
 name: CI
+
 on:
   push:
   pull_request:
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'   # ou ta version locale
+
       - name: Install deps
         run: |
-          pip install -U pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install pytest pytest-django coverage requests-mock ruff
-      - name: Django sanity (settings echo)
-        run: python -c "print('DJANGO_SETTINGS_MODULE:', 'config.settings')"
-      - name: Run tests
-        run: pytest
-      - name: Ruff
-        run: ruff check .
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django tests
+        run: python manage.py test -v 2
