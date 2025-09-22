@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import AssetCategory, DownloadableAsset
+from .models import DownloadCategory, DownloadableAsset
 
 # Create your tests here.
 
@@ -13,7 +13,11 @@ class AdminDownloadableAssetUploadTest(TestCase):
             username="admin", email="admin@example.com", password="password"
         )
         self.client.login(username="admin", password="password")
-        self.category = AssetCategory.objects.create(name="Test Catégorie")
+        self.category = DownloadCategory.objects.create(
+            slug="test-category",
+            title="Test Catégorie",
+            page_path="/test-category"
+        )
 
     def test_admin_upload_downloadable_asset(self):
         url = reverse('admin:downloads_downloadableasset_add')
@@ -22,7 +26,7 @@ class AdminDownloadableAssetUploadTest(TestCase):
         data = {
             'title': 'Test Asset',
             'slug': 'test-asset',
-            'category': self.category.id,
+            'category': self.category.pk,
             'description': 'Un fichier de test',
             'file': file_data,
             'ebook_code': 'AUDIT_SANS_PEUR',
