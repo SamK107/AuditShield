@@ -1,9 +1,11 @@
-{% extends 'store/base.html' %}
+{% extends "store/base.html" %}
 {% block content %}
-  <h2>Uploader un fichier</h2>
-  <form method="post" enctype="multipart/form-data">
+<section class="max-w-2xl mx-auto px-4 py-8">
+  <h1 class="text-xl font-semibold mb-4">Uploader un fichier</h1>
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Envoyer</button>
+    <button class="px-4 py-2 rounded bg-gray-900 text-white">Envoyer</button>
   </form>
+</section>
 {% endblock %}

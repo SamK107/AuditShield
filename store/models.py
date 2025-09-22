@@ -1,7 +1,10 @@
 # store/models.py
+import uuid
+
+from django.core.validators import EmailValidator
 from django.db import models
 from django.utils import timezone
-import uuid
+
 
 def get_expires_at():
     # 72h par défaut
@@ -19,7 +22,11 @@ class Product(models.Model):
     deliverable_file = models.FileField(upload_to="deliverables/", blank=True, null=True)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    download_slug = models.SlugField(null=True, blank=True, help_text="Slug de l'asset à télécharger (app 'downloads').")
+    download_slug = models.SlugField(
+        null=True,
+        blank=True,
+        help_text="Slug de l'asset à télécharger (app 'downloads').",
+    )
 
     def __str__(self):
         return self.title
@@ -35,6 +42,7 @@ class OfferTier(models.Model):
     ]
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    title = models.CharField(max_length=200, blank=True)  # Ajouté pour affichage/seed
     price_fcfa = models.PositiveIntegerField(blank=True, null=True)
     description_md = models.TextField(blank=True)
     cta_type = models.CharField(max_length=10, default="BUY")  # BUY|QUOTE|CALL
@@ -85,7 +93,11 @@ class Order(models.Model):
         ("CANCELED", "Annulée"),
     ]
 
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="orders")
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="orders",
+    )
     tier_id = models.IntegerField(null=True, blank=True)  # Pour compatibilité, à remplacer par tier FK si Tier existe
     email = models.EmailField()
     first_name = models.CharField(max_length=120, blank=True)
@@ -149,8 +161,20 @@ class IrregularityRow(models.Model):
     VERSION_CHOICES = [(EBOOK, "Version ebook"), (PLUS, "Version améliorée")]
 
     # (optionnel) héritage legacy : on garde product nullable pour compat
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="irregularity_rows", null=True, blank=True)
-    category = models.ForeignKey(IrregularityCategory, on_delete=models.CASCADE, related_name="rows", null=True, blank=True)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="irregularity_rows",
+        null=True,
+        blank=True,
+    )
+    category = models.ForeignKey(
+        IrregularityCategory,
+        on_delete=models.CASCADE,
+        related_name="rows",
+        null=True,
+        blank=True,
+    )
 
     version = models.CharField(max_length=10, choices=VERSION_CHOICES, default=EBOOK)
     irregularity = models.TextField(help_text="Irrégularité constatée")
@@ -176,7 +200,13 @@ class PreliminaryTable(models.Model):
         (FONCTION, "Fonction"),
     ]
 
-    product = models.ForeignKey("store.Product", on_delete=models.CASCADE, related_name="prelim_tables", null=True, blank=True)
+    product = models.ForeignKey(
+        "store.Product",
+        on_delete=models.CASCADE,
+        related_name="prelim_tables",
+        null=True,
+        blank=True,
+    )
     slug = models.SlugField(max_length=80)
     title = models.CharField(max_length=200)
     group = models.CharField(max_length=12, choices=GROUP_CHOICES, default=STRUCTURE)
@@ -210,3 +240,68 @@ class PreliminaryRow(models.Model):
 
     def __str__(self):
         return self.irregularity[:80]
+
+# --- AJOUTS : demandes clients (Kit / Formation) ---
+try:
+    from django.db.models import JSONField  # Django 3.1+
+except Exception:
+    from django.contrib.postgres.fields import JSONField  # fallback
+
+class ClientInquiry(models.Model):
+    KIND_KIT = "KIT"
+    KIND_TRAINING = "TRAINING"
+    KIND_CHOICES = (
+        (KIND_KIT, "Kit personnalisé"),
+        (KIND_TRAINING, "Formation & Assistance"),
+    )
+
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=24, default="new")
+
+    # Contact
+    contact_name = models.CharField(max_length=120, blank=True)
+    email = models.EmailField(validators=[EmailValidator()], blank=True)
+    phone = models.CharField(max_length=64, blank=True)
+
+    # Structure
+    organization_name = models.CharField(max_length=180, blank=True)
+    statut_juridique = models.CharField(max_length=48, blank=True)
+    location = models.CharField(max_length=120, blank=True)
+    sector = models.CharField(max_length=64, blank=True)
+    mission_text = models.TextField(blank=True)
+
+    # Ressources / budget
+    budget_range = models.CharField(max_length=64, blank=True)
+    funding_sources = JSONField(default=list, blank=True)
+
+    # Audits / contrôles
+    audits_types = JSONField(default=list, blank=True)
+    audits_frequency = models.CharField(max_length=64, blank=True)
+
+    # Organisation
+    staff_size = models.CharField(max_length=32, blank=True)
+    org_chart_text = models.TextField(blank=True)
+
+    # Notes diverses
+    notes_text = models.TextField(blank=True)
+
+    # Payload brut du formulaire
+    payload = JSONField(default=dict, blank=True)
+
+    def __str__(self):
+        who = self.organization_name or self.contact_name or self.email or str(self.pk)
+        return f"{self.get_kind_display()} – {who}"
+
+
+def upload_inquiry_doc(instance, filename):
+    return f"inquiries/{instance.inquiry_id}/{filename}"
+
+class InquiryDocument(models.Model):
+    inquiry = models.ForeignKey(ClientInquiry, on_delete=models.CASCADE, related_name="documents")
+    file = models.FileField(upload_to=upload_inquiry_doc)
+    original_name = models.CharField(max_length=255, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.original_name or (self.file.name.split('/')[-1])

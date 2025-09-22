@@ -16,17 +16,39 @@ Including another URLconf
 """
 # config/urls.py
 
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
 
 urlpatterns = [
-    path('downloads/', include('downloads.urls')),
     path("admin/", admin.site.urls),
-    path("", include(("core.urls", "core"), namespace="core")),
-    path("", include(("store.urls", "store"), namespace="store")),
-    # path("", include(('downloads.urls', "downloads"), namespace="downloads")),
+
+    # Pages publiques de téléchargement (en racine)
+    path(
+        "",
+        include(("downloads.public_urls", "downloads_public"),
+                namespace="downloads_public"),
+    ),
+
+    # Route technique /downloads/<slug> pour servir les fichiers par slug
+    path(
+        "downloads/",
+        include(("downloads.urls", "downloads"),
+                namespace="downloads"),
+    ),
+
+    # Apps existantes
+    path(
+        "",
+        include(("core.urls", "core"),
+                namespace="core"),
+    ),
+    path(
+        "",
+        include(("store.urls", "store"),
+                namespace="store"),
+    ),
 ]
 
 # Servir les fichiers médias en dev (PDF, images, etc.)

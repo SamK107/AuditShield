@@ -1,0 +1,16 @@
+{% extends "store/base.html" %}
+{% block title %}Merci — Demande reçue{% endblock %}
+{% block content %}
+<section class="py-16">
+  <div class="max-w-xl mx-auto px-4 text-center">
+    <h1 class="text-2xl font-extrabold">Merci !</h1>
+    <p class="mt-2 text-slate-600">
+      Votre demande de Kit personnalisé a bien été envoyée.<br>
+      Nous vous contactons sous 24–48 h avec une proposition adaptée à votre contexte.
+    </p>
+    <a href="{% url 'store:offers' %}#kit" class="mt-6 inline-block px-4 py-2 rounded-xl border hover:bg-slate-50">
+      Retour aux offres
+    </a>
+  </div>
+</section>
+{% endblock %}

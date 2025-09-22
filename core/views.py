@@ -1,6 +1,8 @@
 # core/views.py
 from django.shortcuts import render
-from store.models import Product, OfferTier, ExampleSlide
+
+from store.models import ExampleSlide, OfferTier, Product
+
 
 def home(request):
     product = Product.objects.filter(is_published=True).first()

@@ -1,0 +1,41 @@
+{% comment %}
+Safelist Tailwind recommandée :
+bg-sky-50 border-sky-200
+bg-emerald-50 border-emerald-200
+bg-amber-50 border-amber-200
+bg-rose-50 border-rose-200
+bg-violet-50 border-violet-200
+bg-indigo-50 border-indigo-200
+{% endcomment %}
+
+{% if assets %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for a in assets %}
+    {% cycle 'bg-sky-50 border-sky-200' 'bg-emerald-50 border-emerald-200' 'bg-amber-50 border-amber-200' 'bg-rose-50 border-rose-200' 'bg-violet-50 border-violet-200' 'bg-indigo-50 border-indigo-200' as pastel_classes silent %}
+    <article class="rounded-2xl border {{ pastel_classes }} p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-white/70 border">{{ a.extension }}</span>
+        <span class="text-[11px] text-gray-600">{{ a.file.size|default_if_none:"" }}</span>
+      </div>
+      <h3 class="font-semibold leading-snug">{{ a.title }}</h3>
+      {% if a.short_desc %}
+        <p class="text-sm text-gray-700 mt-1">{{ a.short_desc }}</p>
+      {% endif %}
+
+      <div class="mt-3">
+        <a href="{{ a.get_download_url }}"
+           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-black">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" x2="12" y1="15" y2="3"/>
+          </svg>
+          Télécharger
+        </a>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="text-sm text-gray-600">Aucun fichier disponible pour ce filtre.</div>
+{% endif %}

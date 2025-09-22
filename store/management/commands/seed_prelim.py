@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
-from store.models import Product, PreliminaryTable, PreliminaryRow
+
+from store.models import PreliminaryRow, PreliminaryTable, Product
+
 
 class Command(BaseCommand):
     help = "Seed d'une table d'analyse préliminaire (DFM) avec 3 lignes d'exemple"
@@ -10,7 +12,7 @@ class Command(BaseCommand):
             product, _ = Product.objects.get_or_create(
                 slug="audit-services-publics",
                 defaults=dict(
-                    title="Audit des services publics",
+                    title="Ebook - Audit Sans Peur",
                     subtitle="",
                     price_fcfa=15000,
                     is_published=True,

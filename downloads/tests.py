@@ -1,8 +1,9 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from .models import DownloadableAsset, AssetCategory
+from django.test import TestCase
+from django.urls import reverse
+
+from .models import DownloadableAsset, DownloadCategory
 
 # Create your tests here.
 
@@ -12,7 +13,11 @@ class AdminDownloadableAssetUploadTest(TestCase):
             username="admin", email="admin@example.com", password="password"
         )
         self.client.login(username="admin", password="password")
-        self.category = AssetCategory.objects.create(name="Test Catégorie")
+        self.category = DownloadCategory.objects.create(
+            slug="test-category",
+            title="Test Catégorie",
+            page_path="/test-category"
+        )
 
     def test_admin_upload_downloadable_asset(self):
         url = reverse('admin:downloads_downloadableasset_add')
@@ -21,7 +26,7 @@ class AdminDownloadableAssetUploadTest(TestCase):
         data = {
             'title': 'Test Asset',
             'slug': 'test-asset',
-            'category': self.category.id,
+            'category': self.category.pk,
             'description': 'Un fichier de test',
             'file': file_data,
             'ebook_code': 'AUDIT_SANS_PEUR',
@@ -30,6 +35,7 @@ class AdminDownloadableAssetUploadTest(TestCase):
             'visibility': 'PUBLIC',
             'is_active': True,
             'version': '1.0.0',
+            'order': 1,
         }
         response = self.client.post(url, data, follow=True)
         if hasattr(response, 'context') and response.context and 'adminform' in response.context:
