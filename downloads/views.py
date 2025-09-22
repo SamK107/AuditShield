@@ -72,10 +72,13 @@ def category_page(request: HttpRequest, slug: str) -> HttpResponse:
     if not user_has_access(request, category):
         messages.info(request, "Veuillez vérifier votre droit d’accès pour ouvrir cette page.")
         return redirect("downloads_public:claim_access")
-    ext = (request.GET.get("ext") or "").upper().strip()
+    ext = (request.GET.get("ext") or "").strip()
     assets_qs = category.assets.filter(is_published=True)
     if ext:
-        assets_qs = [a for a in assets_qs if a.extension == ext]
+    # si extension est stockée en majuscules:
+        assets_qs = assets_qs.filter(extension=ext.upper())
+    # ou, plus souple si casse variable:
+    # assets_qs = assets_qs.filter(extension__iexact=ext)
     all_exts = sorted({a.extension for a in category.assets.filter(is_published=True)})
     ctx = {"category": category, "assets": assets_qs, "all_exts": all_exts, "active_ext": ext}
     # Option SEO soft : header pour robots
