@@ -1,12 +1,15 @@
 # store/services/cinetpay.py
-import os
+import json
 import logging
-from urllib.parse import urlencode
+import os
 from decimal import Decimal, InvalidOperation
 
 import requests
 from django.urls import reverse
-import json
+
+import base64
+import hashlib
+import hmac
 
 # =========================
 #  Config & constantes
@@ -21,6 +24,9 @@ NOTIFY_URL_ENV = os.getenv("CINETPAY_NOTIFY_URL")
 
 ENV_MODE  = os.getenv("CINETPAY_ENV", "sandbox").lower()   # "sandbox" | "production"
 CHANNELS  = os.getenv("CINETPAY_CHANNELS", "CREDIT_CARD")  # "ALL", "CREDIT_CARD", etc.
+
+WEBHOOK_HEADER = os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
+WEBHOOK_SECRET = os.getenv("CINETPAY_WEBHOOK_SECRET")
 
 logger = logging.getLogger("cinetpay")
 
@@ -48,8 +54,16 @@ def _runtime_urls(request):
     """
     base = f"{request.scheme}://{request.get_host()}"
 
-    return_url = RETURN_URL_ENV if not _is_placeholder_url(RETURN_URL_ENV) else base + reverse("payment_return")
-    notify_url = NOTIFY_URL_ENV if not _is_placeholder_url(NOTIFY_URL_ENV) else base + reverse("payment_notify")
+    return_url = (
+        RETURN_URL_ENV
+        if not _is_placeholder_url(RETURN_URL_ENV)
+        else base + reverse("payment_return")
+    )
+    notify_url = (
+        NOTIFY_URL_ENV
+        if not _is_placeholder_url(NOTIFY_URL_ENV)
+        else base + reverse("payment_notify")
+    )
 
     return return_url, notify_url
 
@@ -130,7 +144,8 @@ def init_payment(
     """
     Crée une transaction CinetPay et renvoie l'URL de paiement.
     - Ajoute return_url/notify_url si fournis (ou si disponibles via .env).
-    - Force 'amount' en ENTIER, comme exigé par CinetPay (évite l'erreur 'amount must be an integer').
+    - Force 'amount' en ENTIER, comme exigé par CinetPay
+      (évite l'erreur 'amount must be an integer').
     """
     if not API_KEY or not SITE_ID:
         raise CinetPayError("CINETPAY_API_KEY / CINETPAY_SITE_ID manquants dans l'environnement.")
@@ -179,7 +194,13 @@ def init_payment(
             "customer_zip_code": customer.get("zip", "00000") or "00000",
         })
 
-    logger.info(f"[CinetPay][init] tx={transaction_id} amount={amount_int} {currency} channels={payload['channels']}")
+    logger.info(
+        "[CinetPay][init] tx=%s amount=%s %s channels=%s",
+        transaction_id,
+        amount_int,
+        currency,
+        payload["channels"],
+    )
 
     data = _post("/v2/payment", payload)
 
@@ -189,9 +210,13 @@ def init_payment(
         logger.error(f"[CinetPay][init] Unexpected code: {code} | response={data}")
         raise CinetPayError({"step": "init", "response": data})
 
-    payment_url = (data.get("data") or {}).get("payment_url") or (data.get("data") or {}).get("checkout_url")
+    data_dict = data.get("data") or {}
+    payment_url = data_dict.get("payment_url") or data_dict.get("checkout_url")
     if not payment_url:
-        logger.error(f"[CinetPay][init] payment_url manquant | response={data}")
+        logger.error(
+            "[CinetPay][init] payment_url manquant | response=%s",
+            data,
+        )
         raise CinetPayError({"step": "init", "error": "payment_url manquant", "response": data})
 
     return payment_url
@@ -236,10 +261,19 @@ def init_payment_auto(order, request) -> str:
         customer={"email": order.email},
         return_url=return_url,
         notify_url=notify_url,
-        metadata=json.dumps({"tier_id": order.tier_id}) if getattr(order, "tier_id", None) else None,
+        metadata=(
+            json.dumps({"tier_id": order.tier_id})
+            if getattr(order, "tier_id", None)
+            else None
+        ),
     )
 
-    logger.info(f"[CinetPay][init_auto] order_id={order.id} tx={tx} → redirect={pay_url}")
+    logger.info(
+        "[CinetPay][init_auto] order_id=%s tx=%s → redirect=%s",
+        order.id,
+        tx,
+        pay_url,
+    )
     return pay_url
 
 
@@ -249,12 +283,57 @@ def safe_check(transaction_id: str) -> dict:
     En prod, fait le vrai check.
     """
     if not (API_KEY and SITE_ID):
-        logger.warning("[CinetPay][safe_check] API_KEY/SITE_ID manquants → renvoi mock ACCEPTED (dev).")
+        logger.warning(
+            "[CinetPay][safe_check] API_KEY/SITE_ID manquants → renvoi mock ACCEPTED (dev)."
+        )
         return {"code": "00", "data": {"status": "ACCEPTED"}}
 
     try:
         return check_transaction(transaction_id)
     except CinetPayError as e:
-        # On choisit de remonter l'erreur telle quelle pour que l'appelant décide (notify view).
-        logger.error(f"[CinetPay][safe_check] error={e}")
+        logger.error("[CinetPay][safe_check] error=%s", e)
         raise
+
+
+def payment_check(order_id: str) -> tuple[bool, str | None]:
+    """
+    Vérifie le paiement côté CinetPay. Retourne (paid?, provider_tx_id ou None).
+    """
+    try:
+        resp = check_transaction(order_id)
+    except Exception as e:
+        logger.error(f"[CinetPay][payment_check] Exception: {e}")
+        return False, None
+    code = str(resp.get("code", ""))
+    data = resp.get("data") or {}
+    status = (data.get("status") or "").upper()
+    provider_tx_id = data.get("transaction_id") or data.get("cpm_trans_id")
+    if code in ("00", "201") and status in ("ACCEPTED", "PAID", "SUCCESS", "COMPLETED"):
+        return True, provider_tx_id
+    logger.info(f"[CinetPay][payment_check] Not paid: code={code} status={status}")
+    return False, provider_tx_id
+
+
+def get_webhook_header() -> str:
+    return os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
+
+def _get_webhook_secret() -> str | None:
+    return os.getenv("CINETPAY_WEBHOOK_SECRET")
+
+def verify_signature(provided_sig: str, raw_body: bytes) -> bool:
+    """
+    Verify HMAC-SHA256 over raw_body with CINETPAY_WEBHOOK_SECRET.
+    Accepts: hex, sha256=<hex>, base64(digest).
+    """
+    secret = _get_webhook_secret()
+    if not secret or not provided_sig or raw_body is None:
+        return False
+    digest = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).digest()
+    expected_hex = digest.hex()
+    expected_b64 = base64.b64encode(digest).decode()
+    candidates = {
+        expected_hex,
+        f"sha256={expected_hex}",
+        expected_b64,
+    }
+    return any(hmac.compare_digest(provided_sig, c) for c in candidates)

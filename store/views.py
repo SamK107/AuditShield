@@ -1,28 +1,41 @@
 # store/views.py
-from django.shortcuts import get_object_or_404, render, redirect
-from django.http import HttpResponse, FileResponse, Http404
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-
-# --- CINETPAY FLOW ---
-from django.views.decorators.http import require_POST
-
-from .models import Product, OfferTier, ExampleSlide, MediaAsset, Order, DownloadToken, IrregularityCategory
-import store.services.cinetpay as cinetpay
-import uuid, os, hmac, hashlib
-from .models import Product, ExampleSlide, IrregularityRow
-from django.db.models import Prefetch  # <— AJOUT ICI
-from .models import PreliminaryTable, PreliminaryRow
+import hashlib
+import hmac
 import logging
-logger = logging.getLogger("cinetpay")
+import os
+import uuid
 
-from .forms import CheckoutForm
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.mail import EmailMessage, send_mail
+from django.db.models import Prefetch
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.core.mail import send_mail
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
+
+import store.services.cinetpay as cinetpay
 from downloads.models import DownloadableAsset
-from .seeds.ebook_irregularities import SEED_IRREGULARITIES  # <-- add
+
+from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
+from .models import (
+    DownloadToken,
+    ExampleSlide,
+    InquiryDocument,
+    IrregularityCategory,
+    IrregularityRow,
+    MediaAsset,
+    OfferTier,
+    Order,
+    PreliminaryTable,
+    Product,
+    Payment,
+    PaymentEvent,
+)
+from .seeds.ebook_irregularities import SEED_IRREGULARITIES
+
+logger = logging.getLogger("cinetpay")
 
 # ---- Pages ----
 
@@ -47,8 +60,201 @@ def product_detail(request, slug):
 
 def offers(request):
     product = Product.objects.filter(is_published=True).first()
-    tiers = OfferTier.objects.filter(product=product) if product else []
-    return render(request, "store/offers.html", {"product": product, "tiers": tiers})
+    tiers_qs = OfferTier.objects.filter(product=product) if product else OfferTier.objects.none()
+
+    standard = kit = formation = None
+    for t in tiers_qs:
+        label = (getattr(t, "get_kind_display", lambda: "")() or t.title or "").lower()
+        combo = " ".join([getattr(t, "slug", "") or "", t.title or "", label])
+        if "ebook" in combo or "standard" in combo:
+            standard = t
+        elif "personnalis" in combo or "kit" in combo or "adapt" in combo:
+            kit = t
+        elif "formation" in combo or "assistance" in combo:
+            formation = t
+    if standard is None and tiers_qs.exists():
+        standard = tiers_qs.order_by("order", "id").first()
+    if kit is None and tiers_qs.count() >= 2:
+        kit = tiers_qs.order_by("order", "id")[1]
+    if formation is None and tiers_qs.count() >= 3:
+        formation = tiers_qs.order_by("order", "id")[2]
+
+    return render(request, "store/offers.html", {
+        "product": product, "standard": standard, "kit": kit, "formation": formation
+    })
+
+@require_http_methods(["GET","POST"])
+def kit_inquiry(request):
+    MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
+    MAX_FILES = 10
+    MAX_FILE_SIZE = 10 * 1024 * 1024
+    ALLOWED_EXTS = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".gif"]
+    INQUIRY_TO = ["contact@ton-domaine.com"]
+    def _total_size(files):
+        return sum(getattr(f, "size", 0) for f in files)
+
+    if request.method == "POST":
+        form = KitInquiryForm(request.POST)
+        files = request.FILES.getlist("documents")
+        file_errors = []
+        if files:
+            if len(files) > MAX_FILES:
+                file_errors.append(f"Limité à {MAX_FILES} fichiers.")
+            import os
+            for f in files:
+                ext = os.path.splitext(f.name)[1].lower()
+                if ext not in ALLOWED_EXTS:
+                    file_errors.append(f"Type non autorisé : {ext}")
+                if f.size > MAX_FILE_SIZE:
+                    file_errors.append(f"{f.name} dépasse 10 Mo.")
+        if file_errors:
+            for err in file_errors:
+                form.add_error("documents", err)
+        if form.is_valid() and not file_errors:
+            inquiry = form.save()
+            for f in files:
+                InquiryDocument.objects.create(
+                    inquiry=inquiry, file=f, original_name=f.name
+                )
+            # Email
+            data = form.cleaned_data
+            subject = "Demande – Kit personnalisé"
+            lines = [
+                "Nouvelle demande de Kit personnalisé :",
+                f"- Nom          : {data['contact_name']}",
+                f"- Email        : {data['email']}",
+                f"- Organisation : {data['organization_name']}",
+                f"- Téléphone    : {data.get('phone') or '—'}",
+                f"- Statut       : {data.get('statut_juridique') or '—'}",
+                f"- Localisation : {data.get('location') or '—'}",
+                f"- Secteur      : {data.get('sector') or '—'}",
+                f"- Budget       : {data.get('budget_range') or '—'}",
+                f"- Missions     : {data.get('mission_text') or '—'}",
+                "",
+                "DÉTAILS (optionnels) :",
+                f"- Financement  : {', '.join(data.get('funding_sources', [])) or '—'}",
+                f"- Audits       : {', '.join(data.get('audits_types', [])) or '—'}",
+                f"- Fréquence    : {data.get('audits_frequency') or '—'}",
+                f"- Taille       : {data.get('staff_size') or '—'}",
+                f"- Organigramme : {data.get('org_chart_text') or '—'}",
+                f"- Notes        : {data.get('notes_text') or '—'}",
+            ]
+            body = "\n".join(lines)
+            try:
+                email = EmailMessage(
+                    subject=subject,
+                    body=body,
+                    to=INQUIRY_TO,
+                    reply_to=[data["email"]],
+                )
+                if _total_size(files) <= MAX_ATTACH_TOTAL:
+                    for f in files:
+                        email.attach(
+                            f.name,
+                            f.read(),
+                            f.content_type or "application/octet-stream",
+                        )
+                else:
+                    if files:
+                        names = "\n".join(f"- {f.name}" for f in files)
+                        email.body += (
+                            "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
+                        )
+                email.send(fail_silently=True)
+                messages.success(
+                    request,
+                    "Merci, votre demande a bien été envoyée. "
+                    "Nous vous contactons sous 24–48 h avec une proposition adaptée."
+                )
+            except Exception:
+                logger.exception("Erreur d'envoi email (kit)")
+                messages.info(
+                    request,
+                    "Votre demande est enregistrée. "
+                    "Un souci d'email est survenu ; nous vous recontactons vite."
+                )
+            return redirect(reverse("store:kit_inquiry_success"))
+    else:
+        form = KitInquiryForm()
+    return render(request, "store/forms/kit_inquiry.html", {"form": form})
+
+def kit_inquiry_success(request):
+    return render(request, "store/forms/kit_inquiry_success.html")
+
+MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
+MAX_FILES = 10  # Nouvelle constante pour le nombre de fichiers
+MAX_FILE_SIZE = 10 * 1024 * 1024  # Nouvelle constante pour la taille maximale d'un fichier
+ALLOWED_EXTS = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".gif"] # Nouvelle constante pour les extensions autorisées
+
+def total_size(files):
+    return sum(getattr(f, "size", 0) for f in files)
+
+INQUIRY_TO = ["contact@ton-domaine.com"]  # à adapter
+MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
+
+def _total_size(files):
+    return sum(getattr(f, "size", 0) for f in files)
+
+def training_inquiry_view(request):
+    if request.method == "POST":
+        form = TrainingInquiryForm(request.POST, request.FILES)
+        if form.is_valid():
+            data = form.cleaned_data
+            files = request.FILES.getlist("documents")
+            program = data.get("program_title") or "Programme de formation (Audit Sans Peur)"
+
+            subject = f"Demande – Formation & Assistance — {program}"
+            lines = [
+                "Nouvelle demande de formation :",
+                f"- Programme    : {program}",
+                f"- Nom          : {data['contact_name']}",
+                f"- Email        : {data['email']}",
+                f"- Organisation : {data['organization_name']}",
+                "",
+                "Contexte & objectifs :",
+                f"{data['message']}",
+                "",
+                "DÉTAILS (optionnels) :",
+                f"- Téléphone    : {data.get('phone') or '—'}",
+                f"- Participants : {data.get('participants_count') or '—'}",
+                f"- Format       : {dict(form.fields['delivery_mode'].choices).get(data.get('delivery_mode'), '—')}",
+                f"- Période      : {data.get('preferred_dates') or '—'}",
+            ]
+            body = "\n".join(lines)
+
+            try:
+                email = EmailMessage(subject=subject, body=body, to=["contact@exemple.com"], reply_to=[data["email"]])
+                # … attach if needed …
+                email.send(fail_silently=False)
+                messages.success(request, "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h.")
+            except Exception:
+                logger.exception("Erreur d'envoi email")
+                messages.info(request, "Votre demande est enregistrée. Un souci d'email est survenu ; nous vous recontactons vite.")
+
+            if _total_size(files) <= MAX_ATTACH_TOTAL:
+                for f in files:
+                    email.attach(f.name, f.read(), f.content_type or "application/octet-stream")
+            else:
+                if files:
+                    names = "\n".join(f"- {f.name}" for f in files)
+                    email.body += "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
+
+            email.send(fail_silently=False)
+
+            messages.success(
+                request,
+                "Merci, votre demande a bien été envoyée. Nous vous contactons sous 24–48 h avec une proposition adaptée."
+            )
+            return redirect(reverse("store:training_inquiry_success"))
+    else:
+        form = TrainingInquiryForm()
+
+    return render(request, "store/training_inquiry.html", {"form": form})
+
+def training_inquiry_success(request):
+    # Page simple de remerciement
+    return render(request, "store/training_inquiry_success.html")
+
 
 def examples(request):
     """Page /exemples/ : cadre central avec carrousel 'Exemples' par défaut."""
@@ -76,32 +282,38 @@ def buy(request, slug):
         form = CheckoutForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            tier_id = data.get("tier_id") or (standard_tier.id if standard_tier else None)
+            tier_id = standard_tier.id if standard_tier else None
             if not tier_id:
-                return render(request, "store/payment_error.html", {"message": "Offre invalide."}, status=400)
+                return render(
+                    request,
+                    "store/payment_error.html",
+                    {"message": "Offre invalide."},
+                    status=400,
+                )
             tier = get_object_or_404(OfferTier, id=tier_id, product=product)
             transaction_id = uuid.uuid4().hex[:24].upper()
+            # Montant/devise fixés côté serveur uniquement
             order = Order.objects.create(
                 product=product,
                 tier_id=tier.id,
                 email=data["email"],
-                first_name=data["first_name"],
-                last_name=data["last_name"],
-                phone=data["phone"],
-                amount_fcfa=tier.price_fcfa or product.price_fcfa,
+                first_name=data.get("first_name", ""),
+                last_name=data.get("last_name", ""),
+                phone=data.get("phone", ""),
+                amount_fcfa=tier.price_fcfa or product.price_fcfa,  # Jamais depuis le client
                 status="PENDING",
                 cinetpay_payment_id=transaction_id,
                 provider_ref=transaction_id,
-                currency="XOF",
+                currency="XOF",  # Jamais depuis le client
             )
             try:
                 payment_url = cinetpay.init_payment_auto(order=order, request=request)
-            except Exception as e:
+            except Exception:
                 order.delete()
                 return render(request, "store/payment_error.html", {"message": "Erreur lors de l'initialisation du paiement."}, status=500)
             return redirect(payment_url)
     else:
-        form = CheckoutForm(initial={"tier_id": standard_tier.id if standard_tier else None})
+        form = CheckoutForm()
     return render(request, "store/checkout.html", {"form": form, "product": product, "tier": tier or standard_tier})
 
 
@@ -116,17 +328,214 @@ def payment_success(request, order_id):
             download_url = asset.get_absolute_url() if hasattr(asset, "get_absolute_url") else None
     return render(request, "store/payment_success.html", {"order": order, "download_url": download_url})
 
+# --- Paiement CinetPay sécurisé ---
+# Sécurité Go/No-Go : Montant et devise toujours fixés côté serveur (jamais depuis le client)
+import json
+import logging
+from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.shortcuts import render
+
+from store.models import Payment
+try:
+    from store.models import PaymentEvent  # optional
+except Exception:
+    PaymentEvent = None
+
+from store.services.cinetpay import verify_signature, get_webhook_header, payment_check
+# deliver_ebook is defined locally below, do not import
+
+from django.utils import timezone
+from django.conf import settings
+from django.core.mail import send_mail
+import secrets
+
+def _sigdebug(header_name, sig, raw):
+    """Log non-sensitive signature diag when CINETPAY_SIG_DEBUG=1."""
+    if os.getenv("CINETPAY_SIG_DEBUG") != "1":
+        return
+    logger = logging.getLogger(__name__)
+    secret = os.getenv("CINETPAY_WEBHOOK_SECRET") or ""
+    logger.warning(
+        "[SIGDEBUG] header=%s provided[:24]=%s body_len=%d body_sha256=%s secret_sha256[:24]=%s",
+        header_name,
+        str(sig)[:24],
+        len(raw or b""),
+        hashlib.sha256(raw or b"").hexdigest(),
+        hashlib.sha256(secret.encode()).hexdigest()[:24],
+    )
+
+@require_POST
+def start_checkout(request, product_slug, tier_id):
+    """
+    Crée un Payment et redirige vers l'URL de paiement CinetPay (server-side only).
+    Montant/devise toujours fixés côté serveur (jamais depuis le client).
+    """
+    from .models import Product, OfferTier
+    import uuid
+    product = get_object_or_404(Product, slug=product_slug, is_published=True)
+    tier = get_object_or_404(OfferTier, id=tier_id, product=product)
+    email = request.POST.get("email")
+    if not email:
+        return JsonResponse({"error": "Email requis"}, status=400)
+    amount = tier.price_fcfa or product.price_fcfa  # Jamais depuis le client
+    order_id = uuid.uuid4().hex[:32]
+    payment = Payment.objects.create(
+        order_id=order_id,
+        amount=amount,
+        currency="XOF",  # Jamais depuis le client
+        email=email,
+        status="INIT",
+    )
+    PaymentEvent.objects.create(payment=payment, kind="INIT", payload={"amount": amount, "email": email})
+    try:
+        pay_url = cinetpay.init_payment_auto(order=payment, request=request)
+    except Exception as e:
+        payment.status = "FAILED"
+        payment.save(update_fields=["status"])
+        PaymentEvent.objects.create(payment=payment, kind="ERROR", payload={"error": str(e)})
+        return JsonResponse({"error": "Erreur lors de l'initialisation du paiement."}, status=500)
+    payment.status = "PENDING"
+    payment.save(update_fields=["status"])
+    PaymentEvent.objects.create(payment=payment, kind="PENDING", payload={"pay_url": pay_url})
+    return JsonResponse({"redirect_url": pay_url})
+
+
 def payment_return(request):
-    """Page de retour après paiement (ne valide rien, juste info utilisateur)."""
-    return render(request, "store/payment_return.html")
+    # purely informational; NEVER delivers here
+    return render(request, "store/payment_return.html", {})
+
+
+@csrf_exempt
+@require_POST
+def cinetpay_callback(request):
+    """
+    Secure CinetPay webhook:
+    - HMAC signature over raw request.body
+    - idempotence (no double delivery)
+    - server-to-server payment_check before delivery
+    - safe 200 responses to avoid provider retries
+    """
+    import hashlib as _hl
+    header_name = get_webhook_header()
+    sig = request.headers.get(header_name) or request.META.get(f"HTTP_{header_name.upper().replace('-','_')}")
+    raw = request.body or b""
+    _sigdebug(header_name, sig, raw)
+    if not sig or not verify_signature(sig, raw):
+        logging.getLogger(__name__).warning(
+            "Invalid signature: header=%s body_len=%d body_sha256=%s",
+            header_name, len(raw), _hl.sha256(raw).hexdigest()
+        )
+        return HttpResponseBadRequest("Invalid signature")
+
+    # 2) Parse JSON
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except Exception:
+        return HttpResponseBadRequest("Invalid JSON")
+
+    order_id = payload.get("transaction_id") or payload.get("cpm_trans_id") or payload.get("order_id")
+    if not order_id:
+        return HttpResponseBadRequest("Missing order_id")
+
+    # 3) Idempotence + server-to-server check
+    with transaction.atomic():
+        try:
+            payment = Payment.objects.select_for_update().get(order_id=order_id)
+        except Payment.DoesNotExist:
+            logging.getLogger(__name__).error("Webhook for unknown order_id=%s", order_id)
+            # Return 200 to avoid endless retries; investigation via logs
+            return JsonResponse({"ok": False, "reason": "unknown_order"}, status=200)
+
+        # Optional raw trace (do not block flow if it fails)
+        if PaymentEvent:
+            try:
+                PaymentEvent.objects.create(payment=payment, kind="WEBHOOK", payload=payload)
+            except Exception:
+                logging.getLogger(__name__).exception("Failed to persist PaymentEvent for %s", order_id)
+
+        # Idempotence: already paid → no re-delivery
+        if getattr(payment, "status", None) == "PAID":
+            return JsonResponse({"ok": True, "idempotent": True}, status=200)
+
+        # Optional consistency checks if payload contains amount/currency
+        try:
+            amt = payload.get("amount")
+            cur = payload.get("currency")
+            if amt is not None and int(amt) != int(payment.amount):
+                logging.getLogger(__name__).warning("Amount mismatch for %s: payload=%s db=%s", order_id, amt, payment.amount)
+            if cur and cur != getattr(payment, "currency", None):
+                logging.getLogger(__name__).warning("Currency mismatch for %s: payload=%s db=%s", order_id, cur, getattr(payment, "currency", None))
+        except Exception:
+            pass  # never block on logging
+
+        # Server-to-server validation
+        ok, provider_tx_id = payment_check(order_id)
+        if not ok:
+            # Mark as failed but return 200 to avoid retries loops
+            try:
+                payment.status = "FAILED"
+                payment.save(update_fields=["status", "updated_at"])
+            except Exception:
+                payment.status = "FAILED"
+                payment.save()
+            if PaymentEvent:
+                try:
+                    PaymentEvent.objects.create(payment=payment, kind="CHECK_FAIL", payload={})
+                except Exception:
+                    logging.getLogger(__name__).exception("Failed to persist CHECK_FAIL for %s", order_id)
+            return JsonResponse({"ok": False, "reason": "check_failed"}, status=200)
+
+        # Mark paid, then deliver exactly once
+        payment.status = "PAID"
+        if provider_tx_id:
+            setattr(payment, "provider_tx_id", provider_tx_id)
+        try:
+            payment.save(update_fields=["status", "provider_tx_id", "updated_at"])
+        except Exception:
+            payment.save()
+
+        if PaymentEvent:
+            try:
+                PaymentEvent.objects.create(payment=payment, kind="CHECK_OK", payload={"provider_tx_id": provider_tx_id})
+            except Exception:
+                logging.getLogger(__name__).exception("Failed to persist CHECK_OK for %s", order_id)
+
+        try:
+            deliver_ebook(payment)  # unique download link + email
+        except Exception as e:
+            logging.getLogger(__name__).exception("Delivery error for %s: %s", order_id, e)
+            # Return 200 to prevent provider retries
+            return JsonResponse({"ok": True, "delivered": False}, status=200)
+
+    return JsonResponse({"ok": True, "delivered": True}, status=200)
+
+
+def deliver_ebook(payment):
+    """
+    Génère un lien de téléchargement unique et expirable, envoie l'e-mail, journalise l'event.
+    """
+    from itsdangerous import URLSafeTimedSerializer
+    from django.urls import reverse
+    # Générer un token sécurisé (expirable)
+    secret = settings.SECRET_KEY
+    s = URLSafeTimedSerializer(secret)
+    token = s.dumps(payment.order_id)
+    download_url = settings.CINETPAY_RETURN_URL.rstrip("/") + reverse("download", args=[token])
+    # Envoi e-mail confirmation (à adapter selon ton backend mail)
+    subject = "Votre lien de téléchargement AuditShield"
+    message = f"Merci pour votre achat !\n\nTéléchargez votre ebook ici (valable 72h) : {download_url}\n\nCeci est un lien personnel et temporaire."
+    send_mail(subject, message, None, [payment.email])
+    PaymentEvent.objects.create(payment=payment, kind="DELIVERED", payload={"download_url": download_url})
 
 
 @csrf_exempt
 @require_POST
 def payment_notify(request):
     import json
-    from django.views.decorators.csrf import csrf_exempt
-    from django.http import JsonResponse
+
     from store.services import deliver_order
     try:
         # Parse JSON
@@ -144,7 +553,9 @@ def payment_notify(request):
         # Retrouver l'Order
         order = Order.objects.filter(provider_ref=transaction_id).first()
         if not order:
-            logger.warning(f"[CinetPay][notify] Order not found for transaction_id={transaction_id}")
+            logger.warning(
+                f"[CinetPay][notify] Order not found for transaction_id={transaction_id}"
+            )
             return JsonResponse({"detail": "Order not found"}, status=404)
         # Re-check côté serveur
         try:
@@ -165,7 +576,9 @@ def payment_notify(request):
         # Sinon, laisser PENDING
         return JsonResponse({"detail": "OK"})
     except Exception as e:
-        logger.error(f"[CinetPay][notify] Unexpected error: {str(e)}")
+        logger.error(
+            f"[CinetPay][notify] Unexpected error: {str(e)}"
+        )
         return JsonResponse({"detail": "Unexpected error"}, status=500)
 
 # Webhook HMAC (structure + check API si besoin)
@@ -298,7 +711,7 @@ def send_download_email(order):
         message = f"Bonjour {order.first_name},\n\nMerci pour votre achat !\n\nVous pouvez télécharger votre ebook ici : {download_url}\n\nCe lien est personnel et réservé à votre usage.\n\nBonne lecture !\nL'équipe AuditShield"
         send_mail(subject, message, None, [order.email])
     else:
-        subject = f"Votre achat sur AuditShield"
+        subject = "Votre achat sur AuditShield"
         message = f"Bonjour {order.first_name},\n\nMerci pour votre achat ! Nous vous enverrons votre lien de téléchargement dès que possible.\n\nL'équipe AuditShield"
         send_mail(subject, message, None, [order.email])
 

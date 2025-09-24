@@ -1,9 +1,17 @@
 # store/admin.py
 from django.contrib import admin
+
 from .models import (
-    Product, OfferTier, ExampleSlide, MediaAsset,
-    Order, DownloadToken, IrregularityCategory, IrregularityRow
+    DownloadToken,
+    ExampleSlide,
+    IrregularityCategory,
+    IrregularityRow,
+    MediaAsset,
+    OfferTier,
+    Order,
+    Product,
 )
+
 
 class ExampleSlideInline(admin.StackedInline):
     model = ExampleSlide
@@ -39,7 +47,8 @@ admin.site.register(Order)
 admin.site.register(DownloadToken)
 
 
-from .models import PreliminaryTable, PreliminaryRow
+from .models import PreliminaryRow, PreliminaryTable
+
 
 class PreliminaryRowInline(admin.TabularInline):
     model = PreliminaryRow
@@ -62,4 +71,19 @@ class ExampleSlideAdmin(admin.ModelAdmin):
     search_fields = ("title", "irregularity", "legal_ref")
     list_editable = ("order",)
     ordering = ("product", "order", "id")
+
+from .models import ClientInquiry, InquiryDocument
+
+
+class InquiryDocumentInline(admin.TabularInline):
+    model = InquiryDocument
+    extra = 0
+    readonly_fields = ("uploaded_at",)
+
+@admin.register(ClientInquiry)
+class ClientInquiryAdmin(admin.ModelAdmin):
+    list_display = ("id","kind","organization_name","contact_name","email","created_at","status")
+    list_filter = ("kind","status","statut_juridique","sector")
+    search_fields = ("organization_name","contact_name","email","phone")
+    inlines = [InquiryDocumentInline]
 

@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff djlint pytest pytest-django
+
+      - name: Lint (Ruff)
+        run: |
+          ruff check . --output-format=github
+
+      - name: Templates Lint (djlint)
+        run: |
+          djlint . --check --profile=django --max-line-length=100
+
+      - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        run: |
+          python manage.py test -v 2

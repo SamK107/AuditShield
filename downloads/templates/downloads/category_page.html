@@ -1,0 +1,37 @@
+{% extends "store/base.html" %}
+{% load static %}
+{% block title %}{{ category.title }} – Téléchargements{% endblock %}
+
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-8">
+  <header class="mb-6">
+    <h1 class="text-2xl font-semibold">{{ category.title }}</h1>
+    {% if category.subtitle %}
+      <p class="text-sm text-gray-600 mt-1">{{ category.subtitle }}</p>
+    {% endif %}
+  </header>
+
+  {% if all_exts %}
+  <div class="flex flex-wrap items-center gap-2 mb-6">
+    <button
+      hx-get="{{ category.get_absolute_url }}{% if active_ext %}?{% endif %}"
+      hx-target="#asset-grid" hx-swap="outerHTML"
+      class="px-3 py-1 rounded-full border text-sm {% if not active_ext %}bg-gray-900 text-white border-gray-900{% else %}border-gray-300 hover:bg-gray-100{% endif %}">
+      Tous
+    </button>
+    {% for e in all_exts %}
+      <button
+        hx-get="{{ category.get_absolute_url }}?ext={{ e }}"
+        hx-target="#asset-grid" hx-swap="outerHTML"
+        class="px-3 py-1 rounded-full border text-sm {% if active_ext == e %}bg-gray-900 text-white border-gray-900{% else %}border-gray-300 hover:bg-gray-100{% endif %}">
+        {{ e }}
+      </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div id="asset-grid">
+    {% include "downloads/_asset_grid.html" %}
+  </div>
+</section>
+{% endblock %}

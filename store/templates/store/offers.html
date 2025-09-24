@@ -1,53 +1,164 @@
 {% extends "store/base.html" %}
 {% block title %}Offres{% endblock %}
 {% block content %}
-<section class="py-14">
+<section class="py-10 md:py-14 bg-gradient-to-b from-slate-50 to-white">
   <div class="max-w-6xl mx-auto px-4">
-    <h1 class="text-3xl font-bold">Nos offres</h1>
-    <div class="mt-8 grid md:grid-cols-3 gap-6">
-      {% for t in tiers %}
-      <div class="relative rounded-3xl border p-6 bg-white shadow-sm hover:shadow-lg transition">
-        {% if t.cta_type == 'BUY' %}
-          <span class="absolute -top-3 left-6 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 ring-1 ring-amber-200">Populaire</span>
-        {% endif %}
-        <div class="text-sm text-slate-500">{{ t.get_kind_display }}</div>
-        <div class="mt-1 font-semibold text-slate-900">{{ product.title }}</div>
-    
-        <div class="mt-3">
-          {% if t.price_fcfa %}
-            <div class="text-3xl font-extrabold">{{ t.price_fcfa }} <span class="text-base font-semibold">FCFA</span></div>
-          {% else %}
-            <div class="text-3xl font-extrabold">Sur devis</div>
-          {% endif %}
+    <h1 class="text-2xl md:text-3xl font-extrabold text-center">Choisissez l’offre qui correspond à vos besoins</h1>
+    <p class="mt-2 text-center text-slate-600">Trois parcours : Standard (ebook), Kit personnalisé, Formation & Assistance.</p>
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Standard -->
+      <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-6 relative">
+        <div class="absolute -top-3 right-4">
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white shadow">Populaire</span>
         </div>
-    
-        <div class="prose prose-sm mt-4 text-slate-700">{{ t.description_md|linebreaks }}</div>
-    
-        <ul class="mt-4 space-y-2 text-sm text-slate-700">
-          <li class="flex gap-2"><i data-lucide="check" class="text-blue-600"></i> Garantie 7 jours</li>
-          <li class="flex gap-2"><i data-lucide="check" class="text-blue-600"></i> Accès immédiat</li>
-          <li class="flex gap-2"><i data-lucide="check" class="text-blue-600"></i> Support email</li>
+        <h3 class="text-xl font-bold">Ebook Audit Sans Peur</h3>
+        <p class="mt-1 text-sm text-slate-600">Ebook complet + bonus. Accès immédiat.</p>
+        <div class="mt-4 flex items-baseline gap-1">
+          <div class="text-2xl font-extrabold text-slate-900">15 000</div><div class="text-slate-500">FCFA</div>
+        </div>
+        <ul class="mt-4 text-sm space-y-2">
+          <li class="flex gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Guide des réponses audit (bonus)</li>
+          <li class="flex gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Kit préparation audit — bonus (texte client ≤ 3 pages)</li>
+          <li class="flex gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Garantie 7 jours</li>
+          <li class="flex gap-2"><i data-lucide="flashlight" class="text-blue-600"></i> Accès immédiat</li>
+          <li class="flex gap-2"><i data-lucide="mail" class="text-blue-600"></i> Support email</li>
         </ul>
-    
         <div class="mt-6">
-          {% if t.cta_type == 'BUY' %}
-            <form method="post" action="{% url 'store:buy' product.slug %}">
-              {% csrf_token %}
-              <input type="hidden" name="tier_id" value="{{ t.id }}">
-              <button class="w-full px-5 py-3 rounded-xl bg-blue-600 text-white shadow hover:shadow-lg transition flex items-center justify-center gap-2">
-                <i data-lucide="credit-card"></i> Acheter maintenant
-              </button>
-            </form>
-          {% elif t.cta_type == 'QUOTE' %}
-            <a href="{% url 'core:contact' %}" class="w-full inline-flex justify-center px-5 py-3 rounded-xl border hover:shadow transition">Demander un devis</a>
+          {% if standard and standard.product and standard.product.slug %}
+            <a href="{% url 'store:buy' standard.product.slug %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white hover:shadow w-full justify-center font-semibold">
+              <i data-lucide="shopping-cart"></i> Acheter maintenant
+            </a>
           {% else %}
-            <a href="{% url 'core:contact' %}" class="w-full inline-flex justify-center px-5 py-3 rounded-xl border hover:shadow transition">Planifier un appel</a>
+            <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-300 text-gray-500 w-full justify-center font-semibold cursor-not-allowed" disabled>
+              <i data-lucide="shopping-cart"></i> Indisponible
+            </button>
           {% endif %}
         </div>
+        <div class="mt-4"><a href="#standard" class="text-blue-700 text-sm hover:underline">Voir plus</a></div>
       </div>
-      {% endfor %}
+
+      <!-- Kit -->
+      <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-6">
+        <h3 class="text-xl font-bold">Kit complet de préparation à l’audit</h3>
+        <p class="mt-1 text-sm text-slate-600">Dossier adapté à vos textes et à votre organisation. Délais 72h.</p>
+        <div class="mt-4 flex items-baseline gap-2"><div class="text-lg font-semibold text-slate-900">Sur devis</div></div>
+        <ul class="mt-4 text-sm space-y-2">
+          <li class="flex gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Dossier irrégularités adapté</li>
+          <li class="flex gap-2"><i data-lucide="clock-8" class="text-blue-600"></i> Disponible sous 72h</li>
+          <li class="flex gap-2"><i data-lucide="shield-check" class="text-blue-600"></i> Garantie 7 jours</li>
+          <li class="flex gap-2"><i data-lucide="mail" class="text-blue-600"></i> Support email</li>
+        </ul>
+        <div class="mt-6">
+          <a href="{% url 'store:kit_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:shadow">
+            <i data-lucide="form-input"></i> Demander mon Kit personnalisé
+          </a>
+        </div>
+        <div class="mt-4"><a href="#kit" class="text-emerald-700 text-sm hover:underline">Voir plus</a></div>
+      </div>
+
+      <!-- Formation -->
+      <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-6">
+        <h3 class="text-xl font-bold">Bouclier contre irrégularité et fautes de gestion</h3>
+        <p class="mt-1 text-sm text-slate-600">Formation interactive + suivi. Contactez-nous pour bâtir le programme.</p>
+        <div class="mt-4 flex items-baseline gap-2"><div class="text-lg font-semibold text-slate-900">Sur devis</div></div>
+        <ul class="mt-4 text-sm space-y-2">
+          <li class="flex gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Ateliers pratiques sur vos cas</li>
+          <li class="flex gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Simulations Q/R avec auditeurs</li>
+          <li class="flex gap-2"><i data-lucide="life-buoy" class="text-blue-600"></i> Assistance post-formation</li>
+          <li class="flex gap-2"><i data-lucide="mail" class="text-blue-600"></i> Support email</li>
+        </ul>
+        <div class="mt-6">
+          <a href="{% url 'store:training_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:shadow">
+            <i data-lucide="file-plus-2"></i> Demander la Formation & Assistance
+          </a>
+        </div>
+        <div class="mt-4"><a href="#formation" class="text-indigo-700 text-sm hover:underline">Voir plus</a></div>
+      </div>
     </div>
-    
+
+    <!-- Sections détaillées -->
+    <div class="mt-14 space-y-14">
+      <section id="standard">
+        <h2 class="text-xl md:text-2xl font-extrabold">Ebook Audit Sans Peur</h2>
+        <p class="mt-1 text-slate-600">Ebook complet, accès immédiat après paiement, avec bonus inclus.</p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          <div class="rounded-xl border p-4">
+            <div class="font-semibold">Contenu</div>
+            <ul class="mt-2 text-sm space-y-1">
+              <li>• Ebook complet (PDF)</li>
+              <li>• Bonus 1 : Guide des réponses audit</li>
+              <li>• Bonus 2 : Kit préparation audit (texte ≤ 3 pages)</li>
+            </ul>
+          </div>
+          <div class="rounded-xl border p-4">
+            <div class="font-semibold">Avantages</div>
+            <ul class="mt-2 text-sm space-y-1">
+              <li>• Accès immédiat</li>
+              <li>• Garantie 7 jours</li>
+              <li>• Support email</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="kit">
+        <h2 class="text-xl md:text-2xl font-extrabold">Kit complet de préparation à l’audit</h2>
+        <p class="mt-1 text-slate-600">Dossier adapté à vos textes, processus et missions. Livraison sous 72h.</p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          <div class="rounded-xl border p-4">
+            <div class="font-semibold">Contenu</div>
+            <ul class="mt-2 text-sm space-y-1">
+              <li>• Tableau des irrégularités adapté</li>
+              <li>• Fiches pratiques par processus</li>
+              <li>• Réponses types aux questions d’audit</li>
+            </ul>
+          </div>
+          <div class="rounded-xl border p-4">
+            <div class="font-semibold">Avantages</div>
+            <ul class="mt-2 text-sm space-y-1">
+              <li>• Disponible sous 72h</li>
+              <li>• Garantie 7 jours</li>
+              <li>• Support email</li>
+            </ul>
+            <div class="mt-4">
+              <a href="{% url 'store:kit_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:shadow">
+                <i data-lucide="form-input"></i> Demander mon Kit personnalisé
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="formation">
+        <h2 class="text-xl md:text-2xl font-extrabold">Bouclier contre irrégularité et fautes de gestion</h2>
+        <p class="mt-1 text-slate-600">Formation interactive avec cas réels + assistance au suivi.</p>
+        <div class="mt-4 grid gap-3 md:grid-cols-2">
+          <div class="rounded-xl border p-4">
+            <div class="font-semibold">Contenu</div>
+            <ul class="mt-2 text-sm space-y-1">
+              <li>• Ateliers pratiques (vos cas)</li>
+              <li>• Simulations questions/réponses</li>
+              <li>• Assistance post-formation</li>
+            </ul>
+          </div>
+          <div class="rounded-xl border p-4">
+            <div class="font-semibold">Avantages</div>
+            <ul class="mt-2 text-sm space-y-1">
+              <li>• Parcours sur-mesure</li>
+              <li>• Plan d’action & suivi</li>
+              <li>• Support email</li>
+            </ul>
+            <div class="mt-4">
+              <a href="{% url 'store:training_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:shadow">
+                <i data-lucide="file-plus-2"></i> Demander la Formation & Assistance
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
   </div>
 </section>
 {% endblock %}

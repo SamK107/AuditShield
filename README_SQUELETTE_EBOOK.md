@@ -102,7 +102,7 @@ Visite : `/`, `/ebook/audit-services-publics/`, `/offres/`, `/exemples/`.
 - **Order**(order_id UUID, product, email, amount_fcfa, status=[pending|paid|failed], cinetpay_payment_id?, created_at)
 - **DownloadToken**(order 1–1, token UUID, expires_at, is_valid())
 
-> **Standard (15 000 FCFA)** inclut : ebook “Audit des services publics” + **bonus** “Dossier irrégularités & solutions (1 texte au choix)” + “Guide de l’audit en 7 étapes”.
+> **Standard (15 000 FCFA)** inclut : ebook “Ebook - Audit Sans Peur” + **bonus** “Dossier irrégularités & solutions (1 texte au choix)” + “Guide de l’audit en 7 étapes”.
 
 ---
 
