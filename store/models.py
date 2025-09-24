@@ -98,7 +98,8 @@ class Order(models.Model):
         on_delete=models.PROTECT,
         related_name="orders",
     )
-    tier_id = models.IntegerField(null=True, blank=True)  # Pour compatibilité, à remplacer par tier FK si Tier existe
+    # Pour compatibilité, à remplacer par tier FK si Tier existe
+    tier_id = models.IntegerField(null=True, blank=True)
     email = models.EmailField()
     first_name = models.CharField(max_length=120, blank=True)
     last_name = models.CharField(max_length=120, blank=True)
@@ -305,3 +306,34 @@ class InquiryDocument(models.Model):
 
     def __str__(self):
         return self.original_name or (self.file.name.split('/')[-1])
+
+
+# --- Paiement CinetPay ---
+class Payment(models.Model):
+    # Go/No-Go: order_id unique, provider_tx_id unique (nullable), status choices, updated_at
+    order_id = models.CharField(max_length=64, unique=True)
+    provider_tx_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    status = models.CharField(max_length=16, choices=[
+        ("INIT", "INIT"),
+        ("PENDING", "PENDING"),
+        ("PAID", "PAID"),
+        ("FAILED", "FAILED"),
+        ("CANCELED", "CANCELED")
+    ], default="INIT")
+    amount = models.IntegerField()
+    currency = models.CharField(max_length=8, default="XOF")
+    email = models.EmailField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment {self.order_id} ({self.status})"
+
+class PaymentEvent(models.Model):
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="events")
+    kind = models.CharField(max_length=32)  # INIT, WEBHOOK, CHECK_OK, DELIVERED, ERROR, etc.
+    payload = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Event {self.kind} for {self.payment.order_id} at {self.created_at}"
