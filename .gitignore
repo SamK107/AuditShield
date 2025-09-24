@@ -50,3 +50,11 @@ backups/
 
 # Test artifacts
 /tmp_test_media/
+
+# Test artifacts
+/tmp_test_media/
+
+# Fichiers d'environnement (jamais en versionné)
+# secrets
+.env
+.env.*

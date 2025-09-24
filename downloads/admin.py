@@ -1,15 +1,33 @@
 from django.contrib import admin
+from django.apps import apps
 
 from .models import DownloadableAsset, DownloadCategory, DownloadEntitlement, PurchaseClaim
 
+DownloadCategory = apps.get_model('downloads', 'DownloadCategory')
 
 @admin.register(DownloadCategory)
 class DownloadCategoryAdmin(admin.ModelAdmin):
-    list_display = ("title", "page_path", "is_protected", "required_sku", "order")
-    list_filter = ("is_protected",)
-    search_fields = ("title", "slug", "page_path")
-    ordering = ("order", "slug")
-    prepopulated_fields = {"slug": ("title",)}
+    list_display = ('slug', 'is_protected', 'required_sku')
+    list_per_page = 50
+    list_filter = ()  # can be extended later with a proper SimpleListFilter
+
+    def is_protected(self, obj):
+        val = getattr(obj, 'is_protected', None)
+        if isinstance(val, bool):
+            return val
+        return bool(val)
+    is_protected.boolean = True
+    is_protected.short_description = "Protected?"
+
+    def required_sku(self, obj):
+        val = getattr(obj, 'required_sku', None)
+        try:
+            if hasattr(val, 'all'):
+                return ", ".join(str(x) for x in val.all())
+        except Exception:
+            pass
+        return "" if val is None else str(val)
+    required_sku.short_description = "Required SKU(s)"
 
 
 @admin.register(DownloadableAsset)

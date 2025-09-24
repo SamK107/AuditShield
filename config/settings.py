@@ -28,16 +28,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DB_SUFFIX = os.getenv("DB_SUFFIX", "dev")
 
 # --- DEBUG & SECRET ---
-DEBUG = env.bool("DJANGO_DEBUG", default=True)
+DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-key")  # sûr pour tests *seulement*
 
-ALLOWED_HOSTS = [
-    "127.0.0.1", "localhost",
-    "f14af32db061.ngrok-free.app",  # <- ton domaine ngrok actuel
-]
+# --- ALLOWED_HOSTS Go/No-Go ---
+if not DEBUG:
+    ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+else:
+    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
+# --- Cookies secure en prod ---
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+
+# --- Reverse proxy TLS (ex: cPanel/Reverse proxy) ---
+if os.getenv("USE_SECURE_PROXY_SSL_HEADER", "0") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# --- CSRF_TRUSTED_ORIGINS pour domaines prod (optionnel) ---
 CSRF_TRUSTED_ORIGINS = [
-    "https://f14af32db061.ngrok-free.app",
+    "https://auditsanspeur.com",
+    "https://www.auditsanspeur.com",
 ]
 
 # Application definition

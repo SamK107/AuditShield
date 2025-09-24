@@ -12,41 +12,21 @@ def upload_to(instance, filename):
 
 
 class DownloadCategory(models.Model):
-    """
-    Catégories publiques liées à des pages racines :
-    /checklists, /bonus, /outils-pratiques, /irregularites
-    """
     slug = models.SlugField(
         primary_key=True,
-        max_length=50,
-        help_text=(
-            "Ex: checklists, bonus, irregularites, outils-pratiques"
-        ),
+        help_text='Ex: checklists, bonus, irregularites, outils-pratiques'
     )
     title = models.CharField(max_length=150)
     subtitle = models.CharField(max_length=200, blank=True)
-    page_path = models.CharField(
-        max_length=80,
-        unique=True,
-        help_text="Chemin public (commence par /), ex: /checklists"
-    )
+    page_path = models.CharField(max_length=80, unique=True, help_text='Chemin public (commence par /), ex: /checklists')
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
-    # Protection d'accès
-    is_protected = models.BooleanField(default=False)
-    required_sku = models.CharField(
-        max_length=64, blank=True,
-        help_text="Code produit requis (ex: EBOOK_ASP)"
-    )
 
     class Meta:
-        ordering = ["order", "slug"]
+        ordering = ['order', 'slug']
 
     def __str__(self):
-        return f"{self.title} ({self.page_path})"
-
-    def get_absolute_url(self):
-        return self.page_path
+        return self.title
 
 
 class DownloadableAsset(models.Model):
