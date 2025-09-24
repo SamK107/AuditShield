@@ -7,6 +7,10 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.urls import reverse
 
+import base64
+import hashlib
+import hmac
+
 # =========================
 #  Config & constantes
 # =========================
@@ -20,6 +24,9 @@ NOTIFY_URL_ENV = os.getenv("CINETPAY_NOTIFY_URL")
 
 ENV_MODE  = os.getenv("CINETPAY_ENV", "sandbox").lower()   # "sandbox" | "production"
 CHANNELS  = os.getenv("CINETPAY_CHANNELS", "CREDIT_CARD")  # "ALL", "CREDIT_CARD", etc.
+
+WEBHOOK_HEADER = os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
+WEBHOOK_SECRET = os.getenv("CINETPAY_WEBHOOK_SECRET")
 
 logger = logging.getLogger("cinetpay")
 
@@ -137,7 +144,8 @@ def init_payment(
     """
     Crée une transaction CinetPay et renvoie l'URL de paiement.
     - Ajoute return_url/notify_url si fournis (ou si disponibles via .env).
-    - Force 'amount' en ENTIER, comme exigé par CinetPay (évite l'erreur 'amount must be an integer').
+    - Force 'amount' en ENTIER, comme exigé par CinetPay
+      (évite l'erreur 'amount must be an integer').
     """
     if not API_KEY or not SITE_ID:
         raise CinetPayError("CINETPAY_API_KEY / CINETPAY_SITE_ID manquants dans l'environnement.")
@@ -285,3 +293,47 @@ def safe_check(transaction_id: str) -> dict:
     except CinetPayError as e:
         logger.error("[CinetPay][safe_check] error=%s", e)
         raise
+
+
+def payment_check(order_id: str) -> tuple[bool, str | None]:
+    """
+    Vérifie le paiement côté CinetPay. Retourne (paid?, provider_tx_id ou None).
+    """
+    try:
+        resp = check_transaction(order_id)
+    except Exception as e:
+        logger.error(f"[CinetPay][payment_check] Exception: {e}")
+        return False, None
+    code = str(resp.get("code", ""))
+    data = resp.get("data") or {}
+    status = (data.get("status") or "").upper()
+    provider_tx_id = data.get("transaction_id") or data.get("cpm_trans_id")
+    if code in ("00", "201") and status in ("ACCEPTED", "PAID", "SUCCESS", "COMPLETED"):
+        return True, provider_tx_id
+    logger.info(f"[CinetPay][payment_check] Not paid: code={code} status={status}")
+    return False, provider_tx_id
+
+
+def get_webhook_header() -> str:
+    return os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
+
+def _get_webhook_secret() -> str | None:
+    return os.getenv("CINETPAY_WEBHOOK_SECRET")
+
+def verify_signature(provided_sig: str, raw_body: bytes) -> bool:
+    """
+    Verify HMAC-SHA256 over raw_body with CINETPAY_WEBHOOK_SECRET.
+    Accepts: hex, sha256=<hex>, base64(digest).
+    """
+    secret = _get_webhook_secret()
+    if not secret or not provided_sig or raw_body is None:
+        return False
+    digest = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).digest()
+    expected_hex = digest.hex()
+    expected_b64 = base64.b64encode(digest).decode()
+    candidates = {
+        expected_hex,
+        f"sha256={expected_hex}",
+        expected_b64,
+    }
+    return any(hmac.compare_digest(provided_sig, c) for c in candidates)

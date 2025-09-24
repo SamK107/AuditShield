@@ -18,8 +18,13 @@ urlpatterns = [
 
     path("buy/<slug:slug>/", views.buy, name="buy"),
     path("payment/return/", views.payment_return, name="payment_return"),
-    path("payment/callback/", views.payment_callback, name="payment_callback"),
+    # path("payment/callback/", views.payment_callback, name="payment_callback"),  # Ancienne route
     path("telecharger/<uuid:token>/", views.download, name="download"),
+
+    # --- Paiement CinetPay sécurisé ---
+    path("buy/<slug:product_slug>/<int:tier_id>/", views.start_checkout, name="start_checkout"),
+    path("payment/return/", views.payment_return, name="payment_return"),
+    path("payment/callback/", views.cinetpay_callback, name="cinetpay_callback"),
 
     path(
         "formation-assistance/demande/",
