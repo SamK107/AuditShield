@@ -34,6 +34,7 @@ from .models import (
     PaymentEvent,
 )
 from .seeds.ebook_irregularities import SEED_IRREGULARITIES
+from store.content.faqs import FAQ_ITEMS
 
 logger = logging.getLogger("cinetpay")
 
@@ -42,20 +43,19 @@ logger = logging.getLogger("cinetpay")
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, is_published=True)
     media = MediaAsset.objects.filter(product=product)
-    faqs = product.faq_json or []
     proofs = product.social_proofs_json or []
     standard_tier = OfferTier.objects.filter(product=product, kind="STANDARD").first()
 
-    # Seed tableau d’analyse (extrait)
+    # Seed tableau d'analyse (extrait)
     rows_ebook = SEED_IRREGULARITIES.get(slug, [])
 
     return render(request, "store/product_detail.html", {
         "product": product,
         "media": media,
-        "faqs": faqs,
+        "faqs": FAQ_ITEMS,  # <-- injection FAQ centralisée
         "proofs": proofs,
         "standard_tier": standard_tier,
-        "rows_ebook": rows_ebook,  # <-- add
+        "rows_ebook": rows_ebook,
     })
 
 def offers(request):
