@@ -1,40 +1,200 @@
 {% extends "store/base.html" %}
 {% block title %}{{ product.title }}{% endblock %}
 {% block content %}
-<section class="py-14">
-  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-[1fr_480px] gap-8 items-start">
-    <div>
-      <h1 class="text-3xl md:text-4xl font-bold">{{ product.title }}</h1>
-      <p class="mt-3 text-gray-600">{{ product.subtitle }}</p>
-      <div class="mt-6 flex items-center gap-3">
-        <form method="post" action="{% url 'store:buy' product.slug %}">
-          {% csrf_token %}
-          {% if standard_tier %}<input type="hidden" name="tier_id" value="{{ standard_tier.id }}">{% endif %}
-          <button class="px-6 py-3 rounded-2xl bg-blue-600 text-white">Obtenir l’ebook — {{ standard_tier.price_fcfa|default:product.price_fcfa }} FCFA</button>
-        </form>
-        <a href="{% url 'store:offers' %}" class="px-6 py-3 rounded-2xl border">Voir les offres</a>
+{% load static %}
+<section class="py-4 md:py-8 bg-gradient-to-b from-slate-50 to-white">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid lg:grid-cols-2 gap-8 items-stretch">
+      <!-- Left panel: Offer & Bonuses -->
+      <div class="rounded-3xl border bg-white/70 backdrop-blur p-6 md:p-8 shadow-sm flex flex-col justify-between">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">{{ product.title }}</h1>
+          {% if product.subtitle %}
+            <p class="mt-3 text-slate-700 md:text-lg">{{ product.subtitle }}</p>
+          {% endif %}
+
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <form method="post" action="{% url 'store:buy' product.slug %}">
+              {% csrf_token %}
+              {% if standard_tier %}<input type="hidden" name="tier_id" value="{{ standard_tier.id }}">{% endif %}
+              <button class="px-6 py-3 rounded-2xl bg-blue-600 text-white font-semibold shadow hover:shadow-lg transition">
+                Obtenir l’ebook — {{ standard_tier.price_fcfa|default:product.price_fcfa }} FCFA
+              </button>
+            </form>
+            <a href="{% url 'store:offers' %}" class="px-6 py-3 rounded-2xl border font-medium hover:bg-slate-50 transition">
+              Voir les offres
+            </a>
+          </div>
+
+          <ul class="mt-6 space-y-2 text-sm md:text-base">
+            <li class="flex gap-2 items-start">
+              <i data-lucide="check-circle" class="mt-0.5 text-green-600"></i>
+              <span>Guide des réponses audit (bonus)</span>
+            </li>
+            <li class="flex gap-2 items-start">
+              <i data-lucide="check-circle" class="mt-0.5 text-green-600"></i>
+              <span>Kit préparation audit — bonus (texte client ≤ 3 pages)</span>
+            </li>
+            <li class="flex gap-2 items-start">
+              <i data-lucide="shield-check" class="mt-0.5 text-green-600"></i>
+              <span>Garantie 7 jours — Satisfait ou remboursé</span>
+            </li>
+            <li class="flex gap-2 items-start">
+              <i data-lucide="flashlight" class="mt-0.5 text-blue-600"></i>
+              <span>Accès immédiat après paiement</span>
+            </li>
+            <li class="flex gap-2 items-start">
+              <i data-lucide="mail" class="mt-0.5 text-blue-600"></i>
+              <span>Support email prioritaire</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mt-8">
+          <div class="rounded-2xl border p-4 flex items-center justify-between">
+            <div>
+              <div class="font-semibold">Prêt à commencer ?</div>
+              <p class="text-sm text-slate-600">Téléchargement immédiat, garantie 7 jours.</p>
+            </div>
+            <form method="post" action="{% url 'store:buy' product.slug %}">
+              {% csrf_token %}
+              {% if standard_tier %}<input type="hidden" name="tier_id" value="{{ standard_tier.id }}">{% endif %}
+              <button class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium">Obtenir l’ebook</button>
+            </form>
+          </div>
+        </div>
       </div>
-      <ul class="mt-6 space-y-2 text-sm">
-        <li class="flex gap-2"><i data-lucide="check"></i> Bonus : Dossier irrégularités & solutions (1 texte au choix)</li>
-        <li class="flex gap-2"><i data-lucide="check"></i> Guide : L’audit en 7 étapes</li>
-        <li class="flex gap-2"><i data-lucide="lock"></i> Téléchargement sécurisé (lien 72h)</li>
-      </ul>
+
+      <!-- Right panel: Cover + carousel (cover only on first slide, then text slides) -->
+      <div class="rounded-3xl border bg-white p-4 md:p-6 shadow-sm flex flex-col justify-center min-h-[400px] lg:min-h-[500px]">
+  <div
+    x-data="{
+      i: 0,
+      slides: [
+        { 
+          kind:'cover',
+          img:'{% static "brand/ebook_carousel/cover.jpg" %}',
+          alt:'Couverture - Audit Sans Peur'
+        },
+        { 
+          kind:'image',
+          img:'{% static "brand/ebook_carousel/chap_1.jpg" %}',
+          alt:'Chapitre 1 - Comprendre l\'audit',
+          blurFrom: 55,
+          fadeTo:  98,
+          blurPx:  5
+        },
+        { 
+          kind:'image',
+          img:'{% static "brand/ebook_carousel/chap_9.jpg" %}',
+          alt:'Chapitre 9 - Ce que vous risquez et comment vous proteger',
+          blurFrom: 70,
+          fadeTo:  95,
+          blurPx:  5
+        },
+        { 
+          kind:'image',
+          img:'{% static "brand/ebook_carousel/chap_10.jpg" %}',
+          alt:'Chapitre 10 - Quand le controle bascule dans le penal',
+          blurFrom: 70,
+          fadeTo:  90,
+          blurPx:  5
+        },
+        { 
+          kind:'image',
+          img:'{% static "brand/ebook_carousel/Question_1.jpg" %}',
+          alt:'Bonus - Q1. Pouvez-vous vous presenter ?',
+          blurFrom: 70,
+          fadeTo:  92,
+          blurPx: 7
+        }
+      ],
+      next(){ this.i = (this.i + 1) % this.slides.length },
+      prev(){ this.i = (this.i - 1 + this.slides.length) % this.slides.length },
+    }"
+    x-init="
+      // gentle autoplay; pause on hover
+      (() => { let t = setInterval(()=>next(), 6000); $el.addEventListener('mouseenter', ()=>clearInterval(t)); })();
+    "
+    class="flex flex-col h-full justify-center items-center relative min-h-[350px] lg:min-h-[450px]"
+    role="img" :aria-label="'Carrousel d\'images, slide ' + (i + 1) + ' sur ' + slides.length + ': ' + (slides[i]?.alt || 'Image')"
+  >
+
+    <!-- 0) Cover (no blur) -->
+    <template x-if="slides[i]?.kind === 'cover'">
+      <div class="absolute inset-0 flex items-center justify-center">
+        <img :src="slides[i].img" :alt="slides[i].alt"
+             class="w-full h-full object-contain rounded-2xl border bg-slate-50 shadow max-h-[320px] md:max-h-[400px]"
+             loading="eager" fetchpriority="high" decoding="async"
+             width="400" height="320">
+      </div>
+    </template>
+
+    <!-- 1-n) Image slides with adjustable gradient blur -->
+    <template x-if="slides[i]?.kind === 'image'">
+      <div class="absolute inset-0 p-4 md:p-5">
+        <div class="relative w-full h-full rounded-2xl border bg-slate-50 shadow overflow-hidden">
+          <img :src="slides[i].img" :alt="slides[i].alt"
+               class="absolute inset-0 w-full h-full object-contain"
+               loading="lazy" decoding="async" width="400" height="320" />
+
+          <!-- Overlay: gradient + backdrop blur, driven by slide variables -->
+          <div class="grad-blur-mask"
+               :style="'--start:' + (slides[i].blurFrom ?? 55) + '%; --opaque:' + (slides[i].fadeTo ?? 92) + '%; --blur:' + (slides[i].blurPx ?? 14) + 'px;'">
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Dots + arrows -->
+    <div class="absolute bottom-4 left-0 right-0 flex items-center justify-between px-4 z-10">
+      <div class="flex gap-2 mx-auto">
+        <template x-for="(_,idx) in slides" :key="'dot-'+idx">
+          <button class="h-2 w-6 rounded-full transition-all duration-200"
+                  :class="idx===i ? 'bg-blue-600' : 'bg-slate-300'"
+                  @click="i=idx" :aria-label="'Aller à la slide ' + (idx + 1)"
+                  :aria-pressed="idx===i ? 'true' : 'false'"></button>
+        </template>
+      </div>
+      <div class="hidden md:flex gap-2 absolute right-4">
+        <button class="px-3 py-1.5 rounded-lg border" @click="prev()" 
+                aria-label="Image précédente" tabindex="0">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <button class="px-3 py-1.5 rounded-lg border" @click="next()" 
+                aria-label="Image suivante" tabindex="0">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
     </div>
-    {% include "store/partials/product_marketing_panel.html" %}
+  </div>
+</div>
+      
+      <!-- /right panel -->
+    </div>
   </div>
 </section>
 
-<section class="py-10 bg-gray-50">
+<section class="py-6 bg-gray-50" id="obtenir">
   <div class="max-w-5xl mx-auto px-4">
     <h2 class="text-xl font-semibold">Ce que vous allez obtenir</h2>
-    <div class="mt-4 grid md:grid-cols-3 gap-4">
-      <div class="rounded-2xl border bg-white p-4"><i data-lucide="book-open"></i> Ebook complet</div>
-      <div class="rounded-2xl border bg-white p-4"><i data-lucide="file-text"></i> Dossier irrégularités (personnalisé)</div>
-      <div class="rounded-2xl border bg-white p-4"><i data-lucide="list-checks"></i> Guide 7 étapes</div>
+    <div class="mt-2 grid md:grid-cols-3 gap-3">
+      <div class="rounded-2xl border bg-white p-2 flex flex-row items-center gap-2 text-sm">
+        <i data-lucide="book-open" class="w-5 h-5"></i> <span>Ebook complet</span>
+      </div>
+      <div class="rounded-2xl border bg-white p-2 flex flex-row items-center gap-2 text-sm">
+        <i data-lucide="file-text" class="w-5 h-5"></i> <span>Kit préparation audit (1 texte)</span>
+      </div>
+      <div class="rounded-2xl border bg-white p-2 flex flex-row items-center gap-2 text-sm">
+        <i data-lucide="list-checks" class="w-5 h-5"></i> <span>Guide des réponses à l'audit</span>
+      </div>
     </div>
   </div>
 </section>
 
+<a href="#obtenir" class="block text-center text-blue-700 text-xs mt-2 underline md:hidden">Ce que vous allez obtenir ↓</a>
+
+<!-- Section Media / Extraits - Commentée temporairement
 <section class="py-10" id="media">
   <div class="max-w-5xl mx-auto px-4 scroll-mt-24">
     <h2 class="text-xl font-semibold">Media / Extraits</h2>
@@ -43,7 +203,7 @@
       <div class="rounded-2xl border p-4">
         <div class="font-medium">{{ m.title }}</div>
         {% if m.kind == 'PDF_EXTRACT' %}
-          <a href="{{ m.file_or_url }}" target="_blank" class="text-blue-700 text-sm">Ouvrir l’extrait PDF →</a>
+          <a href="{{ m.file_or_url }}" target="_blank" class="text-blue-700 text-sm">Ouvrir l'extrait PDF →</a>
         {% elif m.kind == 'VIDEO' %}
           <div class="aspect-video mt-2">
             <iframe src="{{ m.file_or_url }}" class="w-full h-full rounded-xl" allowfullscreen></iframe>
@@ -56,8 +216,9 @@
     </div>
   </div>
 </section>
+-->
 
-<section class="py-10 bg-gray-50">
+<!-- <section class="py-10 bg-gray-50">
   <div class="max-w-5xl mx-auto px-4">
     <h2 class="text-xl font-semibold">Tableau d’analyse (extrait)</h2>
     {% include "store/partials/irregularities_table.html" with rows=rows_ebook version="EBOOK" only %}
@@ -65,7 +226,7 @@
       <a href="{% url 'store:examples' %}#tableau" class="text-blue-700 text-sm">Voir d’autres exemples →</a>
     </div>
   </div>
-</section>
+</section>-->
 
 <section class="py-10 bg-gray-50">
   <div class="max-w-5xl mx-auto px-4">
@@ -109,6 +270,7 @@
   </form>
 </div>
 
+<!-- Section Témoignages - Commentée temporairement
 <section class="py-12 bg-slate-50" id="temoignages">
   <div class="max-w-6xl mx-auto px-4 scroll-mt-24">
     <h2 class="text-xl font-semibold">Ils en parlent</h2>
@@ -119,7 +281,7 @@
           <div class="h-10 w-10 rounded-full bg-blue-600/10 text-blue-700 flex items-center justify-center font-bold">✓</div>
           <figcaption class="font-medium">{{ p.t }}</figcaption>
         </div>
-        <blockquote class="mt-3 text-slate-700 text-sm">“{{ p.q }}”</blockquote>
+        <blockquote class="mt-3 text-slate-700 text-sm">"{{ p.q }}"</blockquote>
       </figure>
       {% empty %}
       <p class="text-sm text-slate-600">Ajoutez des témoignages clients pour renforcer la preuve sociale.</p>
@@ -127,24 +289,29 @@
     </div>
   </div>
 </section>
+-->
 
+<!-- Section Pourquoi j'ai écrit - Commentée temporairement
 <section class="py-10 bg-white" id="pourquoi">
   <div class="max-w-5xl mx-auto px-4 scroll-mt-24">
-    <h2 class="text-xl font-semibold">Pourquoi j’ai écrit cet ebook</h2>
+    <h2 class="text-xl font-semibold">Pourquoi j'ai écrit cet ebook</h2>
     <p class="mt-3 text-slate-700 text-sm">
-      (3–5 lignes claires sur l’objectif, la transformation attendue, le public, et les résultats concrets.)
+      (3–5 lignes claires sur l'objectif, la transformation attendue, le public, et les résultats concrets.)
     </p>
   </div>
 </section>
+-->
 
+<!-- Section À propos de l'auteur - Commentée temporairement
 <section class="py-10 bg-white" id="auteur">
   <div class="max-w-5xl mx-auto px-4 scroll-mt-24">
-    <h2 class="text-xl font-semibold">À propos de l’auteur</h2>
+    <h2 class="text-xl font-semibold">À propos de l'auteur</h2>
     <p class="mt-3 text-slate-700 text-sm">
-      (Preuve d’expertise : missions, organisations accompagnées, bénéfices pour le lecteur.)
+      (Preuve d'expertise : missions, organisations accompagnées, bénéfices pour le lecteur.)
     </p>
   </div>
 </section>
+-->
 
 <section class="py-10">
   <div class="max-w-5xl mx-auto px-4">

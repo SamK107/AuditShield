@@ -1,0 +1,54 @@
+/* static/styles/grad-blur.css */
+.grad-blur-mask{
+  position:absolute; inset:0; pointer-events:none;
+  /* defaults if not provided inline */
+  --start:55%;
+  --opaque:92%;
+  --blur:14px;
+  
+  /* Gradient subtil qui obscurcit progressivement le texte */
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0) var(--start),
+    rgba(255,255,255,0.2) calc(var(--start) + 3%),
+    rgba(255,255,255,0.5) calc(var(--start) + 8%),
+    rgba(255,255,255,0.8) calc(var(--start) + 15%),
+    rgba(255,255,255,0.95) calc(var(--start) + 25%),
+    rgba(255,255,255,1) var(--opaque)
+  );
+}
+
+/* Version avec support backdrop-filter pour un effet plus réaliste */
+@supports (backdrop-filter: blur(1px)) {
+  .grad-blur-mask {
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0) var(--start),
+      rgba(255,255,255,0.1) calc(var(--start) + 5%),
+      rgba(255,255,255,0.4) calc(var(--start) + 12%),
+      rgba(255,255,255,0.7) calc(var(--start) + 20%),
+      rgba(255,255,255,1) var(--opaque)
+    );
+  }
+  
+  /* Applique un léger flou seulement sur la zone de transition */
+  .grad-blur-mask::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--start);
+    bottom: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.3) 30%,
+      rgba(255,255,255,0.8) 70%,
+      rgba(255,255,255,1) 100%
+    );
+    backdrop-filter: blur(calc(var(--blur) * 0.3));
+    -webkit-backdrop-filter: blur(calc(var(--blur) * 0.3));
+  }
+}

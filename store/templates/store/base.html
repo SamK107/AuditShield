@@ -36,12 +36,28 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { borderRadius: { '2xl': '1rem' }}}}</script>
 
+  <!-- Gradient blur styles -->
+  <link rel="stylesheet" href="{% static 'styles/grad-blur.css' %}">
+  <script>
+  (function(){
+    const ok = CSS.supports('backdrop-filter','blur(2px)') || CSS.supports('-webkit-backdrop-filter','blur(2px)');
+    if(!ok){ document.documentElement.classList.add('no-bdf'); }
+  })();
+  </script>
+
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <!-- htmx -->
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
