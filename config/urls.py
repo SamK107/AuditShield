@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 # config/urls.py
 
 from django.conf import settings
@@ -23,31 +24,28 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     # Pages publiques de téléchargement (en racine)
     path(
         "",
-        include(("downloads.public_urls", "downloads_public"),
-                namespace="downloads_public"),
+        include(("downloads.public_urls", "downloads_public"), namespace="downloads_public"),
     ),
-
     # Route technique /downloads/<slug> pour servir les fichiers par slug
     path(
         "downloads/",
-        include(("downloads.urls", "downloads"),
-                namespace="downloads"),
+        include(("downloads.urls", "downloads"), namespace="downloads"),
     ),
-
     # Apps existantes
     path(
         "",
-        include(("core.urls", "core"),
-                namespace="core"),
+        include(("core.urls", "core"), namespace="core"),
     ),
     path(
         "",
-        include(("store.urls", "store"),
-                namespace="store"),
+        include(("store.urls", "store"), namespace="store"),
+    ),
+    path(
+        "",
+        include(("legal.urls", "legal"), namespace="legal"),
     ),
 ]
 
@@ -56,5 +54,3 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     # Optionnel : servir aussi les statiques via Django en dev (en prod, Whitenoise s'en charge)
     # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-

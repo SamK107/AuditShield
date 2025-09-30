@@ -52,3 +52,11 @@
     -webkit-backdrop-filter: blur(calc(var(--blur) * 0.3));
   }
 }
+
+@layer components {
+  .btn-primary { @apply px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition; }
+  .btn-secondary { @apply px-4 py-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 border transition; }
+  .input { @apply w-full rounded-xl border px-3 py-2; }
+  .textarea { @apply w-full rounded-xl border px-3 py-2; }
+  .select { @apply w-full rounded-xl border px-3 py-2 bg-white; }
+}

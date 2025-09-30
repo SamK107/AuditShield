@@ -1,4 +1,7 @@
 # store/services/cinetpay.py
+import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -7,32 +10,27 @@ from decimal import Decimal, InvalidOperation
 import requests
 from django.urls import reverse
 
-import base64
-import hashlib
-import hmac
-
 # =========================
 #  Config & constantes
 # =========================
-API_URL   = os.getenv("CINETPAY_API_URL", "https://api-checkout.cinetpay.com")
-API_KEY   = os.getenv("CINETPAY_API_KEY")
-SITE_ID   = os.getenv("CINETPAY_SITE_ID")
+API_URL = os.getenv("CINETPAY_API_URL", "https://api-checkout.cinetpay.com")
+API_KEY = os.getenv("CINETPAY_API_KEY")
+SITE_ID = os.getenv("CINETPAY_SITE_ID")
 
 # Ces deux-là peuvent contenir des placeholders en dev ; on les filtrera.
 RETURN_URL_ENV = os.getenv("CINETPAY_RETURN_URL")
 NOTIFY_URL_ENV = os.getenv("CINETPAY_NOTIFY_URL")
 
-ENV_MODE  = os.getenv("CINETPAY_ENV", "sandbox").lower()   # "sandbox" | "production"
-CHANNELS  = os.getenv("CINETPAY_CHANNELS", "CREDIT_CARD")  # "ALL", "CREDIT_CARD", etc.
+ENV_MODE = os.getenv("CINETPAY_ENV", "sandbox").lower()  # "sandbox" | "production"
+CHANNELS = os.getenv("CINETPAY_CHANNELS", "CREDIT_CARD")  # "ALL", "CREDIT_CARD", etc.
 
-WEBHOOK_HEADER = os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
-WEBHOOK_SECRET = os.getenv("CINETPAY_WEBHOOK_SECRET")
 
 logger = logging.getLogger("cinetpay")
 
 
 class CinetPayError(Exception):
     """Erreur applicative lisible pour les appels CinetPay."""
+
     pass
 
 
@@ -57,12 +55,12 @@ def _runtime_urls(request):
     return_url = (
         RETURN_URL_ENV
         if not _is_placeholder_url(RETURN_URL_ENV)
-        else base + reverse("payment_return")
+        else base + reverse("store:cinetpay_return")
     )
     notify_url = (
         NOTIFY_URL_ENV
         if not _is_placeholder_url(NOTIFY_URL_ENV)
-        else base + reverse("payment_notify")
+        else base + reverse("store:cinetpay_notify")
     )
 
     return return_url, notify_url
@@ -158,7 +156,7 @@ def init_payment(
         "apikey": API_KEY,
         "site_id": SITE_ID,
         "transaction_id": str(transaction_id),
-        "amount": amount_int,                 # <-- ENTIER obligé !
+        "amount": amount_int,  # <-- ENTIER obligé !
         "currency": currency,
         "description": description,
         "channels": (channels or CHANNELS),
@@ -181,18 +179,20 @@ def init_payment(
     # Données client (optionnelles)
     if customer:
         phone = customer.get("phone") or customer.get("phone_number") or ""
-        payload.update({
-            "customer_id": customer.get("id") or "",
-            "customer_name": customer.get("name") or "",
-            "customer_surname": customer.get("surname") or "",
-            "customer_email": customer.get("email") or "",
-            "customer_phone_number": phone,
-            "customer_address": customer.get("address") or "",
-            "customer_city": customer.get("city") or "",
-            "customer_country": customer.get("country") or "",
-            "customer_state": customer.get("state", "") or "",
-            "customer_zip_code": customer.get("zip", "00000") or "00000",
-        })
+        payload.update(
+            {
+                "customer_id": customer.get("id") or "",
+                "customer_name": customer.get("name") or "",
+                "customer_surname": customer.get("surname") or "",
+                "customer_email": customer.get("email") or "",
+                "customer_phone_number": phone,
+                "customer_address": customer.get("address") or "",
+                "customer_city": customer.get("city") or "",
+                "customer_country": customer.get("country") or "",
+                "customer_state": customer.get("state", "") or "",
+                "customer_zip_code": customer.get("zip", "00000") or "00000",
+            }
+        )
 
     logger.info(
         "[CinetPay][init] tx=%s amount=%s %s channels=%s",
@@ -247,6 +247,13 @@ def init_payment_auto(order, request) -> str:
     designation = f"{order.product.title} — {order.email}"
     tx = order.provider_ref or order.cinetpay_payment_id
 
+    if not tx:
+        # On force une convention unique côté app : provider_ref doit être créé à la création de la commande
+        # et NE JAMAIS changer. Ex: "ORDER-" + uuid4().hex (persisté sur Order.provider_ref).
+        raise CinetPayError(
+            "Transaction_id manquant : initialisez order.provider_ref (stable) au moment de la création de la commande."
+        )
+
     # order.amount_fcfa peut être int/Decimal/str → on laisse la fonction bas niveau sécuriser
     amount = order.amount_fcfa
     currency = (order.currency or "XOF").upper()
@@ -262,9 +269,7 @@ def init_payment_auto(order, request) -> str:
         return_url=return_url,
         notify_url=notify_url,
         metadata=(
-            json.dumps({"tier_id": order.tier_id})
-            if getattr(order, "tier_id", None)
-            else None
+            json.dumps({"tier_id": order.tier_id}) if getattr(order, "tier_id", None) else None
         ),
     )
 
@@ -314,26 +319,40 @@ def payment_check(order_id: str) -> tuple[bool, str | None]:
     return False, provider_tx_id
 
 
-def get_webhook_header() -> str:
-    return os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
+# --- Webhook signature config (unifié) ---
+def get_webhook_header_value(request) -> str | None:
+    # Essaye d'abord les clés standardisées de Django/Wsgi
+    for key in ("HTTP_X_SIGNATURE", "HTTP_X_TOKEN"):
+        val = request.META.get(key)
+        if val:
+            return val.strip()
+    # Fallback via request.headers
+    return request.headers.get("X-Signature") or request.headers.get("X-Token")
+
 
 def _get_webhook_secret() -> str | None:
-    return os.getenv("CINETPAY_WEBHOOK_SECRET")
+    # Secret = CINETPAY_SECRET_KEY (préféré), sinon fallback API_KEY
+    import os
+
+    return os.getenv("CINETPAY_SECRET_KEY") or os.getenv("CINETPAY_API_KEY")
+
 
 def verify_signature(provided_sig: str, raw_body: bytes) -> bool:
     """
-    Verify HMAC-SHA256 over raw_body with CINETPAY_WEBHOOK_SECRET.
-    Accepts: hex, sha256=<hex>, base64(digest).
+    Verify HMAC-SHA256 over raw_body with secret.
+    Accepts: hex, 'sha256=<hex>', or base64(digest).
     """
     secret = _get_webhook_secret()
     if not secret or not provided_sig or raw_body is None:
         return False
+
+    import base64
+    import hashlib
+    import hmac
+
     digest = hmac.new(secret.encode("utf-8"), raw_body, hashlib.sha256).digest()
     expected_hex = digest.hex()
     expected_b64 = base64.b64encode(digest).decode()
-    candidates = {
-        expected_hex,
-        f"sha256={expected_hex}",
-        expected_b64,
-    }
+
+    candidates = {expected_hex, f"sha256={expected_hex}", expected_b64}
     return any(hmac.compare_digest(provided_sig, c) for c in candidates)

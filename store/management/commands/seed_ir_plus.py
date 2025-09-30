@@ -69,7 +69,6 @@ DATA_PLUS = {
             ),
         ],
     },
-
     # 2) Collectivités
     "collectivites": {
         "title": "Collectivités territoriales",
@@ -133,7 +132,6 @@ DATA_PLUS = {
             ),
         ],
     },
-
     # 3) EPIC
     "epic": {
         "title": "EPIC",
@@ -197,7 +195,6 @@ DATA_PLUS = {
             ),
         ],
     },
-
     # 4) ONG
     "ong": {
         "title": "ONG",
@@ -261,7 +258,6 @@ DATA_PLUS = {
             ),
         ],
     },
-
     # 5) Projet BM
     "projet-bm": {
         "title": "Projet de développement (Banque mondiale)",
@@ -327,6 +323,7 @@ DATA_PLUS = {
     },
 }
 
+
 class Command(BaseCommand):
     help = "Seed des lignes Version PLUS (5 irrégularités par catégorie : DFM, Collectivités, EPIC, ONG, Projet BM)."
 
@@ -343,7 +340,9 @@ class Command(BaseCommand):
                     is_published=True,
                 ),
             )
-            self.stdout.write(self.style.WARNING("Aucun produit publié trouvé — produit par défaut créé."))
+            self.stdout.write(
+                self.style.WARNING("Aucun produit publié trouvé — produit par défaut créé.")
+            )
 
         total_cats, total_rows, created_rows = 0, 0, 0
 
@@ -369,7 +368,7 @@ class Command(BaseCommand):
                     irregularity=row["irregularity"],  # clé simple pour éviter doublons
                     defaults=dict(
                         order=idx * 10,  # 0,10,20,30,40
-                        product=product,               # si ton modèle a ce champ
+                        product=product,  # si ton modèle a ce champ
                         reference=row["reference"],
                         actors=row["actors"],
                         dispositions=row["dispositions"],
@@ -377,6 +376,8 @@ class Command(BaseCommand):
                 )
                 created_rows += int(was_created)
 
-        self.stdout.write(self.style.SUCCESS(
-            f"OK — catégories traitées: {total_cats}; lignes PLUS demandées: {total_rows}; créées: {created_rows}"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"OK — catégories traitées: {total_cats}; lignes PLUS demandées: {total_rows}; créées: {created_rows}"
+            )
+        )

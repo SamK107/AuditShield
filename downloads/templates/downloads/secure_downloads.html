@@ -1,0 +1,21 @@
+{% extends "store/base.html" %}
+{% block title %}Téléchargements sécurisés{% endblock %}
+{% block content %}
+<section class="max-w-xl mx-auto px-4 py-10">
+  <h1 class="text-2xl font-bold mb-6">Téléchargement de votre ebook</h1>
+  <div class="space-y-4">
+    {% for asset in asset_links %}
+      <div class="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm">
+        <div>
+          <div class="font-semibold">{{ asset.title }}</div>
+          <div class="text-xs text-gray-500">Format : {{ asset.extension }}</div>
+        </div>
+        <a href="{{ asset.signed_url }}" class="px-4 py-2 bg-gray-900 text-white rounded hover:bg-black">Télécharger</a>
+      </div>
+    {% endfor %}
+  </div>
+  {% if asset_links|length < 2 %}
+    <div class="mt-6 text-sm text-red-600">Attention : une des variantes est manquante.</div>
+  {% endif %}
+</section>
+{% endblock %}

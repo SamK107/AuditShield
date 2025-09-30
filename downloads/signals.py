@@ -22,6 +22,7 @@ def _set_if_exists(instance, attr: str, value):
                 # Tolérance maximum : ne jamais bloquer un upload
                 pass
 
+
 @receiver(pre_save, sender=DownloadableAsset)
 def fill_meta_on_upload(sender, instance: DownloadableAsset, **kwargs):
     """
@@ -38,4 +39,3 @@ def fill_meta_on_upload(sender, instance: DownloadableAsset, **kwargs):
     _set_if_exists(instance, "mime_type", guessed_mime or "")
     _set_if_exists(instance, "original_name", filename)
     _set_if_exists(instance, "size", getattr(instance.file, "size", None))
-

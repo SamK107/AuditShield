@@ -26,7 +26,8 @@ class AdminDownloadableAssetUploadTest(TestCase):
     def test_admin_upload_xlsx(self):
         url = reverse("admin:downloads_downloadableasset_add")
         fake = SimpleUploadedFile(
-            "testfile.xlsx", b"PK\x03\x04FakeXLSXContent",
+            "testfile.xlsx",
+            b"PK\x03\x04FakeXLSXContent",
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         data = {

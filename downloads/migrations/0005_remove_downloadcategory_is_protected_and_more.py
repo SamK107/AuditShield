@@ -6,16 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('downloads', '0004_alter_downloadcategory_required_sku_purchaseclaim_and_more'),
+        ("downloads", "0004_alter_downloadcategory_required_sku_purchaseclaim_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='downloadcategory',
-            name='is_protected',
+            model_name="downloadcategory",
+            name="is_protected",
         ),
         migrations.RemoveField(
-            model_name='downloadcategory',
-            name='required_sku',
+            model_name="downloadcategory",
+            name="required_sku",
         ),
     ]

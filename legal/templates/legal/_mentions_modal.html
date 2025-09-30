@@ -1,0 +1,22 @@
+<div id="legal-modal" x-data="{ open: true }" x-show="open" class="fixed inset-0 z-50" x-cloak>
+  <div class="absolute inset-0 bg-black/40" @click="open=false"></div>
+  <div class="absolute inset-x-0 top-10 mx-auto w-[min(900px,92vw)]">
+    <div class="rounded-2xl bg-white shadow-xl border overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b">
+        <h2 class="text-lg font-semibold">Mentions légales</h2>
+        <button class="p-2 hover:bg-slate-100 rounded-xl" @click="open=false" aria-label="Fermer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-5 py-4">
+        <article class="prose prose-slate max-w-none">
+          {{ doc.html_content|safe }}
+        </article>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
+        <a href="{% url 'legal:mentions' %}" class="btn-secondary">Voir la page</a>
+        <button class="btn-primary" @click="open=false">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>

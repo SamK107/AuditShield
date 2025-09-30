@@ -12,183 +12,359 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='IrregularityCategory',
+            name="IrregularityCategory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200)),
-                ('slug', models.SlugField()),
-                ('group', models.CharField(choices=[('FUNCTION', 'Fonction'), ('STRUCTURE', 'Structure')], default='STRUCTURE', max_length=16)),
-                ('order', models.PositiveSmallIntegerField(default=0)),
-                ('description', models.TextField(blank=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=200)),
+                ("slug", models.SlugField()),
+                (
+                    "group",
+                    models.CharField(
+                        choices=[("FUNCTION", "Fonction"), ("STRUCTURE", "Structure")],
+                        default="STRUCTURE",
+                        max_length=16,
+                    ),
+                ),
+                ("order", models.PositiveSmallIntegerField(default=0)),
+                ("description", models.TextField(blank=True)),
             ],
             options={
-                'ordering': ('order', 'title'),
+                "ordering": ("order", "title"),
             },
         ),
         migrations.CreateModel(
-            name='Order',
+            name="Order",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order_id', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('email', models.EmailField(max_length=254)),
-                ('amount_fcfa', models.PositiveIntegerField()),
-                ('status', models.CharField(choices=[('pending', 'En attente'), ('paid', 'Payé'), ('failed', 'Échec')], default='pending', max_length=10)),
-                ('cinetpay_payment_id', models.CharField(blank=True, max_length=100)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('tier_id', models.IntegerField(blank=True, null=True)),
-                ('provider', models.CharField(default='cinetpay', max_length=20)),
-                ('provider_ref', models.CharField(blank=True, max_length=64, null=True, unique=True)),
-                ('currency', models.CharField(default='XOF', max_length=8)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("order_id", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                ("email", models.EmailField(max_length=254)),
+                ("amount_fcfa", models.PositiveIntegerField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("pending", "En attente"), ("paid", "Payé"), ("failed", "Échec")],
+                        default="pending",
+                        max_length=10,
+                    ),
+                ),
+                ("cinetpay_payment_id", models.CharField(blank=True, max_length=100)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("tier_id", models.IntegerField(blank=True, null=True)),
+                ("provider", models.CharField(default="cinetpay", max_length=20)),
+                (
+                    "provider_ref",
+                    models.CharField(blank=True, max_length=64, null=True, unique=True),
+                ),
+                ("currency", models.CharField(default="XOF", max_length=8)),
             ],
         ),
         migrations.CreateModel(
-            name='PreliminaryTable',
+            name="PreliminaryTable",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('slug', models.SlugField(max_length=80)),
-                ('title', models.CharField(max_length=200)),
-                ('group', models.CharField(choices=[('STRUCTURE', 'Structure'), ('FONCTION', 'Fonction')], default='STRUCTURE', max_length=12)),
-                ('description', models.TextField(blank=True)),
-                ('order', models.PositiveSmallIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("slug", models.SlugField(max_length=80)),
+                ("title", models.CharField(max_length=200)),
+                (
+                    "group",
+                    models.CharField(
+                        choices=[("STRUCTURE", "Structure"), ("FONCTION", "Fonction")],
+                        default="STRUCTURE",
+                        max_length=12,
+                    ),
+                ),
+                ("description", models.TextField(blank=True)),
+                ("order", models.PositiveSmallIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': "Table d'analyse préliminaire",
-                'verbose_name_plural': "Tables d'analyse préliminaire",
-                'ordering': ('order', 'title'),
+                "verbose_name": "Table d'analyse préliminaire",
+                "verbose_name_plural": "Tables d'analyse préliminaire",
+                "ordering": ("order", "title"),
             },
         ),
         migrations.CreateModel(
-            name='Product',
+            name="Product",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('slug', models.SlugField(unique=True)),
-                ('title', models.CharField(max_length=200)),
-                ('subtitle', models.CharField(blank=True, max_length=300)),
-                ('price_fcfa', models.PositiveIntegerField(default=15000)),
-                ('hero_image', models.ImageField(blank=True, null=True, upload_to='products/')),
-                ('guarantee_text', models.TextField(blank=True)),
-                ('faq_json', models.JSONField(blank=True, default=list)),
-                ('social_proofs_json', models.JSONField(blank=True, default=list)),
-                ('deliverable_file', models.FileField(blank=True, null=True, upload_to='deliverables/')),
-                ('is_published', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("slug", models.SlugField(unique=True)),
+                ("title", models.CharField(max_length=200)),
+                ("subtitle", models.CharField(blank=True, max_length=300)),
+                ("price_fcfa", models.PositiveIntegerField(default=15000)),
+                ("hero_image", models.ImageField(blank=True, null=True, upload_to="products/")),
+                ("guarantee_text", models.TextField(blank=True)),
+                ("faq_json", models.JSONField(blank=True, default=list)),
+                ("social_proofs_json", models.JSONField(blank=True, default=list)),
+                (
+                    "deliverable_file",
+                    models.FileField(blank=True, null=True, upload_to="deliverables/"),
+                ),
+                ("is_published", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='DownloadToken',
+            name="DownloadToken",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('expires_at', models.DateTimeField(default=store.models.get_expires_at)),
-                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='store.order')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("token", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                ("expires_at", models.DateTimeField(default=store.models.get_expires_at)),
+                (
+                    "order",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE, to="store.order"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='PreliminaryRow',
+            name="PreliminaryRow",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order', models.PositiveSmallIntegerField(default=0)),
-                ('irregularity', models.CharField(max_length=255, verbose_name='Irrégularité')),
-                ('reference', models.CharField(blank=True, max_length=255, verbose_name='Référence')),
-                ('actors', models.CharField(blank=True, max_length=255, verbose_name='Acteurs concernés')),
-                ('dispositions', models.TextField(verbose_name='Dispositions pratiques')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('table', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rows', to='store.preliminarytable')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("order", models.PositiveSmallIntegerField(default=0)),
+                ("irregularity", models.CharField(max_length=255, verbose_name="Irrégularité")),
+                (
+                    "reference",
+                    models.CharField(blank=True, max_length=255, verbose_name="Référence"),
+                ),
+                (
+                    "actors",
+                    models.CharField(blank=True, max_length=255, verbose_name="Acteurs concernés"),
+                ),
+                ("dispositions", models.TextField(verbose_name="Dispositions pratiques")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "table",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rows",
+                        to="store.preliminarytable",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': "Ligne d'analyse préliminaire",
-                'verbose_name_plural': "Lignes d'analyse préliminaire",
-                'ordering': ('order', 'id'),
+                "verbose_name": "Ligne d'analyse préliminaire",
+                "verbose_name_plural": "Lignes d'analyse préliminaire",
+                "ordering": ("order", "id"),
             },
         ),
         migrations.AddField(
-            model_name='preliminarytable',
-            name='product',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='prelim_tables', to='store.product'),
+            model_name="preliminarytable",
+            name="product",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="prelim_tables",
+                to="store.product",
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='product',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='store.product'),
+            model_name="order",
+            name="product",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, to="store.product"
+            ),
         ),
         migrations.CreateModel(
-            name='MediaAsset',
+            name="MediaAsset",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('kind', models.CharField(choices=[('PDF_EXTRACT', 'PDF extrait'), ('VIDEO', 'Vidéo')], max_length=20)),
-                ('title', models.CharField(max_length=200)),
-                ('file_or_url', models.CharField(max_length=500)),
-                ('thumb', models.ImageField(blank=True, null=True, upload_to='media/thumbs/')),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='media', to='store.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "kind",
+                    models.CharField(
+                        choices=[("PDF_EXTRACT", "PDF extrait"), ("VIDEO", "Vidéo")], max_length=20
+                    ),
+                ),
+                ("title", models.CharField(max_length=200)),
+                ("file_or_url", models.CharField(max_length=500)),
+                ("thumb", models.ImageField(blank=True, null=True, upload_to="media/thumbs/")),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="media",
+                        to="store.product",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='IrregularityRow',
+            name="IrregularityRow",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('version', models.CharField(choices=[('EBOOK', 'Version ebook'), ('PLUS', 'Version améliorée')], default='EBOOK', max_length=10)),
-                ('irregularity', models.TextField(help_text='Irrégularité constatée')),
-                ('reference', models.CharField(blank=True, help_text='Référence juridique/texte', max_length=255)),
-                ('actors', models.CharField(blank=True, help_text='Acteurs concernés', max_length=255)),
-                ('dispositions', models.TextField(help_text='Dispositions pratiques/recommandations')),
-                ('order', models.PositiveSmallIntegerField(default=0)),
-                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='rows', to='store.irregularitycategory')),
-                ('product', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='irregularity_rows', to='store.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "version",
+                    models.CharField(
+                        choices=[("EBOOK", "Version ebook"), ("PLUS", "Version améliorée")],
+                        default="EBOOK",
+                        max_length=10,
+                    ),
+                ),
+                ("irregularity", models.TextField(help_text="Irrégularité constatée")),
+                (
+                    "reference",
+                    models.CharField(
+                        blank=True, help_text="Référence juridique/texte", max_length=255
+                    ),
+                ),
+                (
+                    "actors",
+                    models.CharField(blank=True, help_text="Acteurs concernés", max_length=255),
+                ),
+                (
+                    "dispositions",
+                    models.TextField(help_text="Dispositions pratiques/recommandations"),
+                ),
+                ("order", models.PositiveSmallIntegerField(default=0)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rows",
+                        to="store.irregularitycategory",
+                    ),
+                ),
+                (
+                    "product",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="irregularity_rows",
+                        to="store.product",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('order', 'id'),
+                "ordering": ("order", "id"),
             },
         ),
         migrations.AddField(
-            model_name='irregularitycategory',
-            name='product',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='ir_categories', to='store.product'),
+            model_name="irregularitycategory",
+            name="product",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="ir_categories",
+                to="store.product",
+            ),
         ),
         migrations.CreateModel(
-            name='ExampleSlide',
+            name="ExampleSlide",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200)),
-                ('irregularity', models.TextField()),
-                ('indicators', models.TextField(blank=True)),
-                ('legal_ref', models.CharField(blank=True, max_length=300)),
-                ('remedy', models.TextField()),
-                ('risks', models.TextField(blank=True)),
-                ('sample_doc_url', models.URLField(blank=True)),
-                ('image', models.ImageField(blank=True, null=True, upload_to='examples/')),
-                ('order', models.PositiveSmallIntegerField(db_index=True, default=0)),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='examples', to='store.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=200)),
+                ("irregularity", models.TextField()),
+                ("indicators", models.TextField(blank=True)),
+                ("legal_ref", models.CharField(blank=True, max_length=300)),
+                ("remedy", models.TextField()),
+                ("risks", models.TextField(blank=True)),
+                ("sample_doc_url", models.URLField(blank=True)),
+                ("image", models.ImageField(blank=True, null=True, upload_to="examples/")),
+                ("order", models.PositiveSmallIntegerField(db_index=True, default=0)),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="examples",
+                        to="store.product",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('order', 'id'),
+                "ordering": ("order", "id"),
             },
         ),
         migrations.AlterUniqueTogether(
-            name='preliminarytable',
-            unique_together={('product', 'slug')},
+            name="preliminarytable",
+            unique_together={("product", "slug")},
         ),
         migrations.CreateModel(
-            name='OfferTier',
+            name="OfferTier",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('kind', models.CharField(choices=[('STANDARD', 'Standard'), ('PERSONNALISATION', 'Personnalisation'), ('FORMATION', 'Formation & Assistance')], max_length=32)),
-                ('price_fcfa', models.PositiveIntegerField(blank=True, null=True)),
-                ('description_md', models.TextField(blank=True)),
-                ('cta_type', models.CharField(default='BUY', max_length=10)),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='store.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "kind",
+                    models.CharField(
+                        choices=[
+                            ("STANDARD", "Standard"),
+                            ("PERSONNALISATION", "Personnalisation"),
+                            ("FORMATION", "Formation & Assistance"),
+                        ],
+                        max_length=32,
+                    ),
+                ),
+                ("price_fcfa", models.PositiveIntegerField(blank=True, null=True)),
+                ("description_md", models.TextField(blank=True)),
+                ("cta_type", models.CharField(default="BUY", max_length=10)),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="store.product"
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('product', 'kind')},
+                "unique_together": {("product", "kind")},
             },
         ),
         migrations.AlterUniqueTogether(
-            name='irregularitycategory',
-            unique_together={('product', 'slug')},
+            name="irregularitycategory",
+            unique_together={("product", "slug")},
         ),
     ]

@@ -10,76 +10,143 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('contenttypes', '0002_remove_content_type_name'),
+        ("contenttypes", "0002_remove_content_type_name"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AssetCategory',
+            name="AssetCategory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=120, unique=True)),
-                ('slug', models.SlugField(blank=True, max_length=140, unique=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=120, unique=True)),
+                ("slug", models.SlugField(blank=True, max_length=140, unique=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Tag',
+            name="Tag",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=60, unique=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=60, unique=True)),
             ],
         ),
         migrations.CreateModel(
-            name='DownloadableAsset',
+            name="DownloadableAsset",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200)),
-                ('slug', models.SlugField(blank=True, max_length=240, unique=True)),
-                ('description', models.TextField(blank=True)),
-                ('ebook_code', models.CharField(default='AUDIT_SANS_PEUR', max_length=80)),
-                ('part_code', models.CharField(blank=True, max_length=80)),
-                ('chapter_code', models.CharField(blank=True, max_length=80)),
-                ('object_id', models.CharField(blank=True, max_length=64)),
-                ('file', models.FileField(upload_to='downloads/%Y/%m/')),
-                ('mime_type', models.CharField(blank=True, max_length=120)),
-                ('size_bytes', models.BigIntegerField(default=0)),
-                ('sha256', models.CharField(blank=True, max_length=64)),
-                ('antivirus_ok', models.BooleanField(default=True)),
-                ('version', models.CharField(default='1.0.0', max_length=40)),
-                ('is_deprecated', models.BooleanField(default=False)),
-                ('visibility', models.CharField(choices=[('PUBLIC', 'Public'), ('CUSTOMER_ONLY', 'Clients seulement'), ('INTERNAL', 'Interne')], default='PUBLIC', max_length=20)),
-                ('is_active', models.BooleanField(default=True)),
-                ('download_count', models.PositiveIntegerField(default=0)),
-                ('last_download_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='downloads.assetcategory')),
-                ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='contenttypes.contenttype')),
-                ('tags', models.ManyToManyField(blank=True, to='downloads.tag')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=200)),
+                ("slug", models.SlugField(blank=True, max_length=240, unique=True)),
+                ("description", models.TextField(blank=True)),
+                ("ebook_code", models.CharField(default="AUDIT_SANS_PEUR", max_length=80)),
+                ("part_code", models.CharField(blank=True, max_length=80)),
+                ("chapter_code", models.CharField(blank=True, max_length=80)),
+                ("object_id", models.CharField(blank=True, max_length=64)),
+                ("file", models.FileField(upload_to="downloads/%Y/%m/")),
+                ("mime_type", models.CharField(blank=True, max_length=120)),
+                ("size_bytes", models.BigIntegerField(default=0)),
+                ("sha256", models.CharField(blank=True, max_length=64)),
+                ("antivirus_ok", models.BooleanField(default=True)),
+                ("version", models.CharField(default="1.0.0", max_length=40)),
+                ("is_deprecated", models.BooleanField(default=False)),
+                (
+                    "visibility",
+                    models.CharField(
+                        choices=[
+                            ("PUBLIC", "Public"),
+                            ("CUSTOMER_ONLY", "Clients seulement"),
+                            ("INTERNAL", "Interne"),
+                        ],
+                        default="PUBLIC",
+                        max_length=20,
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("download_count", models.PositiveIntegerField(default=0)),
+                ("last_download_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="downloads.assetcategory",
+                    ),
+                ),
+                (
+                    "content_type",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="contenttypes.contenttype",
+                    ),
+                ),
+                ("tags", models.ManyToManyField(blank=True, to="downloads.tag")),
             ],
         ),
         migrations.CreateModel(
-            name='AssetEvent',
+            name="AssetEvent",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('kind', models.CharField(max_length=40)),
-                ('at', models.DateTimeField(auto_now_add=True)),
-                ('ip', models.GenericIPAddressField(blank=True, null=True)),
-                ('user_agent', models.TextField(blank=True)),
-                ('utm_source', models.CharField(blank=True, max_length=80)),
-                ('utm_medium', models.CharField(blank=True, max_length=80)),
-                ('utm_campaign', models.CharField(blank=True, max_length=80)),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('asset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='events', to='downloads.downloadableasset')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("kind", models.CharField(max_length=40)),
+                ("at", models.DateTimeField(auto_now_add=True)),
+                ("ip", models.GenericIPAddressField(blank=True, null=True)),
+                ("user_agent", models.TextField(blank=True)),
+                ("utm_source", models.CharField(blank=True, max_length=80)),
+                ("utm_medium", models.CharField(blank=True, max_length=80)),
+                ("utm_campaign", models.CharField(blank=True, max_length=80)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "asset",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="events",
+                        to="downloads.downloadableasset",
+                    ),
+                ),
             ],
         ),
         migrations.AddIndex(
-            model_name='downloadableasset',
-            index=models.Index(fields=['ebook_code', 'part_code', 'chapter_code', 'is_active'], name='downloads_d_ebook_c_25c347_idx'),
+            model_name="downloadableasset",
+            index=models.Index(
+                fields=["ebook_code", "part_code", "chapter_code", "is_active"],
+                name="downloads_d_ebook_c_25c347_idx",
+            ),
         ),
         migrations.AddIndex(
-            model_name='downloadableasset',
-            index=models.Index(fields=['content_type', 'object_id'], name='downloads_d_content_ddc161_idx'),
+            model_name="downloadableasset",
+            index=models.Index(
+                fields=["content_type", "object_id"], name="downloads_d_content_ddc161_idx"
+            ),
         ),
     ]

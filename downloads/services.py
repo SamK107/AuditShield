@@ -2,6 +2,7 @@ from django.utils import timezone
 
 try:
     from storages.backends.s3boto3 import S3Boto3Storage
+
     HAS_S3 = True
 except Exception:
     HAS_S3 = False
@@ -18,7 +19,9 @@ class SignedUrlService:
         if HAS_S3 and isinstance(f.storage, S3Boto3Storage):
             return f.storage.url(
                 f.name,
-                parameters={"ResponseContentDisposition": f"attachment; filename={f.name.split('/')[-1]}"},
+                parameters={
+                    "ResponseContentDisposition": f"attachment; filename={f.name.split('/')[-1]}"
+                },
                 expire=expires,
             )
         return f.url
@@ -36,6 +39,7 @@ def user_has_access(request, category) -> bool:
     if not getattr(category, "is_protected", False):
         return True
     from .models import DownloadEntitlement
+
     # Utilisateur connecté
     if getattr(request, "user", None) and request.user.is_authenticated:
         if DownloadEntitlement.objects.filter(user=request.user, category=category).exists():
@@ -69,4 +73,3 @@ def check_site_purchase(email: str, sku: str) -> bool:
         return q.filter(sku=sku).exists()
     except Exception:
         return False
-

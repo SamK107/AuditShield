@@ -1,0 +1,16 @@
+{% extends "store/base.html" %}
+{% block title %}{{ doc.title }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-8">
+  <header class="flex items-center gap-3 mb-6">
+    <!-- Lucide Shield -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+    </svg>
+    <h1 class="text-3xl font-extrabold">{{ doc.title }}</h1>
+  </header>
+  <article class="prose prose-slate max-w-none">
+    {{ doc.html_content|safe }}
+  </article>
+</section>
+{% endblock %}
