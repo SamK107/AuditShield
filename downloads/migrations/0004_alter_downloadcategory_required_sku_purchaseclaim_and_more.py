@@ -8,41 +8,89 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('downloads', '0003_add_category_protection'),
+        ("downloads", "0003_add_category_protection"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='downloadcategory',
-            name='required_sku',
-            field=models.CharField(blank=True, help_text='Code produit requis (ex: EBOOK_ASP)', max_length=64),
+            model_name="downloadcategory",
+            name="required_sku",
+            field=models.CharField(
+                blank=True, help_text="Code produit requis (ex: EBOOK_ASP)", max_length=64
+            ),
         ),
         migrations.CreateModel(
-            name='PurchaseClaim',
+            name="PurchaseClaim",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email', models.EmailField(max_length=254)),
-                ('platform', models.CharField(max_length=40)),
-                ('order_ref', models.CharField(blank=True, max_length=80)),
-                ('proof', models.FileField(blank=True, upload_to='claims/%Y/%m/')),
-                ('status', models.CharField(choices=[('NEW', 'NEW'), ('APPROVED', 'APPROVED'), ('REJECTED', 'REJECTED')], default='NEW', max_length=16)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='downloads.downloadcategory')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("email", models.EmailField(max_length=254)),
+                ("platform", models.CharField(max_length=40)),
+                ("order_ref", models.CharField(blank=True, max_length=80)),
+                ("proof", models.FileField(blank=True, upload_to="claims/%Y/%m/")),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("NEW", "NEW"),
+                            ("APPROVED", "APPROVED"),
+                            ("REJECTED", "REJECTED"),
+                        ],
+                        default="NEW",
+                        max_length=16,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="downloads.downloadcategory"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='DownloadEntitlement',
+            name="DownloadEntitlement",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email', models.EmailField(max_length=254)),
-                ('source', models.CharField(choices=[('SITE', 'SITE'), ('EXT', 'EXTERNAL'), ('MANUAL', 'MANUAL')], default='SITE', max_length=16)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='downloads.downloadcategory')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("email", models.EmailField(max_length=254)),
+                (
+                    "source",
+                    models.CharField(
+                        choices=[("SITE", "SITE"), ("EXT", "EXTERNAL"), ("MANUAL", "MANUAL")],
+                        default="SITE",
+                        max_length=16,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="downloads.downloadcategory"
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('email', 'category')},
+                "unique_together": {("email", "category")},
             },
         ),
     ]

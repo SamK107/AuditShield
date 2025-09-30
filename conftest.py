@@ -1,4 +1,3 @@
-
 import pytest
 
 
@@ -14,6 +13,7 @@ def _safe_email_backend(settings, monkeypatch):
 @pytest.fixture
 def seed_download_categories(db):
     from downloads.models import DownloadCategory
+
     checklists, _ = DownloadCategory.objects.get_or_create(
         slug="checklists",
         defaults=dict(
@@ -39,4 +39,3 @@ def seed_download_categories(db):
         ),
     )
     return {"checklists": checklists, "bonus": bonus}
-    

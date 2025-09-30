@@ -7,51 +7,67 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('store', '0001_initial'),
+        ("store", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='order',
-            name='order_id',
+            model_name="order",
+            name="order_id",
         ),
         migrations.RemoveField(
-            model_name='order',
-            name='provider',
+            model_name="order",
+            name="provider",
         ),
         migrations.AddField(
-            model_name='order',
-            name='first_name',
+            model_name="order",
+            name="first_name",
             field=models.CharField(blank=True, max_length=120),
         ),
         migrations.AddField(
-            model_name='order',
-            name='last_name',
+            model_name="order",
+            name="last_name",
             field=models.CharField(blank=True, max_length=120),
         ),
         migrations.AddField(
-            model_name='order',
-            name='paid_at',
+            model_name="order",
+            name="paid_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='order',
-            name='phone',
+            model_name="order",
+            name="phone",
             field=models.CharField(blank=True, max_length=32),
         ),
         migrations.AddField(
-            model_name='product',
-            name='download_slug',
-            field=models.SlugField(blank=True, help_text="Slug de l'asset à télécharger (app 'downloads').", null=True),
+            model_name="product",
+            name="download_slug",
+            field=models.SlugField(
+                blank=True, help_text="Slug de l'asset à télécharger (app 'downloads').", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='product',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='orders', to='store.product'),
+            model_name="order",
+            name="product",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="orders",
+                to="store.product",
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='status',
-            field=models.CharField(choices=[('CREATED', 'Créée'), ('PENDING', 'En attente'), ('PAID', 'Payée'), ('FAILED', 'Échouée'), ('CANCELED', 'Annulée')], default='CREATED', max_length=16),
+            model_name="order",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("CREATED", "Créée"),
+                    ("PENDING", "En attente"),
+                    ("PAID", "Payée"),
+                    ("FAILED", "Échouée"),
+                    ("CANCELED", "Annulée"),
+                ],
+                default="CREATED",
+                max_length=16,
+            ),
         ),
     ]

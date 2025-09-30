@@ -8,8 +8,7 @@ from downloads.models import DownloadableAsset, DownloadCategory
 def test_signal_does_not_crash_when_optional_fields_missing():
     # Prépare une catégorie existante (via seed_download_pages ou création rapide)
     cat, _ = DownloadCategory.objects.get_or_create(
-        slug="checklists",
-        defaults={"title": "Checklists", "page_path": "/checklists", "order": 1}
+        slug="checklists", defaults={"title": "Checklists", "page_path": "/checklists", "order": 1}
     )
 
     # Fichier factice

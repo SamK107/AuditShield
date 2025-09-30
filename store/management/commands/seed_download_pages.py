@@ -51,6 +51,4 @@ class Command(BaseCommand):
                 slug=c["slug"],
                 defaults={k: v for k, v in c.items() if k != "slug"},
             )
-            self.stdout.write(
-                self.style.SUCCESS(f"{'Créé' if created else 'MAJ'}: {obj}")
-            )
+            self.stdout.write(self.style.SUCCESS(f"{'Créé' if created else 'MAJ'}: {obj}"))

@@ -10,48 +10,81 @@ import store.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('store', '0002_remove_order_order_id_remove_order_provider_and_more'),
+        ("store", "0002_remove_order_order_id_remove_order_provider_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ClientInquiry',
+            name="ClientInquiry",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('kind', models.CharField(choices=[('KIT', 'Kit personnalisé'), ('TRAINING', 'Formation & Assistance')], max_length=16)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('status', models.CharField(default='new', max_length=24)),
-                ('contact_name', models.CharField(blank=True, max_length=120)),
-                ('email', models.EmailField(blank=True, max_length=254, validators=[django.core.validators.EmailValidator()])),
-                ('phone', models.CharField(blank=True, max_length=64)),
-                ('organization_name', models.CharField(blank=True, max_length=180)),
-                ('statut_juridique', models.CharField(blank=True, max_length=48)),
-                ('location', models.CharField(blank=True, max_length=120)),
-                ('sector', models.CharField(blank=True, max_length=64)),
-                ('mission_text', models.TextField(blank=True)),
-                ('budget_range', models.CharField(blank=True, max_length=64)),
-                ('funding_sources', models.JSONField(blank=True, default=list)),
-                ('audits_types', models.JSONField(blank=True, default=list)),
-                ('audits_frequency', models.CharField(blank=True, max_length=64)),
-                ('staff_size', models.CharField(blank=True, max_length=32)),
-                ('org_chart_text', models.TextField(blank=True)),
-                ('notes_text', models.TextField(blank=True)),
-                ('payload', models.JSONField(blank=True, default=dict)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "kind",
+                    models.CharField(
+                        choices=[
+                            ("KIT", "Kit personnalisé"),
+                            ("TRAINING", "Formation & Assistance"),
+                        ],
+                        max_length=16,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("status", models.CharField(default="new", max_length=24)),
+                ("contact_name", models.CharField(blank=True, max_length=120)),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True,
+                        max_length=254,
+                        validators=[django.core.validators.EmailValidator()],
+                    ),
+                ),
+                ("phone", models.CharField(blank=True, max_length=64)),
+                ("organization_name", models.CharField(blank=True, max_length=180)),
+                ("statut_juridique", models.CharField(blank=True, max_length=48)),
+                ("location", models.CharField(blank=True, max_length=120)),
+                ("sector", models.CharField(blank=True, max_length=64)),
+                ("mission_text", models.TextField(blank=True)),
+                ("budget_range", models.CharField(blank=True, max_length=64)),
+                ("funding_sources", models.JSONField(blank=True, default=list)),
+                ("audits_types", models.JSONField(blank=True, default=list)),
+                ("audits_frequency", models.CharField(blank=True, max_length=64)),
+                ("staff_size", models.CharField(blank=True, max_length=32)),
+                ("org_chart_text", models.TextField(blank=True)),
+                ("notes_text", models.TextField(blank=True)),
+                ("payload", models.JSONField(blank=True, default=dict)),
             ],
         ),
         migrations.AddField(
-            model_name='offertier',
-            name='title',
+            model_name="offertier",
+            name="title",
             field=models.CharField(blank=True, max_length=200),
         ),
         migrations.CreateModel(
-            name='InquiryDocument',
+            name="InquiryDocument",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('file', models.FileField(upload_to=store.models.upload_inquiry_doc)),
-                ('original_name', models.CharField(blank=True, max_length=255)),
-                ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('inquiry', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documents', to='store.clientinquiry')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("file", models.FileField(upload_to=store.models.upload_inquiry_doc)),
+                ("original_name", models.CharField(blank=True, max_length=255)),
+                ("uploaded_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "inquiry",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="documents",
+                        to="store.clientinquiry",
+                    ),
+                ),
             ],
         ),
     ]

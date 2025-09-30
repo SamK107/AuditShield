@@ -4,9 +4,11 @@ import pytest
 
 cinetpay = pytest.importorskip("store.services.cinetpay")
 
+
 def test_cinetpay_config_defaults(monkeypatch):
     monkeypatch.setenv("CINETPAY_API_URL", "https://api-checkout.cinetpay.com")
     assert cinetpay.API_URL.startswith("https://")
+
 
 @pytest.mark.parametrize("code", ["201", "00", "SUCCESS"])
 def test_cinetpay_post_is_mockable(code):

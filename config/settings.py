@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "core",
     "store",
     "downloads",
+    "legal",
 ]
 
 # Whitenoise/static config (idempotent, single source of truth)
@@ -132,14 +133,26 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CINETPAY_SITE_ID = os.getenv("CINETPAY_SITE_ID")
-CINETPAY_API_KEY = os.getenv("CINETPAY_API_KEY")
-CINETPAY_SECRET_KEY = os.getenv("CINETPAY_SECRET_KEY")
+# ---- CinetPay: variables d'environnement ----
+CINETPAY_SITE_ID = os.environ.get("CINETPAY_SITE_ID")
+CINETPAY_API_KEY = os.environ.get("CINETPAY_API_KEY")
+# Certaines intégrations fournissent un secret distinct. Laisse vide si non fourni.
+CINETPAY_SECRET_KEY = os.environ.get("CINETPAY_SECRET_KEY")
+
+# URLs de callback (dev par défaut, surchargées par l'environnement prod)
+CINETPAY_NOTIFY_URL = os.environ.get(
+    "CINETPAY_NOTIFY_URL", "http://127.0.0.1:8000/payments/cinetpay/notify/"
+)
+CINETPAY_RETURN_URL = os.environ.get(
+    "CINETPAY_RETURN_URL", "http://127.0.0.1:8000/payments/cinetpay/return/"
+)
+CINETPAY_CANCEL_URL = os.environ.get(
+    "CINETPAY_CANCEL_URL", "http://127.0.0.1:8000/payments/cinetpay/cancel/"
+)
+
+# Variables héritées (compatibilité)
 CINETPAY_ENV = os.getenv("CINETPAY_ENV", "sandbox")
 CINETPAY_BASE_URL = os.getenv("CINETPAY_BASE_URL", "https://api-checkout.cinetpay.com/v2/payment")
-# URLs publiques de ton site
-CINETPAY_RETURN_URL = os.getenv("CINETPAY_RETURN_URL", "https://tondomaine/offres/retour/")
-CINETPAY_NOTIFY_URL = os.getenv("CINETPAY_NOTIFY_URL", "https://tondomaine/offres/notify/")
 
 # settings.py (dev)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

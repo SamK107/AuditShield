@@ -9,6 +9,7 @@ def _safe_import(pkg_name: str):
         return None
     return pkg
 
+
 def test_management_commands_import():
     # Add your apps that host custom commands
     candidates = [

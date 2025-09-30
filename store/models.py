@@ -1,5 +1,6 @@
 # store/models.py
 import uuid
+from uuid import uuid4
 
 from django.core.validators import EmailValidator
 from django.db import models
@@ -9,6 +10,7 @@ from django.utils import timezone
 def get_expires_at():
     # 72h par défaut
     return timezone.now() + timezone.timedelta(hours=72)
+
 
 class Product(models.Model):
     slug = models.SlugField(unique=True)
@@ -30,6 +32,7 @@ class Product(models.Model):
 
     def __str__(self):
         return self.title
+
 
 class OfferTier(models.Model):
     STANDARD = "STANDARD"
@@ -53,6 +56,7 @@ class OfferTier(models.Model):
     def __str__(self):
         return f"{self.product.title} - {self.kind}"
 
+
 class ExampleSlide(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="examples")
     title = models.CharField(max_length=200)
@@ -71,6 +75,7 @@ class ExampleSlide(models.Model):
     class Meta:
         ordering = ("order", "id")
 
+
 class MediaAsset(models.Model):
     PDF_EXTRACT = "PDF_EXTRACT"
     VIDEO = "VIDEO"
@@ -83,6 +88,7 @@ class MediaAsset(models.Model):
 
     def __str__(self):
         return f"{self.product.title} - {self.kind}: {self.title}"
+
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -112,7 +118,7 @@ class Order(models.Model):
 
     cinetpay_payment_id = models.CharField(max_length=100, blank=True)
     provider_ref = models.CharField(max_length=64, unique=True, null=True, blank=True)
-
+    uuid = models.UUIDField(default=uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
@@ -124,16 +130,23 @@ class Order(models.Model):
         """Compat pour anciens appels CinetPay qui lisaient amount_xof."""
         return self.amount_fcfa
 
+    def save(self, *args, **kwargs):
+        if not self.provider_ref:
+            self.provider_ref = f"ORDER-{uuid.uuid4().hex}"
+        super().save(*args, **kwargs)
+
+
 class DownloadToken(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE)
-    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    token = models.UUIDField(default=uuid4, editable=False, unique=True)
     expires_at = models.DateTimeField(default=get_expires_at)
 
     def is_valid(self):
         return timezone.now() < self.expires_at
 
     def __str__(self):
-        return f"Token for {self.order.order_id}"
+        return f"Token for Order#{self.order.pk}"
+
 
 # --- NOUVEAU : Catégories (par fonction/structure) ---
 class IrregularityCategory(models.Model):
@@ -154,6 +167,7 @@ class IrregularityCategory(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_group_display()})"
+
 
 # --- Adapté : lignes du tableau rattachées à une catégorie ---
 class IrregularityRow(models.Model):
@@ -192,6 +206,7 @@ class IrregularityRow(models.Model):
 
 
 # --- Analyses préliminaires (tables -> lignes) ---
+
 
 class PreliminaryTable(models.Model):
     STRUCTURE = "STRUCTURE"
@@ -242,11 +257,13 @@ class PreliminaryRow(models.Model):
     def __str__(self):
         return self.irregularity[:80]
 
+
 # --- AJOUTS : demandes clients (Kit / Formation) ---
 try:
     from django.db.models import JSONField  # Django 3.1+
 except Exception:
     from django.contrib.postgres.fields import JSONField  # fallback
+
 
 class ClientInquiry(models.Model):
     KIND_KIT = "KIT"
@@ -298,6 +315,7 @@ class ClientInquiry(models.Model):
 def upload_inquiry_doc(instance, filename):
     return f"inquiries/{instance.inquiry_id}/{filename}"
 
+
 class InquiryDocument(models.Model):
     inquiry = models.ForeignKey(ClientInquiry, on_delete=models.CASCADE, related_name="documents")
     file = models.FileField(upload_to=upload_inquiry_doc)
@@ -305,7 +323,7 @@ class InquiryDocument(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.original_name or (self.file.name.split('/')[-1])
+        return self.original_name or (self.file.name.split("/")[-1])
 
 
 # --- Paiement CinetPay ---
@@ -313,13 +331,17 @@ class Payment(models.Model):
     # Go/No-Go: order_id unique, provider_tx_id unique (nullable), status choices, updated_at
     order_id = models.CharField(max_length=64, unique=True)
     provider_tx_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
-    status = models.CharField(max_length=16, choices=[
-        ("INIT", "INIT"),
-        ("PENDING", "PENDING"),
-        ("PAID", "PAID"),
-        ("FAILED", "FAILED"),
-        ("CANCELED", "CANCELED")
-    ], default="INIT")
+    status = models.CharField(
+        max_length=16,
+        choices=[
+            ("INIT", "INIT"),
+            ("PENDING", "PENDING"),
+            ("PAID", "PAID"),
+            ("FAILED", "FAILED"),
+            ("CANCELED", "CANCELED"),
+        ],
+        default="INIT",
+    )
     amount = models.IntegerField()
     currency = models.CharField(max_length=8, default="XOF")
     email = models.EmailField(null=True, blank=True)
@@ -329,6 +351,7 @@ class Payment(models.Model):
     def __str__(self):
         return f"Payment {self.order_id} ({self.status})"
 
+
 class PaymentEvent(models.Model):
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="events")
     kind = models.CharField(max_length=32)  # INIT, WEBHOOK, CHECK_OK, DELIVERED, ERROR, etc.
@@ -337,3 +360,20 @@ class PaymentEvent(models.Model):
 
     def __str__(self):
         return f"Event {self.kind} for {self.payment.order_id} at {self.created_at}"
+
+
+class PaymentWebhookLog(models.Model):
+    provider = models.CharField(max_length=32, default="cinetpay", db_index=True)
+    order_ref = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    status = models.CharField(max_length=32, blank=True, default="")
+    signature = models.CharField(max_length=128, blank=True, default="")
+    raw_body = models.TextField(blank=True, default="")
+    processed = models.BooleanField(default=False)
+    http_status = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Token for Order#{self.order.pk}"

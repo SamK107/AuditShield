@@ -9,6 +9,7 @@ def cat_checklists(db):
         slug="checklists", title="Checklists", page_path="/checklists", is_protected=False
     )
 
+
 @pytest.fixture
 def cat_bonus(db):
     return DownloadCategory.objects.create(

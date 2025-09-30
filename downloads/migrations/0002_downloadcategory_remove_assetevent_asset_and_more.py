@@ -10,142 +10,167 @@ import downloads.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('downloads', '0001_initial'),
+        ("downloads", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DownloadCategory',
+            name="DownloadCategory",
             fields=[
-                ('slug', models.SlugField(help_text='Ex: checklists, bonus, irregularites, outils-pratiques', primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=150)),
-                ('subtitle', models.CharField(blank=True, max_length=200)),
-                ('page_path', models.CharField(help_text='Chemin public (commence par /), ex: /checklists', max_length=80, unique=True)),
-                ('description', models.TextField(blank=True)),
-                ('order', models.PositiveIntegerField(default=0)),
+                (
+                    "slug",
+                    models.SlugField(
+                        help_text="Ex: checklists, bonus, irregularites, outils-pratiques",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("title", models.CharField(max_length=150)),
+                ("subtitle", models.CharField(blank=True, max_length=200)),
+                (
+                    "page_path",
+                    models.CharField(
+                        help_text="Chemin public (commence par /), ex: /checklists",
+                        max_length=80,
+                        unique=True,
+                    ),
+                ),
+                ("description", models.TextField(blank=True)),
+                ("order", models.PositiveIntegerField(default=0)),
             ],
             options={
-                'ordering': ['order', 'slug'],
+                "ordering": ["order", "slug"],
             },
         ),
         migrations.RemoveField(
-            model_name='assetevent',
-            name='asset',
+            model_name="assetevent",
+            name="asset",
         ),
         migrations.RemoveField(
-            model_name='assetevent',
-            name='user',
+            model_name="assetevent",
+            name="user",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='tags',
+            model_name="downloadableasset",
+            name="tags",
         ),
         migrations.AlterModelOptions(
-            name='downloadableasset',
-            options={'ordering': ['order', '-created_at']},
+            name="downloadableasset",
+            options={"ordering": ["order", "-created_at"]},
         ),
         migrations.RemoveIndex(
-            model_name='downloadableasset',
-            name='downloads_d_ebook_c_25c347_idx',
+            model_name="downloadableasset",
+            name="downloads_d_ebook_c_25c347_idx",
         ),
         migrations.RemoveIndex(
-            model_name='downloadableasset',
-            name='downloads_d_content_ddc161_idx',
+            model_name="downloadableasset",
+            name="downloads_d_content_ddc161_idx",
         ),
         migrations.RenameField(
-            model_name='downloadableasset',
-            old_name='antivirus_ok',
-            new_name='is_published',
+            model_name="downloadableasset",
+            old_name="antivirus_ok",
+            new_name="is_published",
         ),
         migrations.RenameField(
-            model_name='downloadableasset',
-            old_name='download_count',
-            new_name='order',
+            model_name="downloadableasset",
+            old_name="download_count",
+            new_name="order",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='chapter_code',
+            model_name="downloadableasset",
+            name="chapter_code",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='content_type',
+            model_name="downloadableasset",
+            name="content_type",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='description',
+            model_name="downloadableasset",
+            name="description",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='ebook_code',
+            model_name="downloadableasset",
+            name="ebook_code",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='is_active',
+            model_name="downloadableasset",
+            name="is_active",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='is_deprecated',
+            model_name="downloadableasset",
+            name="is_deprecated",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='last_download_at',
+            model_name="downloadableasset",
+            name="last_download_at",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='mime_type',
+            model_name="downloadableasset",
+            name="mime_type",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='object_id',
+            model_name="downloadableasset",
+            name="object_id",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='part_code',
+            model_name="downloadableasset",
+            name="part_code",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='sha256',
+            model_name="downloadableasset",
+            name="sha256",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='size_bytes',
+            model_name="downloadableasset",
+            name="size_bytes",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='version',
+            model_name="downloadableasset",
+            name="version",
         ),
         migrations.RemoveField(
-            model_name='downloadableasset',
-            name='visibility',
+            model_name="downloadableasset",
+            name="visibility",
         ),
         migrations.AddField(
-            model_name='downloadableasset',
-            name='short_desc',
-            field=models.CharField(blank=True, max_length=200, verbose_name='Description courte (1 phrase)'),
+            model_name="downloadableasset",
+            name="short_desc",
+            field=models.CharField(
+                blank=True, max_length=200, verbose_name="Description courte (1 phrase)"
+            ),
         ),
         migrations.AlterField(
-            model_name='downloadableasset',
-            name='file',
+            model_name="downloadableasset",
+            name="file",
             field=models.FileField(upload_to=downloads.models.upload_to),
         ),
         migrations.AlterField(
-            model_name='downloadableasset',
-            name='slug',
-            field=models.SlugField(help_text="Slug unique pour l'URL ex: plan-action-correctif", max_length=120, unique=True),
+            model_name="downloadableasset",
+            name="slug",
+            field=models.SlugField(
+                help_text="Slug unique pour l'URL ex: plan-action-correctif",
+                max_length=120,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='downloadableasset',
-            name='category',
-            field=models.ForeignKey(default=django.utils.timezone.now, on_delete=django.db.models.deletion.CASCADE, related_name='assets', to='downloads.downloadcategory'),
+            model_name="downloadableasset",
+            name="category",
+            field=models.ForeignKey(
+                default=django.utils.timezone.now,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="assets",
+                to="downloads.downloadcategory",
+            ),
             preserve_default=False,
         ),
         migrations.DeleteModel(
-            name='AssetEvent',
+            name="AssetEvent",
         ),
         migrations.DeleteModel(
-            name='Tag',
+            name="Tag",
         ),
         migrations.DeleteModel(
-            name='AssetCategory',
+            name="AssetCategory",
         ),
     ]

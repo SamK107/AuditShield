@@ -63,7 +63,5 @@ class Command(BaseCommand):
             created += int(was_created)
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"OK — table '{table.title}' prête, lignes créées: {created}"
-            )
+            self.style.SUCCESS(f"OK — table '{table.title}' prête, lignes créées: {created}")
         )

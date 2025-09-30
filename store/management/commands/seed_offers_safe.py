@@ -51,8 +51,4 @@ class Command(BaseCommand):
                 updated += 1
             else:
                 created += 1
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Tiers créés: {created}, mis à jour: {updated}"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Tiers créés: {created}, mis à jour: {updated}"))

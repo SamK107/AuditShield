@@ -7,4 +7,3 @@ class DownloadsConfig(AppConfig):
 
     def ready(self):
         from . import signals  # noqa
-

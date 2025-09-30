@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Téléchargements — {{ order.product.title }}</title>
+</head>
+<body>
+  <main class="max-w-3xl mx-auto p-6">
+    <h1>Téléchargements – {{ order.product.title }}</h1>
+    <p>Commande : <strong>{{ order.uuid }}</strong> — Email : {{ order.email }}</p>
+    {% if admin_message %}
+      <div style="padding:8px;border:1px solid #f0c36d;background:#fff7e6">
+        {{ admin_message }}
+      </div>
+    {% endif %}
+    <ul>
+      {% for a in assets %}
+        <li>
+          <a href="{% url 'downloads:asset' a.id %}">{{ a.title }}</a>
+        </li>
+      {% empty %}
+        <li>Aucun fichier disponible.</li>
+      {% endfor %}
+    </ul>
+  </main>
+</body>
+</html>

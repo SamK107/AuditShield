@@ -17,10 +17,12 @@ class ExampleSlideInline(admin.StackedInline):
     model = ExampleSlide
     extra = 0
 
+
 class IrregularityCategoryInline(admin.TabularInline):
     model = IrregularityCategory
     extra = 0
     fields = ("title", "slug", "group", "order")
+
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -28,10 +30,12 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     inlines = [ExampleSlideInline, IrregularityCategoryInline]
 
+
 class IrregularityRowInline(admin.TabularInline):
     model = IrregularityRow
     extra = 0
     fields = ("order", "version", "irregularity", "reference", "actors", "dispositions")
+
 
 @admin.register(IrregularityCategory)
 class IrregularityCategoryAdmin(admin.ModelAdmin):
@@ -40,6 +44,7 @@ class IrregularityCategoryAdmin(admin.ModelAdmin):
     search_fields = ("title", "product__title")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [IrregularityRowInline]
+
 
 admin.site.register(OfferTier)
 admin.site.register(MediaAsset)
@@ -56,6 +61,7 @@ class PreliminaryRowInline(admin.TabularInline):
     fields = ("order", "irregularity", "reference", "actors", "dispositions")
     show_change_link = True
 
+
 @admin.register(PreliminaryTable)
 class PreliminaryTableAdmin(admin.ModelAdmin):
     list_display = ("title", "product", "group", "order")
@@ -63,6 +69,7 @@ class PreliminaryTableAdmin(admin.ModelAdmin):
     search_fields = ("title", "slug", "description")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [PreliminaryRowInline]
+
 
 @admin.register(ExampleSlide)
 class ExampleSlideAdmin(admin.ModelAdmin):
@@ -72,6 +79,7 @@ class ExampleSlideAdmin(admin.ModelAdmin):
     list_editable = ("order",)
     ordering = ("product", "order", "id")
 
+
 from .models import ClientInquiry, InquiryDocument
 
 
@@ -80,10 +88,18 @@ class InquiryDocumentInline(admin.TabularInline):
     extra = 0
     readonly_fields = ("uploaded_at",)
 
+
 @admin.register(ClientInquiry)
 class ClientInquiryAdmin(admin.ModelAdmin):
-    list_display = ("id","kind","organization_name","contact_name","email","created_at","status")
-    list_filter = ("kind","status","statut_juridique","sector")
-    search_fields = ("organization_name","contact_name","email","phone")
+    list_display = (
+        "id",
+        "kind",
+        "organization_name",
+        "contact_name",
+        "email",
+        "created_at",
+        "status",
+    )
+    list_filter = ("kind", "status", "statut_juridique", "sector")
+    search_fields = ("organization_name", "contact_name", "email", "phone")
     inlines = [InquiryDocumentInline]
-
