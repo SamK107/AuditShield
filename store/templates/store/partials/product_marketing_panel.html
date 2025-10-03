@@ -40,7 +40,7 @@
         <template x-for="(s, idx) in slides" :key="'dot-'+idx">
           <button
             @click="i=idx"
-            :class="i===idx ? 'w-6 h-2 bg-blue-600 rounded-full' : 'w-2 h-2 bg-slate-300 rounded-full'"
+            :class="i===idx ? 'w-6 h-2 btn rounded-full' : 'w-2 h-2 bg-slate-300 rounded-full'"
             aria-label="Aller à la slide"
           ></button>
         </template>

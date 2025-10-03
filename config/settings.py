@@ -154,5 +154,24 @@ CINETPAY_CANCEL_URL = os.environ.get(
 CINETPAY_ENV = os.getenv("CINETPAY_ENV", "sandbox")
 CINETPAY_BASE_URL = os.getenv("CINETPAY_BASE_URL", "https://api-checkout.cinetpay.com/v2/payment")
 
-# settings.py (dev)
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# # settings.py (dev)
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "mail.auditsanspeur.com"
+# EMAIL_PORT = 465
+# EMAIL_HOST_USER = "contact@auditsanspeur.com"
+# # Assurez-vous de définir EMAIL_HOST_PASSWORD dans les variables d'environnement
+# EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+# EMAIL_USE_SSL = True
+# EMAIL_USE_TLS = False
+
+
+# Email config
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.auditsanspeur.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 465))
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "True") == "True"
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "False") == "True"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+SERVER_EMAIL = EMAIL_HOST_USER

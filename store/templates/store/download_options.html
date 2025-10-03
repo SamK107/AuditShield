@@ -1,0 +1,20 @@
+{% extends 'store/base.html' %}
+{% block content %}
+  <h1>Télécharger votre ebook</h1>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {% if product.deliverable_file_a4 %}
+      <div class="border rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-2">PDF A4</h2>
+        <p class="mb-4">Format A4, idéal pour impression sur papier standard.</p>
+        <a href="{% url 'store:download_version' token 'a4' %}" class="px-4 py-2 bg-blue-600 text-white rounded">Télécharger A4</a>
+      </div>
+    {% endif %}
+    {% if product.deliverable_file_6x9 %}
+      <div class="border rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-2">PDF 6×9</h2>
+        <p class="mb-4">Format 6×9, compact pour une lecture confortable sur petit écran.</p>
+        <a href="{% url 'store:download_version' token '6x9' %}" class="px-4 py-2 bg-green-600 text-white rounded">Télécharger 6×9</a>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

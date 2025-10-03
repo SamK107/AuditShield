@@ -9,17 +9,25 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage, send_mail
 from django.db.models import Prefetch
-from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
 import store.services.cinetpay as cinetpay
+from store.services.cinetpay import verify_signature, payment_check
+import os  # ensure os is imported for get_webhook_header
+
+def get_webhook_header():
+    """Return the configured HTTP header key for CinetPay webhooks."""
+    return os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
 from downloads.models import DownloadableAsset
 from store.content.faqs import FAQ_ITEMS
 
 from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
+from django.conf import settings
 from .models import (
     DownloadToken,
     ExampleSlide,
@@ -99,7 +107,7 @@ def kit_inquiry(request):
     MAX_FILES = 10
     MAX_FILE_SIZE = 10 * 1024 * 1024
     ALLOWED_EXTS = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".gif"]
-    INQUIRY_TO = ["contact@ton-domaine.com"]
+    INQUIRY_TO = ["contact@auditsanspeur.com"]
 
     def _total_size(files):
         return sum(getattr(f, "size", 0) for f in files)
@@ -211,7 +219,7 @@ def total_size(files):
     return sum(getattr(f, "size", 0) for f in files)
 
 
-INQUIRY_TO = ["contact@ton-domaine.com"]  # à adapter
+INQUIRY_TO = ["contact@auditsanspeur.com"]  # à adapter
 MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
 
 
@@ -248,7 +256,11 @@ def training_inquiry_view(request):
 
             try:
                 email = EmailMessage(
-                    subject=subject, body=body, to=["contact@exemple.com"], reply_to=[data["email"]]
+                    subject=subject,
+                    body=body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=["contact@auditsanspeur.com"],
+                    reply_to=[data["email"]],
                 )
                 # … attach if needed …
                 email.send(fail_silently=False)
@@ -469,7 +481,7 @@ def start_checkout(request, product_slug, tier_id):
 def payment_return(request):
     transaction_id = request.GET.get("transaction_id")
     if not transaction_id:
-        return HttpResponseBadRequest("Missing transaction_id parameter.")
+        return render(request, "store/payment_return.html")
     order = get_object_or_404(Order, transaction_id=transaction_id)
     # Enregistrer dans la session
     request.session["order_email"] = order.email
@@ -847,9 +859,18 @@ def _cinetpay_secret_bytes():
 
 
 def cinetpay_return(request):
-    """Page succès client"""
-    # TODO: lire les query params pour remonter un message ou l'order_id si besoin
-    return HttpResponse("Paiement réussi. Merci.")
+    """Redirige vers la page des options de téléchargement après paiement réussi"""
+    tx_id = request.GET.get("cpm_trans_id") or request.GET.get("transaction_id")
+    if not tx_id:
+        # Render a generic payment result page when no transaction ID provided
+        return render(request, "store/payment_success.html", {})
+    order = get_object_or_404(
+        Order,
+        (Q(cinetpay_payment_id=tx_id) | Q(provider_ref=tx_id)),
+        status=Order.PAID,
+    )
+    dt, _ = DownloadToken.objects.get_or_create(order=order)
+    return redirect("store:download_options", token=dt.token)
 
 
 def cinetpay_cancel(request):
@@ -928,3 +949,34 @@ def cinetpay_notify(request):
         log.save(update_fields=["processed"])
 
     return HttpResponse("OK")
+
+@require_http_methods(["GET"])
+def download_options(request, token):
+    """Affiche les deux options PDF (A4 et 6×9) pour télécharger l'ebook."""
+    from django.shortcuts import get_object_or_404
+    from store.models import DownloadToken, Order
+    dt = get_object_or_404(DownloadToken, token=token)
+    if not dt.is_valid() or dt.order.status != Order.PAID:
+        raise Http404("Lien de téléchargement invalide ou paiement non validé.")
+    product = dt.order.product
+    return render(request, "store/download_options.html", {"product": product, "token": token})
+
+@require_http_methods(["GET"])
+def download_version(request, token, version):
+    """Télécharge la version choisie (a4 ou 6x9) du PDF."""
+    from django.shortcuts import get_object_or_404
+    from django.http import FileResponse, Http404
+    from store.models import DownloadToken, Order
+    dt = get_object_or_404(DownloadToken, token=token)
+    if not dt.is_valid() or dt.order.status != Order.PAID:
+        raise Http404("Lien de téléchargement invalide ou paiement non validé.")
+    product = dt.order.product
+    if version == 'a4':
+        f = product.deliverable_file_a4
+    elif version == '6x9':
+        f = product.deliverable_file_6x9
+    else:
+        raise Http404("Version inconnue.")
+    if not f:
+        raise Http404("Fichier non disponible.")
+    return FileResponse(f.open('rb'), as_attachment=True, filename=f.name.split('/')[-1])

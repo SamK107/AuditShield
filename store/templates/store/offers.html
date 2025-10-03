@@ -10,7 +10,7 @@
       <!-- Standard -->
       <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-6 relative">
         <div class="absolute -top-3 right-4">
-          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white shadow">Populaire</span>
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-brand-600 text-white shadow">Populaire</span>
         </div>
         <h3 class="text-xl font-bold">Ebook Audit Sans Peur</h3>
         <p class="mt-1 text-sm text-slate-600">Ebook complet + bonus. Accès immédiat.</p>
@@ -26,7 +26,7 @@
         </ul>
         <div class="mt-6">
           {% if standard and standard.product and standard.product.slug %}
-            <a href="{% url 'store:buy' standard.product.slug %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white hover:shadow w-full justify-center font-semibold">
+            <a href="{% url 'store:buy' standard.product.slug %}" class="btn-brand w-full justify-center">
               <i data-lucide="shopping-cart"></i> Acheter maintenant
             </a>
           {% else %}
@@ -35,7 +35,7 @@
             </button>
           {% endif %}
         </div>
-        <div class="mt-4"><a href="#standard" class="text-blue-700 text-sm hover:underline">Voir plus</a></div>
+        <div class="mt-4"><a href="#standard" class="link-more">Voir plus</a></div>
       </div>
 
       <!-- Kit -->
@@ -50,11 +50,11 @@
           <li class="flex gap-2"><i data-lucide="mail" class="text-blue-600"></i> Support email</li>
         </ul>
         <div class="mt-6">
-          <a href="{% url 'store:kit_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:shadow w-full justify-center md:w-auto">
+          <a href="{% url 'store:kit_inquiry' %}" class="btn-kit w-full justify-center md:w-auto">
             <i data-lucide="form-input"></i> Demander mon Kit personnalisé
           </a>
         </div>
-        <div class="mt-4"><a href="#kit" class="text-emerald-700 text-sm hover:underline">Voir plus</a></div>
+        <div class="mt-4"><a href="#kit" class="link-more">Voir plus</a></div>
       </div>
 
       <!-- Formation -->
@@ -69,11 +69,11 @@
           <li class="flex gap-2"><i data-lucide="mail" class="text-blue-600"></i> Support email</li>
         </ul>
         <div class="mt-6">
-          <a href="{% url 'store:training_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:shadow w-full justify-center md:w-auto">
+          <a href="{% url 'store:training_inquiry' %}" class="btn-brand w-full justify-center md:w-auto">
             <i data-lucide="file-plus-2"></i> Demander la Formation & Assistance
           </a>
         </div>
-        <div class="mt-4"><a href="#formation" class="text-indigo-700 text-sm hover:underline">Voir plus</a></div>
+        <div class="mt-4"><a href="#formation" class="link-more">Voir plus</a></div>
       </div>
     </div>
 
@@ -122,7 +122,7 @@
               <li>• Support email</li>
             </ul>
             <div class="mt-4">
-              <a href="{% url 'store:kit_inquiry' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:shadow">
+              <a href="{% url 'store:kit_inquiry' %}" class="btn-kit inline-flex items-center gap-2">
                 <i data-lucide="form-input"></i> Demander mon Kit personnalisé
               </a>
             </div>

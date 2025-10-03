@@ -13,4 +13,9 @@ class Migration(migrations.Migration):
             name="uuid",
             field=models.UUIDField(null=True, blank=True, editable=False),
         ),
+        migrations.AlterField(
+            model_name="product",
+            name="price_fcfa",
+            field=models.PositiveIntegerField(default=15000),
+        ),
     ]

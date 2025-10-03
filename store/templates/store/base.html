@@ -7,76 +7,34 @@
   <title>{% block title %}Boutique{% endblock %} – Audit sans peur</title>
   <meta name="description" content="Ebook et offres personnalisées pour se préparer aux missions d'audit." />
 
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
- 
-<!-- SVG principal -->
-<link rel="icon" type="image/svg+xml" href="{% static 'brand/logo_img2.svg' %}">
+  <!-- Favicons (inchangés) -->
+  <link rel="icon" type="image/svg+xml" href="{% static 'brand/logo_img2.svg' %}">
+  <link rel="icon" href="{% static 'brand/logo_img2_optimized.ico' %}" sizes="16x16 32x32 48x48 64x64" type="image/x-icon">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'brand/logo_img2_optimized_16.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'brand/logo_img2_optimized_32.png' %}">
+  <link rel="icon" type="image/png" sizes="48x48" href="{% static 'brand/logo_img2_optimized_48.png' %}">
+  <link rel="icon" type="image/png" sizes="64x64" href="{% static 'brand/logo_img2_optimized_64.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'brand/logo_img2_optimized_180.png' %}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'brand/logo_img2_optimized_512.png' %}">
 
-<!-- ICO multi-tailles (compatibilité max) -->
-<link rel="icon" href="{% static 'brand/logo_img2_optimized.ico' %}" sizes="16x16 32x32 48x48 64x64" type="image/x-icon">
-
-<!-- PNG explicites -->
-<link rel="icon" type="image/png" sizes="16x16" href="{% static 'brand/logo_img2_optimized_16.png' %}">
-<link rel="icon" type="image/png" sizes="32x32" href="{% static 'brand/logo_img2_optimized_32.png' %}">
-<link rel="icon" type="image/png" sizes="48x48" href="{% static 'brand/logo_img2_optimized_48.png' %}">
-<link rel="icon" type="image/png" sizes="64x64" href="{% static 'brand/logo_img2_optimized_64.png' %}">
-
-<!-- iOS écran d’accueil -->
-<link rel="apple-touch-icon" sizes="180x180" href="{% static 'brand/logo_img2_optimized_180.png' %}">
-
-<!-- PWA / Android -->
-<link rel="icon" type="image/png" sizes="512x512" href="{% static 'brand/logo_img2_optimized_512.png' %}">
-
-
-
-  <style>html{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";}</style>
-
-  <!-- Tailwind CDN (dev). En prod, passer au build CLI -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { theme: { extend: { borderRadius: { '2xl': '1rem' }}}}</script>
-
-  <!-- Gradient blur styles -->
+  <!-- CSS locaux -->
+  <link rel="stylesheet" href="{% static 'css/app.build.css' %}">
   <link rel="stylesheet" href="{% static 'styles/grad-blur.css' %}">
-  <script>
-  (function(){
-    const ok = CSS.supports('backdrop-filter','blur(2px)') || CSS.supports('-webkit-backdrop-filter','blur(2px)');
-    if(!ok){ document.documentElement.classList.add('no-bdf'); }
-  })();
-  </script>
-
-  <!-- Alpine.js -->
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- htmx -->
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <!-- Lucide -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (window.lucide && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-      }
-    });
-  </script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => { if (window.lucide) lucide.createIcons(); });
-    // CSRF pour htmx
-    document.addEventListener('htmx:configRequest', (event) => {
-      const csrftoken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
-      if (csrftoken) event.detail.headers['X-CSRFToken'] = csrftoken;
-    });
+    (function(){
+      const ok = CSS.supports('backdrop-filter','blur(2px)') || CSS.supports('-webkit-backdrop-filter','blur(2px)');
+      if(!ok){ document.documentElement.classList.add('no-bdf'); }
+    })();
   </script>
 
   <style>
     /* Evite le FOUC Alpine */
     [x-cloak]{display:none!important}
   </style>
-  <!-- Favicon SVG moderne -->
-  
 </head>
-<body class="min-h-screen flex flex-col bg-white text-gray-900">
-  <header x-data="{open:false}" class="sticky top-0 z-50 bg-white/70 backdrop-blur border-b">
+<body class="min-h-screen flex flex-col bg-white text-[color:var(--ink)]">
+  <header x-data="{open:false}" class="sticky top-0 z-50 bg-brand-600 text-white border-b border-brand-700/30">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2" aria-label="Accueil Audit Ebooks">
         <!-- LOGO -->
@@ -88,24 +46,24 @@
         <span class="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">Bloom Shield Gouvernance</span>
       </a>
 
-      <nav class="hidden md:flex items-center gap-6 text-sm">
-        <a href="{% url 'store:offers' %}" class="hover:text-blue-700">Offres</a>
-        <a href="{% url 'store:examples' %}" class="hover:text-blue-700">Exemples</a>
-        <a href="{% url 'core:about' %}" class="hover:text-blue-700">À propos</a>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-white">
+        <a href="{% url 'store:offers' %}" class="hover:text-brand-50">Offres</a>
+        <a href="{% url 'store:examples' %}" class="hover:text-brand-50">Exemples</a>
+        <a href="{% url 'core:about' %}" class="hover:text-brand-50">À propos</a>
       </nav>
 
-      <a href="{% url 'store:offers' %}" class="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm hover:shadow transition">
+      <a href="{% url 'store:offers' %}" class="hidden md:inline-flex btn-cta-yellow">
         <i data-lucide="shopping-bag"></i> Obtenir l’ebook
       </a>
       <button @click="open = true" class="md:hidden inline-flex items-center p-2 text-gray-700">
         <i data-lucide="menu"></i>
       </button>
     </div>
-    <div x-show="open" @click.outside="open = false" class="md:hidden bg-white border-b">
+    <div x-show="open" @click.outside="open = false" class="md:hidden bg-brand-600 border-b border-brand-700/30">
       <nav class="flex flex-col px-4 py-2 gap-2">
-        <a href="{% url 'store:offers' %}" class="py-2 hover:text-blue-700">Offres</a>
-        <a href="{% url 'store:examples' %}" class="py-2 hover:text-blue-700">Exemples</a>
-        <a href="{% url 'core:about' %}" class="py-2 hover:text-blue-700">À propos</a>
+        <a href="{% url 'store:offers' %}" class="py-2 hover:text-brand-50">Offres</a>
+        <a href="{% url 'store:examples' %}" class="py-2 hover:text-brand-50">Exemples</a>
+        <a href="{% url 'core:about' %}" class="py-2 hover:text-brand-50">À propos</a>
       </nav>
     </div>
   </header>
@@ -137,5 +95,14 @@
       </nav>
     </div>
   </footer>
+  <!-- JS local bundle (Alpine, HTMX, Lucide, CSRF htmx) -->
+  <script src="{% static 'js/bundle.js' %}" defer></script>
+  <!-- Lucide (CDN pour valider visuellement) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+    });
+  </script>
 </body>
 </html>

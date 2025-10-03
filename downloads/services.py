@@ -7,7 +7,7 @@ try:
 except Exception:
     HAS_S3 = False
 
-from .models import DownloadableAsset
+from .models import DownloadableAsset, DownloadEntitlement, DownloadCategory
 
 
 class SignedUrlService:
@@ -34,23 +34,30 @@ class SignedUrlService:
         # AssetEvent n'existe plus, donc on ne log plus d'événement détaillé ici.
 
 
-def user_has_access(request, category) -> bool:
-    """Retourne True si la catégorie n'est pas protégée ou si l'utilisateur/email possède un droit (entitlement)."""
-    if not getattr(category, "is_protected", False):
-        return True
-    from .models import DownloadEntitlement
+ALWAYS_PROTECTED = {"bonus", "checklists", "outils-pratiques", "irregularites"}
 
-    # Utilisateur connecté
-    if getattr(request, "user", None) and request.user.is_authenticated:
-        if DownloadEntitlement.objects.filter(user=request.user, category=category).exists():
-            return True
-        email = getattr(request.user, "email", None)
-        if email and DownloadEntitlement.objects.filter(email=email, category=category).exists():
-            return True
-    # Fallback session (après claim par email)
-    email = request.session.get("verified_email")
-    if email and DownloadEntitlement.objects.filter(email=email, category=category).exists():
+def user_has_access(request, category: "DownloadCategory") -> bool:
+    """
+    Phase 1 gate for downloads:
+    - If slug in ALWAYS_PROTECTED or category.is_protected: require entitlement
+    - Else public
+    """
+    slug = (category.slug or "").strip().lower()
+    # 1) Public if not protected and not in ALWAYS_PROTECTED
+    if not category.is_protected and slug not in ALWAYS_PROTECTED:
         return True
+
+    # 2) Protected: check entitlement on category
+    user = getattr(request, "user", None)
+    if user and getattr(user, "is_authenticated", False):
+        if DownloadEntitlement.objects.filter(user=user, category=category).exists():
+            return True
+
+    email = (request.session.get("download_claim_email") or "").strip()
+    if email and DownloadEntitlement.objects.filter(email__iexact=email, category=category).exists():
+        return True
+
+    # 3) Deny
     return False
 
 

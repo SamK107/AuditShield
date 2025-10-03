@@ -7,17 +7,41 @@
     <span class="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full bg-blue-600/10 text-blue-700 ring-1 ring-blue-600/20">
       <i data-lucide="shield-check" class="h-4 w-4"></i> Prêt pour l’audit en 7 étapes
     </span>
+
     <h1 class="mt-5 text-4xl md:text-6xl font-extrabold tracking-tight">
       Préparez votre structure à l’audit<br>
       <span class="bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">sans stress ni surprises</span>
     </h1>
+
     <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
       Ebook concret + dossier d’irrégularités personnalisé + guide 7 étapes. Clair, actionnable, immédiatement utile.
     </p>
+
+    <!-- CTAs -->
     <div class="mt-8 flex items-center justify-center gap-3">
-      {% if product %}<a href="{% url 'store:product_detail' product.slug %}" class="px-6 py-3 rounded-2xl bg-blue-600 text-white shadow hover:shadow-lg transition">Voir le livre</a>{% endif %}
-      <a href="{% url 'store:offers' %}" class="px-6 py-3 rounded-2xl border shadow-sm hover:shadow transition">Voir les offres</a>
+      {% if product %}
+      <a
+        href="{% url 'store:product_detail' product.slug %}"
+        class="px-6 py-3 rounded-2xl text-white shadow hover:shadow-lg transition
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+               focus-visible:ring-[#12475b]"
+        style="background-color:#12475b"
+        >
+        Voir le livre
+      </a>
+      {% endif %}
+
+      <a
+        href="{% url 'store:offers' %}"
+        class="px-6 py-3 rounded-2xl text-white shadow-sm hover:shadow transition
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+               focus-visible:ring-blue-600"
+        style="background-color:#2563eb"
+        >
+        Voir les offres
+      </a>
     </div>
+
     <div class="mt-6 flex items-center justify-center gap-4 text-sm text-slate-600">
       <div class="flex items-center gap-1">
         <i data-lucide="star" class="h-4 w-4 text-amber-500"></i>
@@ -47,7 +71,6 @@
     </div>
   </div>
 </section>
-
 
 <section class="py-10 bg-gray-50">
   <div class="max-w-6xl mx-auto px-4">

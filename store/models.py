@@ -22,6 +22,8 @@ class Product(models.Model):
     faq_json = models.JSONField(default=list, blank=True)
     social_proofs_json = models.JSONField(default=list, blank=True)
     deliverable_file = models.FileField(upload_to="deliverables/", blank=True, null=True)
+    deliverable_file_a4 = models.FileField(upload_to="deliverables/a4/", blank=True, null=True, help_text="Version PDF format A4.")
+    deliverable_file_6x9 = models.FileField(upload_to="deliverables/6x9/", blank=True, null=True, help_text="Version PDF format 6×9.")
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     download_slug = models.SlugField(
