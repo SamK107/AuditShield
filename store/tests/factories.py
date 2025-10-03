@@ -31,14 +31,20 @@ class OrderFactory(factory.django.DjangoModelFactory):
     created_at = factory.LazyFunction(timezone.now)
 
 
+class DownloadCategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = DownloadCategory
+
+    slug = factory.Sequence(lambda n: f"ebook-category-{n}")
+    title = factory.Sequence(lambda n: f"Ebook Category {n}")
+    page_path = factory.LazyAttribute(lambda o: f"/{o.slug}")
+
+
 class DownloadableAssetFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = DownloadableAsset
 
-    category = factory.SubFactory(
-        lambda: DownloadCategory.objects.first()
-        or DownloadCategory.objects.create(slug="ebook", title="Ebook", page_path="/ebook")
-    )
+    category = factory.SubFactory(DownloadCategoryFactory)
     title = factory.Iterator(["PDF A4", "PDF 6x9"])
     file = factory.Sequence(lambda n: (f"ebooks/audit-sans-peur-{n}.pdf"))
     is_published = True

@@ -28,7 +28,7 @@
           </td>
           <td class="p-2">
             {% if order.status == order.PAID and order.downloadtoken %}
-              <a href="{% url 'store:download' order.downloadtoken.token %}" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Télécharger</a>
+              <a href="{% url 'store:download' order.downloadtoken.token %}" class="px-3 py-1 btn text-white rounded ">Télécharger</a>
             {% elif order.status == order.PAID %}
               <span class="text-gray-400">Lien indisponible</span>
             {% else %}

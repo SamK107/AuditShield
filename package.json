@@ -1,0 +1,24 @@
+{
+  "name": "auditsheild",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:css": "tailwindcss -i ./static/css/app.css -o ./static/css/app.build.css --watch",
+    "build:css": "tailwindcss -i ./static/css/app.css -o ./static/css/app.build.css --minify",
+    "dev:js": "esbuild ./static/js/app.js --bundle --outfile=./static/js/bundle.js --watch",
+    "build:js": "esbuild ./static/js/app.js --bundle --minify --outfile=./static/js/bundle.js",
+    "build": "npm run build:css && npm run build:js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "tailwindcss": "^3.4.13",
+    "postcss": "^8.4.47",
+    "autoprefixer": "^10.4.20"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.1.0",
+    "alpinejs": "^3.14.0",
+    "htmx.org": "^1.9.12",
+    "lucide": "^0.471.0"
+  }
+}

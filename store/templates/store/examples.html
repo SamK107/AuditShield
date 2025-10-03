@@ -10,7 +10,7 @@
     <div class="mt-3 flex items-center gap-3">
       <div class="inline-flex rounded-full border border-slate-200 bg-white shadow-sm">
         <button
-          class="px-3 py-1.5 text-sm rounded-full bg-blue-600 text-white"
+          class="px-3 py-1.5 text-sm rounded-full btn text-white"
           hx-get="{% url 'store:examples_block' %}?mode=carousel"
           hx-target="#examplesBlock"
           hx-swap="innerHTML settle:150ms"
@@ -42,7 +42,7 @@
     </div>
 
     <div class="mt-6 flex gap-3">
-      {% if product %}<a href="{% url 'store:product_detail' product.slug %}" class="px-5 py-3 rounded-xl bg-blue-600 text-white">Voir le livre</a>{% endif %}
+      {% if product %}<a href="{% url 'store:product_detail' product.slug %}" class="px-5 py-3 rounded-xl btn text-white">Voir le livre</a>{% endif %}
       <a href="{% url 'store:offers' %}" class="px-5 py-3 rounded-xl border">Demander une personnalisation</a>
     </div>
   </div>

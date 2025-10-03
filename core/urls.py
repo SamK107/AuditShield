@@ -1,5 +1,5 @@
 # core/urls.py
-from django.urls import path
+from django.urls import path, include
 
 from . import views
 
@@ -7,6 +7,8 @@ app_name = "core"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    # Pages de téléchargement (namespacées)
+    path("", include("downloads.public_urls", namespace="downloads")),
     path("a-propos/", views.about, name="about"),
     path("politique/", views.policy, name="policy"),
     path("cgv/", views.cgv, name="cgv"),

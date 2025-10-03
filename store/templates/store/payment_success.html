@@ -17,7 +17,7 @@
       <div>Date&nbsp;: {{ order.paid_at|date:'d/m/Y H:i' }}</div>
     </div>
     {% if download_url %}
-      <a href="{{ download_url }}" class="inline-block mt-4 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">Télécharger mon ebook</a>
+      <a href="{{ download_url }}" class="inline-block mt-4 px-6 py-3 rounded-xl btn text-white font-semibold  transition">Télécharger mon ebook</a>
     {% else %}
       <div class="mt-4 text-gray-600">Votre lien de téléchargement vous sera envoyé par email.</div>
     {% endif %}

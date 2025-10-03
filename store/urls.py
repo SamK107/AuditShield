@@ -24,6 +24,8 @@ urlpatterns = [
     path("payments/cinetpay/notify/", views.cinetpay_notify, name="cinetpay_notify"),
     path("payments/cinetpay/return/", views.cinetpay_return, name="cinetpay_return"),
     path("payments/cinetpay/cancel/", views.cinetpay_cancel, name="cinetpay_cancel"),
+    path("download-options/<uuid:token>/", views.download_options, name="download_options"),
+    path("download/<uuid:token>/<str:version>/", views.download_version, name="download_version"),
     path(
         "formation-assistance/demande/",
         views.training_inquiry_view,

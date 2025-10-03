@@ -31,7 +31,7 @@
     {# Lien vers le produit (optionnel) #}
     {% if product %}
       <a href="{% url 'store:product_detail' product.slug %}"
-         class="px-3 py-1.5 text-sm rounded-xl bg-blue-600 text-white shadow hover:shadow-md transition">
+         class="px-3 py-1.5 text-sm rounded-xl btn text-white shadow hover:shadow-md transition">
         Voir le livre
       </a>
     {% endif %}

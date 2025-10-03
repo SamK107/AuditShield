@@ -331,10 +331,14 @@ def get_webhook_header_value(request) -> str | None:
 
 
 def _get_webhook_secret() -> str | None:
-    # Secret = CINETPAY_SECRET_KEY (préféré), sinon fallback API_KEY
+    # Secret priority: CINETPAY_WEBHOOK_SECRET (tests), CINETPAY_SECRET_KEY, then CINETPAY_API_KEY
     import os
 
-    return os.getenv("CINETPAY_SECRET_KEY") or os.getenv("CINETPAY_API_KEY")
+    return (
+        os.getenv("CINETPAY_WEBHOOK_SECRET")
+        or os.getenv("CINETPAY_SECRET_KEY")
+        or os.getenv("CINETPAY_API_KEY")
+    )
 
 
 def verify_signature(provided_sig: str, raw_body: bytes) -> bool:

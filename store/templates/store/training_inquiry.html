@@ -63,7 +63,7 @@
 
           <div class="flex items-center gap-4 mt-4">
             <label class="text-sm font-medium mb-0">Uploader des documents (Word, Excel, PDF)</label>
-            <input type="file" name="documents" id="id_documents" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" class="px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+            <input type="file" name="documents" id="id_documents" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" class="px-3 py-2 rounded-xl border border-slate-300 focus:ring focus:ring-brand-200 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
           </div>
           <p class="mt-1 text-xs text-slate-500">Max 5 fichiers, 10 Mo/fichier.</p>
           {% if form.errors.documents %}<div class="text-xs text-red-600">{{ form.errors.documents }}</div>{% endif %}
@@ -73,7 +73,7 @@
       <div class="hidden">{{ form.website }}</div>
 
       <div class="pt-3">
-        <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:shadow">
+        <button class="btn">
           <i data-lucide="send"></i> Envoyer ma demande
         </button>
       </div>
