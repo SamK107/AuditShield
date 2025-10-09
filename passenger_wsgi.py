@@ -1,12 +1,10 @@
-import os
-import sys
+import os, sys
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(__file__)
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))  # s'assurer que le projet est dans PYTHONPATH
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
-import config.wsgi
-
-application = config.wsgi.application
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()

@@ -1,3 +1,5 @@
+from django.urls import path
+from core.views_debug import healthcheck_view, whoami_view
 """
 URL configuration for config project.
 

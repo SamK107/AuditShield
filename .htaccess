@@ -1,0 +1,12 @@
+RewriteEngine On
+# servir fichiers/dossiers existants
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+# laisser passer static & media
+RewriteRule ^(static|media)/ - [L]
+# Passenger (Django)
+PassengerBaseURI /
+PassengerAppRoot /home/cp2660732p19/apps/auditshield
+PassengerPython /home/cp2660732p19/virtualenv/apps/auditshield/3.12/bin/python
+PassengerStartupFile passenger_wsgi.py
