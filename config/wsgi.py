@@ -8,6 +8,7 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 """
 
 import os
+print("WSGI_BOOT HOST:", os.environ.get("HTTP_HOST"))
 
 from django.core.wsgi import get_wsgi_application
 

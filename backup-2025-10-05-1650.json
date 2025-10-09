@@ -1,0 +1,256 @@
+[
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$870000$83wwOnaIWtwnC0JOWhN1Ug$Sk8n/1TuagY7mVlubAo/Vg5a71Bm1eAWUCPVK9ribwU=",
+    "last_login": "2025-10-05T00:17:51.210Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "contact@auditsanspeur.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-04T19:48:11.184Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "dyix6024d8l3x52hudg9xdbosjp5karw",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hAo0Blduu8ZyAxMpWpoUtqV8e7apAvd_vfef6lI21ri1mSJU1YXZdXpd2NKD6k7yHeqt1mnua7LxHpX9EGbHuYsz-vh_h0UauVbJwlMDNahz9kCGpSxA2thBM_MkjsXeiRHiMAOJDGZlIKzeA7G96jeH_GEN9U:1v5CRj:VXAuN7Y6IsZtX0Dn50KhiKMQafu1rWFmOODmPKl56K8",
+    "expire_date": "2025-10-19T00:17:51.223Z"
+  }
+},
+{
+  "model": "store.product",
+  "pk": 1,
+  "fields": {
+    "slug": "auditshield-ebook",
+    "title": "AuditShield – E-book",
+    "subtitle": "",
+    "price_fcfa": 10000,
+    "hero_image": "",
+    "guarantee_text": "",
+    "faq_json": [],
+    "social_proofs_json": [],
+    "deliverable_file": "",
+    "deliverable_file_a4": "",
+    "deliverable_file_6x9": "",
+    "is_published": true,
+    "created_at": "2025-10-05T14:09:53.876Z",
+    "download_slug": null
+  }
+},
+{
+  "model": "store.offertier",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "kind": "STANDARD",
+    "title": "Standard",
+    "price_fcfa": 10000,
+    "description_md": "",
+    "cta_type": "BUY"
+  }
+},
+{
+  "model": "store.offertier",
+  "pk": 2,
+  "fields": {
+    "product": 1,
+    "kind": "KIT",
+    "title": "Kit personnalisé",
+    "price_fcfa": 25000,
+    "description_md": "",
+    "cta_type": "BUY"
+  }
+},
+{
+  "model": "store.offertier",
+  "pk": 4,
+  "fields": {
+    "product": 1,
+    "kind": "FORMATION",
+    "title": "Formation & Assistance",
+    "price_fcfa": 75000,
+    "description_md": "",
+    "cta_type": "BUY"
+  }
+},
+{
+  "model": "store.exampleslide",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "title": "Exemple d'irrégularité",
+    "irregularity": "",
+    "indicators": "",
+    "legal_ref": "",
+    "remedy": "",
+    "risks": "",
+    "sample_doc_url": "",
+    "image": "",
+    "order": 0
+  }
+},
+{
+  "model": "store.order",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "tier_id": 1,
+    "email": "aloubs700@gmail.com",
+    "first_name": "sam",
+    "last_name": "Hamidou",
+    "phone": "66036000",
+    "amount_fcfa": 10000,
+    "currency": "XOF",
+    "status": "CREATED",
+    "cinetpay_payment_id": "",
+    "provider_ref": "ORDER-957ff2f5cba84f1e974f27c914277377",
+    "uuid": "bcd35202-3ebc-4612-b45f-290ad237efc3",
+    "created_at": "2025-10-05T14:23:57.907Z",
+    "paid_at": null
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 1,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "ABC123",
+    "status": "ACCEPTED",
+    "signature": "769580e739f6d5d4dfdb664f1c6125a8c793dea77f05cf7a881f4f847b7242b7",
+    "raw_body": "{\"status\":\"ACCEPTED\",\"amount\":1000,\"transaction_id\":\"ABC123\"}",
+    "processed": false,
+    "http_status": 400,
+    "created_at": "2025-10-05T02:48:20.902Z"
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 2,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "ABC123",
+    "status": "ACCEPTED",
+    "signature": "769580e739f6d5d4dfdb664f1c6125a8c793dea77f05cf7a881f4f847b7242b7",
+    "raw_body": "{\"status\":\"ACCEPTED\",\"amount\":1000,\"transaction_id\":\"ABC123\"}",
+    "processed": false,
+    "http_status": 400,
+    "created_at": "2025-10-05T02:49:33.612Z"
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 3,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "ABC123",
+    "status": "ACCEPTED",
+    "signature": "769580e739f6d5d4dfdb664f1c6125a8c793dea77f05cf7a881f4f847b7242b7",
+    "raw_body": "{\"status\":\"ACCEPTED\",\"amount\":1000,\"transaction_id\":\"ABC123\"}",
+    "processed": false,
+    "http_status": 400,
+    "created_at": "2025-10-05T02:52:11.192Z"
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 4,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "ABC123",
+    "status": "ACCEPTED",
+    "signature": "878c2a4853923e80417479ff6f31e6afcb13feaa4e81e7ae1baa5efeb86b02cb",
+    "raw_body": "{\"status\":\"ACCEPTED\",\"amount\":1000,\"transaction_id\":\"ABC123\"}",
+    "processed": false,
+    "http_status": 400,
+    "created_at": "2025-10-05T02:58:36.753Z"
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 5,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "ABC123",
+    "status": "SUCCESS",
+    "signature": "",
+    "raw_body": "{\"status\":\"SUCCESS\",\"amount\":1000,\"transaction_id\":\"ABC123\"}\n",
+    "processed": false,
+    "http_status": 400,
+    "created_at": "2025-10-05T03:05:16.156Z"
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 6,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "ABC123",
+    "status": "SUCCESS",
+    "signature": "33fb18ede10ec8c811147f2f09942a80903009de387b7128e9a299ce3c6d7543",
+    "raw_body": "{\"status\":\"SUCCESS\",\"amount\":1000,\"transaction_id\":\"ABC123\"}\n",
+    "processed": true,
+    "http_status": 200,
+    "created_at": "2025-10-05T03:07:36.193Z"
+  }
+},
+{
+  "model": "store.paymentwebhooklog",
+  "pk": 7,
+  "fields": {
+    "provider": "cinetpay",
+    "order_ref": "TEST123",
+    "status": "SUCCESS",
+    "signature": "b157e7afe0ab623aae3dc5828044d666b0452e2c1374461d0e03fd74cf8bae7a",
+    "raw_body": "{\"transaction_id\":\"TEST123\",\"status\":\"SUCCESS\",\"amount\":1000}\n",
+    "processed": false,
+    "http_status": 200,
+    "created_at": "2025-10-05T12:26:55.306Z"
+  }
+},
+{
+  "model": "legal.legaldocument",
+  "pk": 1,
+  "fields": {
+    "title": "Mentions légales",
+    "slug": "mentions-legales",
+    "doc_type": "mentions",
+    "html_content": "<h1 class=\"text-2xl font-bold mb-4\">Mentions légales</h1>\n<p><strong>Éditeur :</strong> Bloom Shield Gouvernance – auditsanspeur.com</p>\n<p><strong>Responsable de la publication :</strong> Alex H.</p>\n<p><strong>Siège :</strong> ACI 2000 Bamako-Mali</p>\n<p><strong>Contact :</strong> <a class=\"underline\" href=\"mailto:contact@auditsanspeur.com\">contact@auditsanspeur.com</a></p>\n<p><strong>Hébergeur :</strong> LWS</p>\n<h2 class=\"text-xl font-semibold mt-6 mb-2\">Propriété intellectuelle</h2>\n<p>Textes, images, ebooks, modèles et éléments du site sont protégés par le droit d’auteur. Toute reproduction, représentation, adaptation, diffusion, traduction, exploitation, partielle ou totale, sans autorisation écrite préalable est interdite.</p>\n<h2 class=\"text-xl font-semibold mt-6 mb-2\">Données personnelles</h2>\n<p>Les données collectées (commande, support) sont utilisées pour fournir les services. Vous disposez d’un droit d’accès, de rectification et de suppression via l’adresse de contact.</p>\n<h2 class=\"text-xl font-semibold mt-6 mb-2\">Cookies & mesure d’audience</h2>\n<p>Nous utilisons uniquement des outils de mesure d’audience respectueux de la vie privée, sans cookies intrusifs ni suivi publicitaire. Voir la page “Cookies”.</p>",
+    "status": "published",
+    "created_at": "2025-10-04T19:46:13.924Z",
+    "updated_at": "2025-10-04T19:46:13.924Z"
+  }
+},
+{
+  "model": "legal.legaldocument",
+  "pk": 2,
+  "fields": {
+    "title": "Politique de confidentialité",
+    "slug": "privacy",
+    "doc_type": "privacy",
+    "html_content": "<h1 class=\"text-2xl font-bold mb-4\">Politique de confidentialité</h1>\n<p>Nous collectons uniquement les données nécessaires au traitement des commandes, au support client et à l’amélioration du service.</p>\n<ul class=\"list-disc pl-6\">\n  <li><strong>Données traitées :</strong> identité, coordonnées, informations de commande/paiement (via prestataire), emails de support.</li>\n  <li><strong>Base légale :</strong> exécution du contrat, intérêt légitime (amélioration), obligations légales.</li>\n  <li><strong>Durées :</strong> limitées au nécessaire (conformité légale et fiscale).</li>\n  <li><strong>Partage :</strong> prestataires techniques (hébergeur, paiement), dans la stricte mesure nécessaire.</li>\n  <li><strong>Vos droits :</strong> accès, rectification, suppression. Contact : <a class=\"underline\" href=\"mailto:contact@auditsanspeur.com\">contact@auditsanspeur.com</a></li>\n</ul>\n<p>Nous n’effectuons pas de vente de données. Nous utilisons uniquement des outils de mesure d’audience respectueux de la vie privée, sans cookies intrusifs ni suivi publicitaire.</p>",
+    "status": "published",
+    "created_at": "2025-10-04T19:46:13.944Z",
+    "updated_at": "2025-10-04T19:46:13.944Z"
+  }
+},
+{
+  "model": "legal.legaldocument",
+  "pk": 3,
+  "fields": {
+    "title": "Politique Cookies",
+    "slug": "cookies",
+    "doc_type": "cookies",
+    "html_content": "<h1 class=\"text-2xl font-bold mb-4\">Politique Cookies</h1>\n<p>Ce site utilise des cookies strictement nécessaires (session, sécurité) et, le cas échéant, des cookies de mesure d’audience respectueux de la vie privée.</p>\n<h2 class=\"text-xl font-semibold mt-6 mb-2\">Types de cookies</h2>\n<ul class=\"list-disc pl-6\">\n  <li><strong>Nécessaires :</strong> sécurité, session, panier.</li>\n  <li><strong>Mesure d’audience :</strong> Nous utilisons uniquement des outils de mesure d’audience respectueux de la vie privée, sans cookies intrusifs ni suivi publicitaire.</li>\n</ul>\n<h2 class=\"text-xl font-semibold mt-6 mb-2\">Gérer vos préférences</h2>\n<p>Vous pouvez configurer votre navigateur pour refuser les cookies non essentiels. Si un bandeau de consentement est déployé, utilisez-le pour gérer vos choix.</p>",
+    "status": "published",
+    "created_at": "2025-10-04T19:46:13.953Z",
+    "updated_at": "2025-10-04T19:46:13.953Z"
+  }
+}
+]

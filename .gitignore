@@ -58,3 +58,19 @@ backups/
 # secrets
 .env
 .env.*
+
+# Backup files - NE SERONT PAS PUSHÉS sur GitHub
+*.bak
+*.backup
+*~
+*.tmp
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+.env.local
