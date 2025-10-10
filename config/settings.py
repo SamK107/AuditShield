@@ -122,6 +122,9 @@ STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"          # /home/.../apps/auditshield/media
 
+# Médias privés (payants)
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
+
 # Stockage (avec whitenoise si dispo)
 if USE_WHITENOISE and HAS_WHITENOISE:
     STORAGES = {

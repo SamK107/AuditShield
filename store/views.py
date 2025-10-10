@@ -4,6 +4,7 @@ import hmac
 import logging
 
 logger = logging.getLogger(__name__)
+logger.warning("STORE.VIEWS LOADED FROM %s", __file__)
 import os
 import uuid
 
@@ -22,6 +23,45 @@ import store.services.cinetpay as cinetpay
 from store.services.cinetpay import verify_signature, payment_check
 from downloads.models import DownloadableAsset
 from store.content.faqs import FAQ_ITEMS
+from downloads.services import user_has_access
+
+from pathlib import Path
+from django.shortcuts import render, get_object_or_404
+from downloads.models import DownloadableAsset, DownloadCategory
+
+# Slugs attendus par l’ebook (aligne-les aux slugs réels de l’admin si besoin)
+SLUG_CHECKLISTS = "checklists"
+SLUG_BONUS = "bonus"
+SLUG_OUTILS = "outils-pratiques"
+SLUG_IRREGS = "irregularites"
+
+def _render_assets_by_category(request, cat_slug, template_name="store/downloads_list.html"):
+    category = DownloadCategory.objects.filter(slug=cat_slug).first()
+    if not category:
+        from django.http import Http404
+        raise Http404("Catégorie introuvable")
+
+    # Si la catégorie est protégée, vérifier l'accès
+    if getattr(category, "is_protected", False) and not user_has_access(request, category):
+        from django.shortcuts import redirect
+        return redirect(f"/claim/?slug={category.slug}&next=/{cat_slug}")
+
+    assets = DownloadableAsset.objects.filter(category=category).order_by("id") if category else []
+    ctx = {"category": category, "assets": assets, "cat_slug": cat_slug}
+    return render(request, template_name, ctx)
+
+def downloads_checklists(request):
+    return _render_assets_by_category(request, SLUG_CHECKLISTS)
+
+def downloads_bonus(request):
+    return _render_assets_by_category(request, SLUG_BONUS)
+
+def downloads_outils(request):
+    return _render_assets_by_category(request, SLUG_OUTILS)
+
+def downloads_irregularites(request):
+    return _render_assets_by_category(request, SLUG_IRREGS)
+  # ta logique d'entitlement
 
 from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
 from django.conf import settings
@@ -855,3 +895,17 @@ def download_version(request, token, version):
     if not f:
         raise Http404("Fichier non disponible.")
     return FileResponse(f.open('rb'), as_attachment=True, filename=f.name.split('/')[-1])
+    
+def secure_download(request, asset_id):
+    asset = get_object_or_404(DownloadableAsset, pk=asset_id)
+    # Ex: vérifier droit d'accès (achat valide, email autorisé, etc.)
+    if not user_has_access(request, asset.category):
+        raise Http404("Not found")
+
+    # Construire le chemin privé : remplace 'media' par 'private_media'
+    rel_path = Path(asset.file.name)  # e.g. downloads/2025/10/fichier.pdf
+    abs_path = Path(settings.PRIVATE_MEDIA_ROOT) / rel_path
+    if not abs_path.exists():
+        raise Http404("Not found")
+
+    return FileResponse(open(abs_path, "rb"), as_attachment=True, filename=rel_path.name)

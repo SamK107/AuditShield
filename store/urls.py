@@ -6,6 +6,13 @@ from store.views import debug_host_view
 app_name = "store"
 
 urlpatterns = [
+    # --- Pages "téléchargement" citées dans l’ebook ---
+    path("checklists", views.downloads_checklists, name="downloads_checklists"),
+    path("bonus", views.downloads_bonus, name="downloads_bonus"),
+    path("bonus/", views.downloads_bonus, name="downloads_bonus_slash"),
+    path("outils-pratiques", views.downloads_outils, name="downloads_outils"),
+    path("irregularites", views.downloads_irregularites, name="downloads_irregularites"),
+
     # --- Pages publiques / offres ---
     path("offres/", views.offers, name="offers"),
     path("ebook/<slug:slug>/", views.product_detail, name="product_detail"),
@@ -46,4 +53,7 @@ urlpatterns = [
     path("formation-assistance/demande/", views.training_inquiry_view, name="training_inquiry"),
     path("formation-assistance/merci/", views.training_inquiry_success, name="training_inquiry_success"),
     path("__whoami__", views.debug_host_view, name="whoami"),
+    
+    #secure download
+    path("downloads/secure/<int:asset_id>/", views.secure_download, name="secure_download"),
 ]
