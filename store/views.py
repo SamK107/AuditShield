@@ -900,7 +900,8 @@ def secure_download(request, asset_id):
     asset = get_object_or_404(DownloadableAsset, pk=asset_id)
     # Ex: vérifier droit d'accès (achat valide, email autorisé, etc.)
     if not user_has_access(request, asset.category):
-        raise Http404("Not found")
+        from django.shortcuts import redirect
+        return redirect(f"/claim/?slug={asset.category.slug}&next=/downloads/secure/{asset_id}/")
 
     # Construire le chemin privé : remplace 'media' par 'private_media'
     rel_path = Path(asset.file.name)  # e.g. downloads/2025/10/fichier.pdf
