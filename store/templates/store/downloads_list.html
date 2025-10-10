@@ -1,0 +1,26 @@
+{% extends "store/base.html" %}
+{% block content %}
+<div class="container mx-auto py-8">
+  <h1 class="text-2xl font-semibold mb-6">
+    Téléchargements — {{ category.name|default:cat_slug }}
+  </h1>
+
+  {% if assets %}
+    <ul class="space-y-3">
+      {% for a in assets %}
+        <li class="flex items-center justify-between p-4 rounded-lg border">
+          <div>
+            <div class="font-medium">{{ a.title|default:a.file.name }}</div>
+            {% if a.description %}<div class="text-sm opacity-75">{{ a.description }}</div>{% endif %}
+          </div>
+          <a href="{% url 'store:secure_download' a.id %}" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+            Télécharger
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Aucun fichier disponible pour cette catégorie.</p>
+  {% endif %}
+</div>
+{% endblock %}
