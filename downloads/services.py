@@ -1,4 +1,5 @@
 from django.utils import timezone
+from downloads.models import ExternalEntitlement
 
 try:
     from storages.backends.s3boto3 import S3Boto3Storage
@@ -80,3 +81,23 @@ def check_site_purchase(email: str, sku: str) -> bool:
         return q.filter(sku=sku).exists()
     except Exception:
         return False
+        
+def user_has_access(request, category):
+    # ... existant (tokens, commandes du site, etc.)
+
+    # 1) Email de session (ex: après /claim)
+    email = (getattr(request, "session", {}) or {}).get("claimed_email") or request.user.email if getattr(request, "user", None) and request.user.is_authenticated else None
+
+    if email:
+        # Achats externes importés (CSV)
+        if ExternalEntitlement.objects.filter(email__iexact=email, category=category).exists():
+            return True
+
+    # 2) Code de claim (fallback si la plateforme ne donne pas l’email)
+    code = request.session.get("claim_code")
+    if code and ExternalEntitlement.objects.filter(claim_code=code, category=category).exists():
+        return True
+
+    # ... reste de ta logique existante ...
+    return False
+

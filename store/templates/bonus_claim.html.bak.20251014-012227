@@ -1,0 +1,177 @@
+{% extends "store/base.html" %}
+{% block content %}
+<div class="mx-auto max-w-3xl py-10 px-4">
+  <div class="bg-white/80 border rounded-2xl shadow-sm overflow-hidden">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b px-6 py-5">
+      <h1 class="text-2xl font-bold tracking-tight">Réclamer votre bonus</h1>
+      <p class="text-slate-600 mt-1">
+        Fournissez votre email & plateforme d’achat, puis <span class="font-medium">l’ID de commande</span>
+        <em>ou</em> une <span class="font-medium">preuve d’achat</span>. Enfin, déposez votre texte (≤ 3 pages).
+      </p>
+    </div>
+
+    {% if messages %}
+      <div class="px-6 pt-5">
+        <div class="space-y-2">
+          {% for message in messages %}
+            <div class="px-4 py-2.5 rounded-md text-sm border
+                        {% if message.tags == 'error' %} bg-red-50 text-red-700 border-red-200
+                        {% elif message.tags == 'success' %} bg-emerald-50 text-emerald-700 border-emerald-200
+                        {% else %} bg-slate-50 text-slate-700 border-slate-200 {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="px-6 pb-6" x-data="bonusClaim()">
+      {% csrf_token %}
+
+      <!-- Étape 1: Contact -->
+      <section class="mt-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded-full bg-blue-600 text-white">1</span>
+          <h2 class="text-base font-semibold">Vos informations d’achat</h2>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label for="id_email" class="block text-sm font-medium mb-1">Email d’achat</label>
+            <input id="id_email" type="email" name="email" required
+                   class="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+          </div>
+
+          <div>
+            <label for="id_platform" class="block text-sm font-medium mb-1">Plateforme</label>
+            <select id="id_platform" name="platform" required
+                    class="w-full border rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="">— Sélectionnez —</option>
+              <option value="selar">Selar</option>
+              <option value="publiseer">Publiseer</option>
+              <option value="youscribe">YouScribe Afrique</option>
+        <option value="chariow">Chariow</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Étape 2: Preuve d’achat (un seul requis) -->
+      <section class="mt-8">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded-full bg-blue-600 text-white">2</span>
+            <h2 class="text-base font-semibold">Preuve d’achat</h2>
+          </div>
+          <div class="text-xs px-2 py-1 rounded-full border bg-white text-slate-600">
+            Un seul requis : <span class="font-medium">ID</span> <em>ou</em> <span class="font-medium">preuve</span>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 items-start">
+          <!-- Colonne A: ID commande -->
+          <div>
+            <label for="id_order" class="block text-sm font-medium mb-1">ID / Référence de commande</label>
+            <input id="id_order" name="order_id" type="text" placeholder="ex. ORDER-XXXX"
+                   x-model="orderId" @input="checkEither()"
+                   class="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+            <p class="text-xs text-slate-500 mt-1">Optionnel si vous joignez la preuve d’achat.</p>
+          </div>
+
+          <!-- Séparateur "ou" (visuel md+) -->
+          <div class="hidden md:flex items-center justify-center">
+            <div class="relative w-full flex items-center">
+              <div class="h-px bg-slate-200 w-full"></div>
+              <div class="absolute left-1/2 -translate-x-1/2 bg-white px-2 text-slate-500 text-sm">ou</div>
+            </div>
+          </div>
+
+          <!-- Colonne B: Preuve d’achat (dropzone) -->
+          <div class="md:col-span-2">
+            <label for="id_proof" class="block text-sm font-medium mb-1">Preuve d’achat (PDF/PNG/JPG)</label>
+
+            <label
+              class="mt-1 block border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition"
+              :class="proofName ? 'border-emerald-300' : 'border-slate-200'">
+              <input id="id_proof" name="proof" type="file" accept=".pdf,.png,.jpg,.jpeg"
+                     class="hidden" @change="onProofChange($event)" />
+              <div class="flex flex-col items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15v4a2 2 0 002 2h14a2 2 0 002-2v-4M7 10l5-5m0 0l5 5m-5-5v12"/>
+                </svg>
+                <span class="text-sm" x-text="proofName || 'Cliquez pour sélectionner votre fichier'"></span>
+                <span class="text-xs text-slate-500">Formats: PDF, PNG, JPG</span>
+              </div>
+            </label>
+
+            <!-- petit espace entre PREUVE et VOTRE TEXTE (exigé) -->
+            <!-- On garde l'espace en bas ici; la section suivante a `mt-4` -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Étape 3: Votre texte (≤ 3 pages) -->
+      <section class="mt-4"> <!-- <- petit espace demandé entre preuve & texte -->
+        <div class="flex items-center gap-2 mb-3">
+          <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded-full bg-blue-600 text-white">3</span>
+          <h2 class="text-base font-semibold">Votre texte (≤ 3 pages)</h2>
+        </div>
+
+        <label
+          class="block border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition"
+          :class="textName ? 'border-emerald-300' : 'border-slate-200'">
+          <input id="id_text" type="file" name="uploaded_text" accept=".pdf,.doc,.docx,.odt" required
+                 class="hidden" @change="onTextChange($event)"/>
+          <div class="flex flex-col items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+            </svg>
+            <span class="text-sm" x-text="textName || 'Cliquez pour déposer votre fichier (PDF/DOC/DOCX/ODT)'"></span>
+            <span class="text-xs text-slate-500">Taille conseillée : 3 pages max</span>
+          </div>
+        </label>
+      </section>
+
+      <!-- Aide: rappel "un des deux suffit" -->
+      <p class="text-xs text-slate-500 mt-3">
+        Un des deux (<em>ID</em> ou <em>preuve</em>) suffit. Votre demande sera vérifiée puis traitée.
+      </p>
+
+      <!-- Espace avant le bouton envoyer (exigé) -->
+      <div class="mt-6">
+        <button type="submit"
+                class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 -ml-1" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+          Envoyer la demande
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Alpine helper -->
+<script>
+  function bonusClaim(){
+    return {
+      orderId: '',
+      proofName: '',
+      textName: '',
+      onProofChange(e){
+        const f = e.target.files?.[0];
+        this.proofName = f ? f.name : '';
+        this.checkEither();
+      },
+      onTextChange(e){
+        const f = e.target.files?.[0];
+        this.textName = f ? f.name : '';
+      },
+      checkEither(){
+        // Optionnel: pourrait colorer un encart si ni ID ni Preuve — ici, juste un hook.
+      }
+    }
+  }
+</script>
+{% endblock %}

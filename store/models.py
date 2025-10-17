@@ -6,6 +6,10 @@ from django.core.validators import EmailValidator
 from django.db import models
 from django.utils import timezone
 
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
+from django.db.models import Q, UniqueConstraint
+
 
 def get_expires_at():
     # 72h par défaut
@@ -379,3 +383,56 @@ class PaymentWebhookLog(models.Model):
 
     def __str__(self):
         return f"Token for Order#{self.order.pk}"
+
+# store/models.py
+class BonusRequest(models.Model):
+    STATUS = [
+        ("RECEIVED", "Reçue"),
+        ("DRAFTED", "Brouillon DOCX prêt"),
+        ("READY", "PDF prêt"),
+        ("SENT", "Envoyé"),
+        ("REJECTED", "Rejeté (non conforme)"),
+    ]
+
+    product_slug = models.CharField(max_length=100)
+    # ⬇️ devient optionnel
+    order_ref = models.CharField(max_length=120, blank=True, null=True)
+
+    purchaser_email = models.EmailField()
+    purchaser_name = models.CharField(max_length=150)
+    delivery_email = models.EmailField()
+    service_role = models.CharField(max_length=150)
+    service_mission = models.TextField(blank=True)
+
+    # Ton texte court (≤ 3–4 pages)
+    uploaded_text = models.FileField(upload_to="bonus_texts/")
+
+    # ⬇️ nouvelle pièce de preuve (si pas d’order_ref)
+    proof_file = models.FileField(
+        upload_to="bonus_proofs/",
+        blank=True, null=True,
+        validators=[FileExtensionValidator(["pdf", "png", "jpg", "jpeg"])],
+        help_text="Preuve d’achat : PDF/PNG/JPG (optionnel si vous fournissez l’ID de commande).",
+    )
+
+    status = models.CharField(max_length=12, choices=STATUS, default="RECEIVED")
+    docx_path = models.FileField(upload_to="bonus_outputs/", blank=True, null=True)
+    pdf_path = models.FileField(upload_to="bonus_outputs/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # unicité seulement quand order_ref est présent
+        constraints = [
+            UniqueConstraint(
+                fields=["product_slug", "order_ref", "purchaser_email"],
+                name="uniq_bonusreq_with_orderref",
+                condition=Q(order_ref__isnull=False),
+            )
+        ]
+
+    def clean(self):
+        # 👉 règle simple : au moins l’un des deux
+        if not self.order_ref and not self.proof_file:
+            raise ValidationError(
+                "Fournissez l’ID/la référence de commande OU téléversez une preuve d’achat (PDF/PNG/JPG)."
+            )

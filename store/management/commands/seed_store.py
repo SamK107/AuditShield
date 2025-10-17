@@ -8,7 +8,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         product, _ = Product.objects.get_or_create(
-            slug="audit-services-publics",
+            slug="audit-sans-peur",
             defaults=dict(
                 title="Ebook - Audit Sans Peur",
                 subtitle="Le guide concret pour éviter les mauvaises surprises.",

@@ -1,0 +1,104 @@
+<!-- store/templates/store/bonus_claim.html -->
+{% extends "store/base.html" %}
+{% block content %}
+<div class="container mx-auto max-w-2xl py-10">
+  <h1 class="text-2xl font-bold mb-3">Réclamer votre bonus (plateforme externe)</h1>
+  <p class="text-slate-600 mb-6">
+    Indiquez votre email et la plateforme. Prouvez l’achat en fournissant
+    <span class="font-medium">l’ID / Référence de commande</span> <span class="italic">ou</span>
+    une <span class="font-medium">preuve (PDF/PNG/JPG)</span>. Un seul des deux est requis.
+  </p>
+
+  {% if messages %}
+    <div class="space-y-2 mb-4">
+      {% for message in messages %}
+        <div class="px-4 py-2 rounded text-sm
+          {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+          {% elif message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+          {% else %}bg-slate-50 text-slate-700 border border-slate-200{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form id="bonus-claim-form" method="post" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
+
+    <!-- Email / Plateforme -->
+    <div>
+      <label class="block text-sm font-medium mb-1" for="purchaser_email">Email d’achat</label>
+      <input id="purchaser_email" type="email" name="purchaser_email" required class="w-full border rounded px-3 py-2" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1" for="platform">Plateforme</label>
+      <select id="platform" name="platform" class="w-full border rounded px-3 py-2" required>
+        <option value="">— Sélectionnez —</option>
+        <option value="selar">Selar</option>
+        <option value="publiseer">Publiseer</option>
+        <option value="youscribe">YouScribe Afrique</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+
+    <!-- ID OU Preuve -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="order_ref">
+          ID / Référence de commande <span class="text-slate-500 font-normal">(optionnel si preuve fournie)</span>
+        </label>
+        <input id="order_ref" type="text" name="order_ref" class="w-full border rounded px-3 py-2" placeholder="ex. ORDER-XXXX" />
+      </div>
+
+      <div>
+        <div class="md:hidden my-2 text-center text-xs uppercase tracking-wide text-slate-500">— ou —</div>
+        <label class="block text-sm font-medium mb-1" for="proof_file">
+          Preuve d’achat (PDF/PNG/JPG) <span class="text-slate-500 font-normal">(optionnel si ID fourni)</span>
+        </label>
+        <input id="proof_file" type="file" name="proof_file" accept=".pdf,.png,.jpg,.jpeg" class="w-full" />
+      </div>
+    </div>
+
+    <!-- Texte (≤ 3 pages) -->
+    <div>
+      <label class="block text-sm font-medium mb-1" for="uploaded_text">Votre texte (≤ 3 pages)</label>
+      <input id="uploaded_text" type="file" name="uploaded_text" accept=".pdf,.docx,.doc,.odt" required class="w-full" />
+    </div>
+
+    <!-- (Optionnel) infos service -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="purchaser_name">Nom & prénom</label>
+        <input id="purchaser_name" type="text" name="purchaser_name" class="w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" for="delivery_email">Email de réception du kit</label>
+        <input id="delivery_email" type="email" name="delivery_email" class="w-full border rounded px-3 py-2" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1" for="service_role">Poste / Service</label>
+      <input id="service_role" type="text" name="service_role" class="w-full border rounded px-3 py-2" />
+      <p class="text-xs text-slate-500 mt-1">Ex.: Chef Service Budget, Agent Comptable, etc.</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1" for="service_mission">Missions du service (bref)</label>
+      <textarea id="service_mission" name="service_mission" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+    </div>
+
+    <!-- Produit cible (caché) -->
+    <input type="hidden" name="product_slug" value="audit-sans-peur" />
+
+    <button class="w-full py-2.5 bg-blue-600 text-white font-medium rounded hover:bg-blue-700">
+      Envoyer la demande
+    </button>
+
+    <p class="text-xs text-slate-500 mt-2">
+      Un des deux (ID <span class="italic">ou</span> preuve) suffit. Votre demande sera vérifiée puis traitée.
+    </p>
+  </form>
+</div>
+{% endblock %}

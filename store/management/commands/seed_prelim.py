@@ -10,7 +10,7 @@ class Command(BaseCommand):
         product = Product.objects.filter(is_published=True).first()
         if not product:
             product, _ = Product.objects.get_or_create(
-                slug="audit-services-publics",
+                slug="audit-sans-peur",
                 defaults=dict(
                     title="Ebook - Audit Sans Peur",
                     subtitle="",

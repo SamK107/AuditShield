@@ -29,6 +29,16 @@
             <a href="{% url 'store:buy' standard.product.slug %}" class="btn-brand w-full justify-center">
               <i data-lucide="shopping-cart"></i> Acheter maintenant
             </a>
+            
+             <!-- AJOUT ICI -->
+            <div class="mt-2 text-center">
+              <a href="{% url 'store:buy_other_methods' 'produit' %}"
+                 class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">
+                <i data-lucide="store"></i> Autres moyens d’achat
+              </a>
+            </div>
+            <!-- FIN AJOUT -->
+            
           {% else %}
             <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-300 text-gray-500 w-full justify-center font-semibold cursor-not-allowed" disabled>
               <i data-lucide="shopping-cart"></i> Indisponible

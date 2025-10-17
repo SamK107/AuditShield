@@ -29,6 +29,10 @@ from pathlib import Path
 from django.shortcuts import render, get_object_or_404
 from downloads.models import DownloadableAsset, DownloadCategory
 
+from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
+from django.conf import settings
+common_note = getattr(settings, "EXTERNAL_BUY_LINKS_NOTE", "")
+
 # Slugs attendus par l’ebook (aligne-les aux slugs réels de l’admin si besoin)
 SLUG_CHECKLISTS = "checklists"
 SLUG_BONUS = "bonus"
@@ -63,8 +67,6 @@ def downloads_irregularites(request):
     return _render_assets_by_category(request, SLUG_IRREGS)
   # ta logique d'entitlement
 
-from .forms import CheckoutForm, KitInquiryForm, TrainingInquiryForm
-from django.conf import settings
 from .models import (
     DownloadToken,
     ExampleSlide,
@@ -910,3 +912,340 @@ def secure_download(request, asset_id):
         raise Http404("Not found")
 
     return FileResponse(open(abs_path, "rb"), as_attachment=True, filename=rel_path.name)
+    
+def buy_other_methods(request, product_key):
+    """
+    /buy/other-methods/<product_key>/ — Affiche les plateformes externes.
+    Tolérant: retombe sur "produit" si la clé est inconnue.
+    """
+    from django.conf import settings
+    links = getattr(settings, "EXTERNAL_BUY_LINKS", {}) or {}
+    platforms = links.get(product_key) or links.get("produit") or {}
+    note = getattr(settings, "EXTERNAL_BUY_LINKS_NOTE", "")
+
+    if isinstance(platforms, dict):
+        platforms_ctx = platforms
+    elif isinstance(platforms, (list, tuple)):
+        platforms_ctx = list(platforms)
+    else:
+        platforms_ctx = {}
+
+    return render(
+        request,
+        "store/buy_other_methods.html",
+        {"platforms": platforms_ctx, "note": note},
+    )
+
+def _make_bonus_token(order_ref: str, email: str) -> str:
+    signer = TimestampSigner(salt="bonus-kit-preparation")
+    return signer.sign(f"{order_ref}:{email}")
+
+def _check_bonus_token(token: str) -> tuple[bool, str, str]:
+    signer = TimestampSigner(salt="bonus-kit-preparation")
+    try:
+        value = signer.unsign(token, max_age=BONUS_TOKEN_AGE)
+        order_ref, email = value.split(":", 1)
+        return True, order_ref, email
+    except SignatureExpired:
+        return False, "", ""
+    except BadSignature:
+        return False, "", ""
+
+@require_http_methods(["GET"])
+def bonus_kit_landing(request):
+    """
+    Page /bonus/kit-preparation/ :
+    - Affiche un petit formulaire "Référence de commande + Email"
+    - Le bouton "Démarrer mon bonus" peut aussi accepter ?order_ref=&email= pour générer le token et rediriger.
+    - Mode démo : ?demo=1 -> saute la vérif et affiche directement la page de soumission.
+    """
+    if request.GET.get("demo") == "1":
+        ctx = {"product_slug": request.GET.get("product_slug","audit-sans-peur"), "order_ref": "DEMO-ORDER-123"}
+        return TemplateResponse(request, "store/bonus_landing.html", ctx)
+
+    order_ref = (request.GET.get("order_ref") or "").strip()
+    email = (request.GET.get("email") or "").strip()
+
+    if order_ref and email:
+        token = _make_bonus_token(order_ref, email)
+        return redirect(f"/bonus/kit-preparation/start?product_slug=audit-sans-peur&token={token}")
+
+    return TemplateResponse(request, "store/bonus_landing.html", {})
+
+@require_http_methods(["POST"])
+def bonus_kit_claim(request):
+    """
+    Réception du petit formulaire (order_ref + email) -> génère un token et redirige vers /start
+    """
+    order_ref = (request.POST.get("order_ref") or "").strip()
+    email = (request.POST.get("email") or "").strip()
+    if not order_ref or not email:
+        return TemplateResponse(request, "store/bonus_landing.html", {
+            "error": "Merci d’indiquer une référence de commande et un email.",
+        }, status=400)
+
+    token = _make_bonus_token(order_ref, email)
+    return redirect(f"/bonus/kit-preparation/start?product_slug=audit-sans-peur&token={token}")
+
+@require_http_methods(["GET", "POST"])
+def bonus_kit_start(request):
+    """
+    Page de soumission (les 3 pages à analyser).
+    - Accès si token signé valide OU mode demo=1.
+    """
+    if request.GET.get("demo") == "1":
+        ctx = {"demo": True, "product_slug": request.GET.get("product_slug","audit-sans-peur"), "order_ref": "DEMO-ORDER-123"}
+        return TemplateResponse(request, "store/bonus_prelim_submit.html", ctx)
+
+    token = request.GET.get("token") or ""
+    ok, order_ref, email = _check_bonus_token(token)
+    if not ok:
+        # retourne au landing avec un message
+        return TemplateResponse(request, "store/bonus_landing.html", {
+            "error": "Accès expiré ou invalide. Merci de saisir à nouveau votre référence et email.",
+        }, status=403)
+
+    if request.method == "POST":
+        # Ici tu traites la soumission (texte 3 pages, fichier, etc.)
+        submitted_text = request.POST.get("text") or ""
+        # TODO: persister / envoyer email / lancer pipeline…
+        return TemplateResponse(request, "store/bonus_prelim_submit.html", {
+            "ok": True, "message": "Votre document a bien été reçu. Merci !",
+            "order_ref": order_ref, "email": email
+        })
+
+    return TemplateResponse(request, "store/bonus_prelim_submit.html", {
+        "order_ref": order_ref, "email": email
+    })
+
+# -----------------------------
+# BONUS: Kit de préparation
+# -----------------------------
+import re
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.http import HttpResponseBadRequest
+from django.core.mail import send_mail, EmailMessage
+from django.conf import settings
+
+ORDER_REF_RE = re.compile(r"^SC[A-Z0-9]{5,}$", re.I)  # ex: SCD8LJ
+
+def validate_internal_order_ref(order_ref: str, email: str) -> bool:
+    """
+    TODO: remplace par une vraie vérif en BD (ex: Order.objects.filter(...).exists()).
+    Ici: on 'mock' : accepte une ref au format SCxxxxx et email non-vide.
+    """
+    if not email or not ORDER_REF_RE.match(order_ref or ""):
+        return False
+    return True
+
+def validate_external_email(email: str) -> bool:
+    """
+    TODO: remplace par une vraie vérif contre la liste des emails transmis par les partenaires.
+    Ici: on 'mock' : on accepte tout email qui contient un '@'.
+    """
+    return bool(email and "@" in email)
+
+def bonus_kit_landing(request):
+    # Ta template existante (bouton Démarrer => vers start)
+    return render(request, "store/bonus_landing.html")
+
+def bonus_kit_start(request):
+    """
+    GET  => Affiche le formulaire de soumission (texte / fichiers, email, ref / externe).
+    POST => Valide & traite, puis redirige vers 'merci'.
+    """
+    if request.method == "GET":
+        # mode DEMO ?demo=1 -> pré-remplit / bypass léger
+        ctx = {
+            "demo": request.GET.get("demo") == "1",
+        }
+        return render(request, "store/bonus_submit.html", ctx)
+
+    # POST
+    email = (request.POST.get("email") or "").strip()
+    order_ref = (request.POST.get("order_ref") or "").strip()
+    external = request.POST.get("is_external") == "on"
+    text_input = (request.POST.get("text_input") or "").strip()
+
+    # Validation basique
+    if not email:
+        return render(request, "store/bonus_submit.html", {"error": "Merci d’indiquer votre email d’achat.", "prefill": request.POST})
+
+    if external:
+        ok = validate_external_email(email)
+        if not ok:
+            return render(
+                request, "store/bonus_submit.html",
+                {"error": "L’email indiqué n’est pas reconnu parmi les achats partenaires.", "prefill": request.POST}
+            )
+    else:
+        if not order_ref:
+            return render(request, "store/bonus_submit.html", {"error": "Merci d’indiquer votre référence de commande.", "prefill": request.POST})
+        ok = validate_internal_order_ref(order_ref, email)
+        if not ok:
+            return render(
+                request, "store/bonus_submit.html",
+                {"error": "Référence de commande invalide ou non trouvée pour cet email.", "prefill": request.POST}
+            )
+
+    if not text_input and not request.FILES.get("doc_file"):
+        return render(request, "store/bonus_submit.html", {"error": "Merci de fournir votre texte (3 pages) ou un fichier.", "prefill": request.POST})
+
+    # TODO: Enregistrer en BD (un modèle BonusSubmission ?)
+    # Exemple minimal: envoyer un email interne + accusé client
+    sent_ok = True
+    try:
+        # Email interne (vers contact@…)
+        admin_to = getattr(settings, "SERVER_EMAIL", None) or getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        if admin_to:
+            body = f"""Nouvelle soumission Bonus Kit:
+Email: {email}
+Externe: {external}
+Réf: {order_ref or '(externe)'}
+Texte: {(text_input[:500] + '...') if len(text_input)>500 else text_input or '(via fichier)'}
+"""
+            EmailMessage(
+                subject="Bonus Kit - Nouvelle soumission",
+                body=body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[admin_to],
+            ).send(fail_silently=False)
+
+        # Accusé client
+        send_mail(
+            subject="Nous avons bien reçu votre demande (Bonus - Audit Sans Peur)",
+            message="Merci ! Nous analyserons votre texte (ou fichier) et reviendrons vers vous.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
+    except Exception:
+        sent_ok = False
+
+    # Redirection Merci
+    qs = f"?email={email}&ok={'1' if sent_ok else '0'}"
+    return redirect(reverse("store:bonus_thanks") + qs)
+
+def bonus_kit_thanks(request):
+    email = request.GET.get("email")
+    sent_ok = request.GET.get("ok") == "1"
+    return render(request, "store/bonus_thanks.html", {"email": email, "sent_ok": sent_ok})
+
+# -----------------------------
+# BONUS: Kit de préparation
+# -----------------------------
+import re
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.http import HttpResponseBadRequest
+from django.core.mail import send_mail, EmailMessage
+from django.conf import settings
+
+ORDER_REF_RE = re.compile(r"^SC[A-Z0-9]{5,}$", re.I)  # ex: SCD8LJ
+
+def validate_internal_order_ref(order_ref: str, email: str) -> bool:
+    """
+    TODO: remplace par une vraie vérif en BD (ex: Order.objects.filter(...).exists()).
+    Ici: on 'mock' : accepte une ref au format SCxxxxx et email non-vide.
+    """
+    if not email or not ORDER_REF_RE.match(order_ref or ""):
+        return False
+    return True
+
+def validate_external_email(email: str) -> bool:
+    """
+    TODO: remplace par une vraie vérif contre la liste des emails transmis par les partenaires.
+    Ici: on 'mock' : on accepte tout email qui contient un '@'.
+    """
+    return bool(email and "@" in email)
+
+def bonus_kit_landing(request):
+    # Ta template existante (bouton Démarrer => vers start)
+    return render(request, "store/bonus_landing.html")
+
+def bonus_kit_start(request):
+    """
+    GET  => Affiche le formulaire de soumission (texte / fichiers, email, ref / externe).
+    POST => Valide & traite, puis redirige vers 'merci'.
+    """
+    if request.method == "GET":
+        # mode DEMO ?demo=1 -> pré-remplit / bypass léger
+        ctx = {
+            "demo": request.GET.get("demo") == "1",
+        }
+        return render(request, "store/bonus_submit.html", ctx)
+
+    # POST
+    email = (request.POST.get("email") or "").strip()
+    order_ref = (request.POST.get("order_ref") or "").strip()
+    external = request.POST.get("is_external") == "on"
+    text_input = (request.POST.get("text_input") or "").strip()
+
+    # Validation basique
+    if not email:
+        return render(request, "store/bonus_submit.html", {"error": "Merci d’indiquer votre email d’achat.", "prefill": request.POST})
+
+    if external:
+        ok = validate_external_email(email)
+        if not ok:
+            return render(
+                request, "store/bonus_submit.html",
+                {"error": "L’email indiqué n’est pas reconnu parmi les achats partenaires.", "prefill": request.POST}
+            )
+    else:
+        if not order_ref:
+            return render(request, "store/bonus_submit.html", {"error": "Merci d’indiquer votre référence de commande.", "prefill": request.POST})
+        ok = validate_internal_order_ref(order_ref, email)
+        if not ok:
+            return render(
+                request, "store/bonus_submit.html",
+                {"error": "Référence de commande invalide ou non trouvée pour cet email.", "prefill": request.POST}
+            )
+
+    if not text_input and not request.FILES.get("doc_file"):
+        return render(request, "store/bonus_submit.html", {"error": "Merci de fournir votre texte (3 pages) ou un fichier.", "prefill": request.POST})
+
+    # TODO: Enregistrer en BD (un modèle BonusSubmission ?)
+    # Exemple minimal: envoyer un email interne + accusé client
+    sent_ok = True
+    try:
+        # Email interne (vers contact@…)
+        admin_to = getattr(settings, "SERVER_EMAIL", None) or getattr(settings, "DEFAULT_FROM_EMAIL", None)
+        if admin_to:
+            body = f"""Nouvelle soumission Bonus Kit:
+Email: {email}
+Externe: {external}
+Réf: {order_ref or '(externe)'}
+Texte: {(text_input[:500] + '...') if len(text_input)>500 else text_input or '(via fichier)'}
+"""
+            EmailMessage(
+                subject="Bonus Kit - Nouvelle soumission",
+                body=body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[admin_to],
+            ).send(fail_silently=False)
+
+        # Accusé client
+        send_mail(
+            subject="Nous avons bien reçu votre demande (Bonus - Audit Sans Peur)",
+            message="Merci ! Nous analyserons votre texte (ou fichier) et reviendrons vers vous.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
+    except Exception:
+        sent_ok = False
+
+    # Redirection Merci
+    qs = f"?email={email}&ok={'1' if sent_ok else '0'}"
+    return redirect(reverse("store:bonus_thanks") + qs)
+
+def bonus_kit_thanks(request):
+    email = request.GET.get("email")
+    sent_ok = request.GET.get("ok") == "1"
+    return render(request, "store/bonus_thanks.html", {"email": email, "sent_ok": sent_ok})
+
+
+def training_inquiry(request):
+    return HttpResponse("Formulaire de demande Formation & Assistance (stub) — à remplacer par ta vue réelle.")

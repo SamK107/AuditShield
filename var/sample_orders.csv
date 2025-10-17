@@ -1,0 +1,5 @@
+email,category_slug,platform,order_ref,claim_code
+client1@example.com,bonus,selar,SLR-1234,
+client2@example.com,checklists,publiseer,PUB-9876,
+client3@example.com,outils-pratiques,youscribe,YS-2025-0042,
+client4@example.com,irregularites,chariow,CHW-55A,ABCDEF1234

@@ -25,6 +25,10 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
+    
+    path("", include(("core.urls", "core"), namespace="core")),
+     
+     
     path("admin/", admin.site.urls),
     # Pages publiques de téléchargement (en racine)
     path(
@@ -37,10 +41,10 @@ urlpatterns = [
         include(("downloads.urls", "downloads"), namespace="downloads"),
     ),
     # Apps existantes
-    path(
-        "",
-        include(("core.urls", "core"), namespace="core"),
-    ),
+    # path(
+    #     "",
+    #     include(("core.urls", "core"), namespace="core"),
+    # ),
     path(
         "",
         include(("store.urls", "store"), namespace="store"),
@@ -49,6 +53,8 @@ urlpatterns = [
         "",
         include(("legal.urls", "legal"), namespace="legal"),
     ),
+    
+  
 ]
 
 # Servir les fichiers médias en dev (PDF, images, etc.)

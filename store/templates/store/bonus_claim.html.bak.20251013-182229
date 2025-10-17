@@ -1,0 +1,70 @@
+{% extends "store/base.html" %}
+{% block content %}
+<div class="container mx-auto max-w-2xl py-10">
+  <h1 class="text-2xl font-bold mb-3">Réclamer votre bonus (plateforme externe)</h1>
+  <p class="text-slate-600 mb-6">
+    Indiquez votre email et la plateforme. Prouvez votre achat en fournissant
+    <span class="font-medium">l’ID / Référence de commande</span> <em>ou</em>
+    une <span class="font-medium">preuve d’achat (PDF/PNG/JPG)</span>.
+    <strong>Un seul des deux est requis.</strong>
+  </p>
+
+  {% if messages %}
+    <div class="space-y-2 mb-4">
+      {% for message in messages %}
+        <div class="px-4 py-2 rounded text-sm
+          {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+          {% elif message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+          {% else %}bg-slate-50 text-slate-700 border border-slate-200{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-medium mb-1" for="id_email">Email d’achat</label>
+      <input id="id_email" type="email" name="email" required class="w-full border rounded px-3 py-2" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1" for="id_platform">Plateforme</label>
+      <select id="id_platform" name="platform" class="w-full border rounded px-3 py-2" required>
+        <option value="">— Sélectionnez —</option>
+        <option value="selar">Selar</option>
+        <option value="publiseer">Publiseer</option>
+        <option value="youscribe">YouScribe Afrique</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium mb-1" for="id_order">ID / Référence de commande (optionnel si preuve fournie)</label>
+        <input id="id_order" type="text" name="order_id" class="w-full border rounded px-3 py-2" placeholder="ex. ORDER-XXXX" />
+      </div>
+      <div class="text-center text-slate-500 md:pt-6">— ou —</div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1" for="id_proof">Preuve d’achat (PDF/PNG/JPG) (optionnel si ID fourni)</label>
+        <input id="id_proof" type="file" name="proof" accept=".pdf,.png,.jpg,.jpeg" class="w-full" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1" for="id_text">Votre texte (≤ 3 pages)</label>
+      <input id="id_text" type="file" name="uploaded_text" accept=".pdf,.doc,.docx,.odt" required class="w-full" />
+    </div>
+
+    <button class="w-full py-2.5 bg-blue-600 text-white font-medium rounded hover:bg-blue-700">
+      Envoyer la demande
+    </button>
+
+    <p class="text-xs text-slate-500 mt-2">
+      Un des deux (<em>ID</em> ou <em>preuve</em>) suffit. Votre demande sera vérifiée puis traitée.
+    </p>
+  </form>
+</div>
+{% endblock %}

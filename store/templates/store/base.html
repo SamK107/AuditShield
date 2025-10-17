@@ -1,13 +1,18 @@
+{# store/base.html — version compatible "coming_soon" #}
 <!doctype html>
 <html lang="fr" class="h-full">
 {% load static %}
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>{% block title %}Boutique{% endblock %} – Audit sans peur</title>
   <meta name="description" content="Ebook et offres personnalisées pour se préparer aux missions d'audit." />
 
-  <!-- Favicons (inchangés) -->
+  {# Hook SEO/OG/CSS additionnels depuis les pages enfants #}
+  {% block extra_head %}{% endblock %}
+
+  <!-- Favicons -->
   <link rel="icon" type="image/svg+xml" href="{% static 'brand/logo_img2.svg' %}">
   <link rel="icon" href="{% static 'brand/logo_img2.svg' %}" sizes="16x16 32x32 48x48 64x64" type="image/x-icon">
   <link rel="icon" type="image/png" sizes="16x16" href="{% static 'brand/logo_img2_optimized_16.png' %}">
@@ -20,6 +25,7 @@
   <!-- CSS locaux -->
   <link rel="stylesheet" href="{% static 'css/app.build.css' %}">
   <link rel="stylesheet" href="{% static 'styles/grad-blur.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
 
   <script>
     (function(){
@@ -33,7 +39,9 @@
     [x-cloak]{display:none!important}
   </style>
 </head>
+
 <body class="min-h-screen flex flex-col bg-white text-[color:var(--ink)]">
+  {% block site_header %}
   <header x-data="{open:false}" class="sticky top-0 z-50 bg-brand-600 text-white border-b border-brand-700/30">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2" aria-label="Accueil Audit Ebooks">
@@ -46,6 +54,10 @@
         <span class="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">Bloom Shield Gouvernance</span>
       </a>
 
+      <!-- Pendant le pré-lancement :
+         - Si "coming_soon" == True, on masque la nav et le gros CTA
+         - Sinon, site normal -->
+      {% if not coming_soon %}
       <nav class="hidden md:flex items-center gap-6 text-sm text-white">
         <a href="{% url 'store:offers' %}" class="hover:text-brand-50">Offres</a>
         <a href="{% url 'store:examples' %}" class="hover:text-brand-50">Exemples</a>
@@ -55,10 +67,13 @@
       <a href="{% url 'store:offers' %}" class="hidden md:inline-flex btn-cta-yellow">
         <i data-lucide="shopping-bag"></i> Obtenir l’ebook
       </a>
-      <button @click="open = true" class="md:hidden inline-flex items-center p-2 text-gray-700">
+      <button @click="open = true" class="md:hidden inline-flex items-center p-2 text-gray-100">
         <i data-lucide="menu"></i>
       </button>
+      {% endif %}
     </div>
+
+    {% if not coming_soon %}
     <div x-show="open" @click.outside="open = false" class="md:hidden bg-brand-600 border-b border-brand-700/30">
       <nav class="flex flex-col px-4 py-2 gap-2">
         <a href="{% url 'store:offers' %}" class="py-2 hover:text-brand-50">Offres</a>
@@ -66,10 +81,15 @@
         <a href="{% url 'core:about' %}" class="py-2 hover:text-brand-50">À propos</a>
       </nav>
     </div>
+    {% endif %}
   </header>
+  {% endblock site_header %}
 
-  <main class="flex-1 w-full">{% block content %}{% endblock %}</main>
+  <main class="flex-1 w-full">
+    {% block content %}{% endblock %}
+  </main>
 
+  {% block site_footer %}
   <footer class="mt-10 border-t">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-slate-600">
       <div>
@@ -95,14 +115,28 @@
       </nav>
     </div>
   </footer>
+  {% endblock site_footer %}
+
   <!-- JS local bundle (Alpine, HTMX, Lucide, CSRF htmx) -->
   <script src="{% static 'js/bundle.js' %}" defer></script>
+  
+  <!-- HTMX (obligatoire pour hx-post/hx-target/hx-swap) -->
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  
   <!-- Lucide (CDN pour valider visuellement) -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- (Optionnel) Montre les erreurs HTMX dans la console -->
+  <script>
+    document.addEventListener('htmx:responseError', (e) => {
+      console.error('HTMX responseError', e.detail);
+      alert('Erreur réseau ou serveur. Réessaie plus tard.');
+    });
+  </script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
     });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </body>
 </html>

@@ -50,7 +50,7 @@ V1 simple “à la Acquisition.com” : page produit persuasive (promesse, preuv
     # Run
     python manage.py runserver
 
-Visite : `/`, `/ebook/audit-services-publics/`, `/offres/`, `/exemples/`.
+Visite : `/`, `/ebook/audit-sans-peur/`, `/offres/`, `/exemples/`.
 
 ---
 

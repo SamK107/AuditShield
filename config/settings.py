@@ -286,3 +286,46 @@ LOGGING = {
 # --- Static files (prod LWS) ---
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+
+EXTERNAL_BUY_LINKS_NOTE = (
+    "Après achat, l’ebook contient des liens sécurisés vers vos bonus sur auditsanspeur.com."
+)
+
+
+# --- Liens d'achat externes (canonique = 'audit-sans-peur') ---
+EXTERNAL_BUY_LINKS = {
+    "produit": {
+        "selar": {
+            "label": "Selar",
+            "url": "https://selar.co/ta-page-produit",
+            "badge": "Recommandé",
+            "description": "Paiement en NGN/FCFA, adapté Afrique de l’Ouest.",
+            "notes": "Après achat, l’ebook contient des liens sécurisés vers vos bonus sur auditsanspeur.com.",
+            "logo": "/static/partners/selar.svg",  
+        },
+        "publiseer": {
+            "label": "Publiseer",
+            "url": "https://publiseer.com/ta-page-produit",
+            "description": "Distribution mondiale (Amazon, Google, Apple).",
+            "logo": "/static/partners/publiseer.svg",
+        },
+        "youscribe": {
+            "label": "YouScribe Afrique",
+            "url": "https://youscribe.com/ta-page-produit",
+            "description": "Portée Afrique francophone.",
+            "logo": "/static/partners/youscribe.svg",
+        },
+        "chariow": {
+            "label": "Chariow",
+            "url": "https://chariow.com/ta-page-produit",
+            "description": "Extension régionale.",
+            "logo": "/static/partners/chariow.svg",
+        },
+    }
+}
+
+# --- Alias (compatibilité rétro) ---
+for _alias in ("produit", "audit-services-publics", "ebook-audit-sans-peur"):
+    EXTERNAL_BUY_LINKS[_alias] = EXTERNAL_BUY_LINKS["produit"]
+

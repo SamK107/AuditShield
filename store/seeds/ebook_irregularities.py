@@ -2,7 +2,7 @@
 
 SEED_IRREGULARITIES = {
     # clé = slug du produit
-    "audit-services-publics": [
+    "audit-sans-peur": [
         {
             "irregularite": "Passation de marchés non conforme (fractionnement, absence d’AO, absence de no-objection)",
             "reference": (

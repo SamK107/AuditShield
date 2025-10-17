@@ -1,0 +1,23 @@
+{% extends "store/base.html" %}
+{% load static %}
+{% block title %}Bonus — Kit de préparation{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+  <h1 class="text-2xl md:text-3xl font-bold">Accéder à votre bonus « Kit de préparation »</h1>
+  <p class="mt-2 text-slate-700">
+    Démarrez directement la soumission de votre document (ou saisie du texte) — le contrôle d’email/commande sera fait à l’envoi.
+  </p>
+
+  <div class="mt-6">
+    <a href="{% url 'store:bonus_submit' %}"
+       class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700">
+      Démarrer mon bonus
+    </a>
+  </div>
+
+  <p class="mt-4 text-sm text-slate-500">
+    (Optionnel) Le parcours « Réclamer mon bonus (plateforme externe) » reste disponible s’il est utilisé par un partenaire.
+  </p>
+</div>
+{% endblock %}

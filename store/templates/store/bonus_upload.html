@@ -1,0 +1,54 @@
+<!-- store/templates/store/bonus_upload.html -->
+{% extends "store/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto max-w-3xl py-10">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">🎁 Kit de préparation à l’audit — Bonus</h1>
+
+  <!-- ✅ Texte explicatif à propos du bonus -->
+  <div class="mb-8 p-6 rounded-lg bg-blue-50 border border-blue-100">
+    <h2 class="text-xl font-semibold mb-3 text-blue-700">À propos du bonus</h2>
+    <p class="mb-4 leading-relaxed">
+      Dans le cadre de votre achat, vous bénéficiez d’un
+      <strong>Kit de préparation à l’audit</strong> personnalisé à partir du texte (≤ 3 pages)
+      que vous nous transmettez.
+      Vous recevrez un document professionnel comprenant :
+      une <strong>couverture personnalisée</strong>,
+      une <strong>introduction synthétique</strong> (résumé, notions essentielles, principes d’application,
+      précautions et conséquences),
+      un <strong>questionnaire de 20 questions/réponses</strong> adapté à votre contexte,
+      ainsi qu’un <strong>tableau des irrégularités</strong> les plus probables avec leurs solutions pratiques.
+    </p>
+
+    <h2 class="text-xl font-semibold mb-3 text-blue-700">Livraison</h2>
+    <p class="leading-relaxed">
+      Votre kit est préparé <strong>sous 72 heures</strong> après vérification du document transmis.
+      L’usage est strictement interne à votre organisation.
+      Une seule demande est autorisée par achat.
+      Pour toute question, contactez
+      <a href="mailto:contact@auditsanspeur.com" class="text-blue-700 underline">contact@auditsanspeur.com</a>.
+    </p>
+  </div>
+
+  <!-- ✅ Formulaire d’upload -->
+  <div class="bg-white shadow rounded-lg p-6 border border-slate-100">
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button
+        type="submit"
+        class="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+        Envoyer le fichier
+      </button>
+    </form>
+  </div>
+
+  <!-- 🕒 Message bas de page -->
+  <p class="mt-6 text-center text-sm text-gray-500">
+    ⏳ Délai moyen de traitement : 72 heures ouvrées — Vous recevrez un lien de téléchargement par email.
+  </p>
+
+</div>
+{% endblock %}

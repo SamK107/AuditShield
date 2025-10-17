@@ -1,0 +1,150 @@
+{% extends "store/base.html" %}
+{% load static %}
+
+{% block title %}AUDIT SANS PEUR — Lancement imminent{% endblock %}
+
+{% block content %}
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 pointer-events-none" aria-hidden="true" style="background:var(--bg-grad)"></div>
+  <div class="max-w-6xl mx-auto px-4 py-16 md:py-24">
+    <div class="grid md:grid-cols-12 gap-8 items-center">
+      <div class="md:col-span-7">
+       <h5 class="inline-flex items-center gap-2 text-lg md:text-xl font-bold text-orange-800 mb-3">
+          <span class="inline-block w-2 h-2 rounded-full bg-brand-600"></span>
+          Lancement dans quelques jours
+        </h5>
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-[color:var(--ink)]">
+          AUDIT SANS PEUR<br class="hidden sm:block"> </h1>
+            <h3 class="mt-2 text-2xl md:text-3xl text-brand-600 font-bold">
+              Transformez vos audits en opportunité
+            </h3>
+
+       
+        <p class="mt-5 text-lg md:text-xl text-slate-700 max-w-2xl">
+          Les outils et techniques pratiques pour recevoir une mission d’audit en toute sérénité — comprendre les attentes, se préparer à l’avance, répondre avec assurance, réduire les risques d’irrégularités.
+        </p>
+
+        <div class="mt-6 flex flex-col sm:flex-row gap-3">
+          <a href="#extrait" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700 focus:outline-none focus-visible:ring-4 ring-brand">
+            Voir l’extrait gratuit
+          </a>
+          <a href="#waitlist" class="inline-flex items-center justify-center rounded-xl border px-5 py-3 font-semibold text-[color:var(--ink)] hover:bg-slate-50 focus:outline-none focus-visible:ring-4 ring-brand">
+            Être averti au lancement
+          </a>
+        </div>
+
+        <p class="mt-4 text-sm text-slate-600">
+          Acteurs cibles : Agents des services publics &amp; collectivités territoriales, ONG &amp; projets financés par bailleurs, DFM, responsables financiers et administratifs.
+        </p>
+      </div>
+
+      <div class="md:col-span-5">
+        <div class="relative">
+          <img src="{% static 'brand/logo_img2_optimized_512.png' %}" alt="Audit Sans Peur" class="w-56 md:w-64 lg:w-72 mx-auto drop-shadow-xl">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="extrait" class="border-t bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-12 md:py-16 grid md:grid-cols-12 gap-8">
+    <div class="md:col-span-7">
+      <h2 class="text-2xl md:text-3xl font-bold">Extrait du guide</h2>
+      <p class="mt-2 text-slate-700">« Ce que tout agent public doit savoir sur l’audit »</p>
+      <ul class="mt-4 grid sm:grid-cols-3 gap-3 text-sm text-slate-600">
+        <li class="rounded-lg border p-3">PDF</li>
+        <li class="rounded-lg border p-3">Check-lists</li>
+        <li class="rounded-lg border p-3">Modèles Word &amp; Excel</li>
+      </ul>
+      <div class="mt-6">
+        <a href="/media/extraits/extrait-audit-sans-peur.pdf"
+           class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700 focus:outline-none focus-visible:ring-4 ring-brand">
+          Télécharger l’extrait (bientôt)
+        </a>
+        <p class="mt-2 text-xs text-slate-500">Le bouton sera activé au lancement.</p>
+      </div>
+    </div>
+    <div class="md:col-span-5">
+      <h3 class="text-lg font-semibold">Le problème</h3>
+      <p class="mt-1 text-slate-700">
+        Les audits arrivent souvent comme des tempêtes : dossiers incomplets, justificatifs introuvables, registres non tenus. Résultat : stress, observations défavorables, risques sur les financements et la réputation.
+      </p>
+
+      <h3 class="mt-6 text-lg font-semibold">Ce que vous risquez si rien ne change</h3>
+      <ul class="mt-2 list-disc pl-5 text-slate-700">
+        <li>Financements suspendus</li>
+        <li>Carrière freinée &amp; réputation fragilisée</li>
+        <li>Observations récurrentes dans les rapports</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="border-t bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+    <h2 class="text-2xl md:text-3xl font-bold">La solution : une préparation simple et concrète</h2>
+
+    <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-xl border p-5">
+        <h3 class="font-semibold">Comprendre les attentes</h3>
+        <p class="mt-1 text-slate-700">Ce que les auditeurs vérifient toujours.</p>
+      </div>
+      <div class="rounded-xl border p-5">
+        <h3 class="font-semibold">Se préparer à l’avance</h3>
+        <p class="mt-1 text-slate-700">Check-lists &amp; registres à jour.</p>
+      </div>
+      <div class="rounded-xl border p-5">
+        <h3 class="font-semibold">Répondre avec assurance</h3>
+        <p class="mt-1 text-slate-700">Scripts &amp; guide des réponses.</p>
+      </div>
+      <div class="rounded-xl border p-5">
+        <h3 class="font-semibold">Réduire les risques</h3>
+        <p class="mt-1 text-slate-700">Éviter les irrégularités fréquentes.</p>
+      </div>
+    </div>
+
+    <p class="mt-6 text-slate-700">
+      Pour qui ? Agents publics &amp; DFM, collectivités territoriales, ONG &amp; projets financés, responsables financiers et administratifs, cabinets.
+    </p>
+  </div>
+</section>
+
+<section id="waitlist" class="border-t bg-white">
+  <div class="max-w-2xl mx-auto px-4 py-12 md:py-16">
+    <h2 class="text-2xl md:text-3xl font-bold">Soyez prévenu dès le lancement</h2>
+    <p class="mt-2 text-slate-700">Laissez votre email pour recevoir l’annonce d’ouverture et les liens d’achat.</p>
+
+    <form class="mt-6 grid sm:grid-cols-3 gap-3"
+          hx-post="{% url 'core:waitlist_signup' %}"
+          hx-target="#waitlist-msg"
+          hx-swap="innerHTML">
+      <input type="text" name="name" placeholder="Votre nom (optionnel)"
+             class="sm:col-span-1 rounded-xl border px-4 py-3">
+      <input type="email" name="email" placeholder="Votre email" required
+             class="sm:col-span-1 rounded-xl border px-4 py-3">
+      <button type="submit"
+              class="sm:col-span-1 rounded-xl bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700 focus:outline-none focus-visible:ring-4 ring-brand">
+        Je veux être informé
+      </button>
+    </form>
+    <p id="waitlist-msg" class="mt-2 text-sm text-slate-600"></p>
+
+    <p class="mt-6 text-xs text-slate-500">
+      Aucun spam. Vous recevrez uniquement l'annonce de lancement et les liens officiels.
+    </p>
+  </div>
+</section>
+
+<section class="border-t bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-10 text-slate-600">
+    <p><strong>Bientôt disponible sur auditsanspeur.com</strong><br>
+    Le paiement en ligne sera proposé directement sur le site (CinetPay), ainsi que des liens vers des plateformes partenaires.</p>
+    <div class="mt-4">
+      <a href="#waitlist" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700">
+        Me prévenir au lancement
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

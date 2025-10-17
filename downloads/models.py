@@ -102,3 +102,29 @@ class PurchaseClaim(models.Model):
 
     def __str__(self):
         return f"Claim {self.email} [{self.platform}] {self.category.slug} ({self.status})"
+
+# --- Entitlements externes (achats réalisés hors du site) ---
+class ExternalEntitlement(models.Model):
+    PLATFORM_CHOICES = [
+        ("selar", "Selar"),
+        ("publiseer", "Publiseer"),
+        ("youscribe", "YouScribe Afrique"),
+        ("chariow", "Chariow"),
+        ("other", "Autre"),
+    ]
+
+    email = models.EmailField(db_index=True)
+    category = models.ForeignKey("downloads.DownloadCategory", on_delete=models.CASCADE, related_name="external_entitlements")
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default="other")
+    order_ref = models.CharField(max_length=120, blank=True, null=True)  # ref commande plateformes
+    claim_code = models.CharField(max_length=32, blank=True, null=True, db_index=True)  # optionnel
+    created_at = models.DateTimeField(auto_now_add=True)
+    redeemed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        unique_together = [("email", "category", "platform", "order_ref")]
+        verbose_name = "Droit d'accès externe"
+        verbose_name_plural = "Droits d'accès externes"
+
+    def __str__(self):
+        return f"{self.email} -> {self.category.slug} ({self.platform})"

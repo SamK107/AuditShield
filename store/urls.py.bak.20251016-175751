@@ -1,0 +1,19 @@
+from django.urls import path
+from . import views
+
+app_name = "store"
+
+urlpatterns = [
+    # ----- BONUS Kit de préparation -----
+    path("bonus/kit-preparation/", views.bonus_kit_landing, name="bonus_landing"),
+    path("bonus/kit-preparation/start", views.bonus_kit_start, name="bonus_submit"),
+    # (Optionnel) si tu veux conserver l’ancienne route de vérif un jour :
+    # path("bonus/kit-preparation/claim", views.bonus_kit_claim, name="bonus_start"),
+    
+    # ----- (autres routes existantes) -----
+    path("offres/", views.offers, name="offers"),
+    path("exemples/", views.examples, name="examples"),
+    path("exemples/preliminaires/", views.examples_prelim, name="examples_prelim"),
+    path("exemples/blocs/", views.examples_block, name="examples_block"),    path("produit/<slug:slug>/", views.product_detail, name="product_detail"),
+    path("buy/", views.start_checkout, name="start_checkout"),    # … garde ici tes autres URL patterns “store” comme avant
+]

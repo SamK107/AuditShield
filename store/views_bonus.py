@@ -1,0 +1,191 @@
+# store/views_bonus.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db import transaction
+import logging
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+from django.utils.http import urlencode
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+
+from store.services.access import user_has_access
+from .models import BonusRequest
+from .forms_bonus import BonusRequestForm
+from django.core.files.storage import default_storage
+ALLOWED_PLATFORMS = {"selar", "publiseer", "youscribe", "chariow"}
+
+
+
+signer = TimestampSigner()
+
+
+# ---------------------------------------------------------
+# 1️⃣ Page d’atterrissage / redirection du lien public
+# ---------------------------------------------------------
+def bonus_landing(request):
+    """
+    Page publique de redirection : auditsanspeur.com/bonus-kit-preparation
+    Cette page oriente le client selon son cas :
+      - Achat sur le site
+      - Achat via plateforme externe
+    """
+    return render(request, "store/bonus_landing.html")
+
+
+# ---------------------------------------------------------
+# 2️⃣ Démarrage bonus (vérifie l’accès)
+# ---------------------------------------------------------
+@login_required
+def bonus_start(request):
+    """
+    Point d’entrée pour un client ayant acheté sur le site.
+    Vérifie qu’il a accès au produit et redirige vers la page d’upload.
+    """
+    product_slug = request.GET.get("product_slug")
+    order_ref = request.GET.get("order_ref")
+
+    if not product_slug or not order_ref:
+        messages.error(request, "Paramètres manquants.")
+        return redirect("store:offers")
+
+    # Vérifie que l’utilisateur a bien accès (achat confirmé)
+    if not user_has_access(request.user, product_slug):
+        messages.error(request, "Accès refusé. Paiement requis.")
+        return redirect("store:offers")
+
+    # Vérifie s’il a déjà déposé un fichier
+    if BonusRequest.objects.filter(
+        product_slug=product_slug,
+        order_ref=order_ref,
+        purchaser_email=request.user.email
+    ).exists():
+        messages.info(request, "Vous avez déjà utilisé ce bonus pour cet achat.")
+        return redirect("store:bonus_thanks")
+
+    # Redirige vers la page d’upload avec les paramètres conservés
+    params = urlencode({"order_ref": order_ref})
+    upload_url = f"{reverse('store:bonus_upload', args=[product_slug])}?{params}"
+    return redirect(upload_url)
+
+
+# ---------------------------------------------------------
+# 3️⃣ Formulaire d’upload du texte client
+# ---------------------------------------------------------
+@login_required
+def bonus_upload(request, product_slug):
+    """
+    Permet au client autorisé d’uploader un texte de ≤ 3 pages
+    pour générer son Kit de préparation à l’audit.
+    """
+    # Vérifie l’accès au produit
+    if not user_has_access(request.user, product_slug):
+        messages.error(request, "Accès refusé. Paiement requis.")
+        return redirect("store:offers")
+
+    if request.method == "POST":
+        form = BonusUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            order_ref = form.cleaned_data["order_ref"]
+            purchaser_email = form.cleaned_data["purchaser_email"]
+
+            # Anti-doublon
+            exists = BonusRequest.objects.filter(
+                product_slug=product_slug,
+                order_ref=order_ref,
+                purchaser_email=purchaser_email,
+            ).exists()
+
+            if exists:
+                messages.warning(request, "Vous avez déjà utilisé ce bonus pour cet achat.")
+                return redirect("store:bonus_thanks")
+
+            # Enregistre la demande
+            instance = form.save(commit=False)
+            instance.product_slug = product_slug
+            instance.save()
+            messages.success(request, "Document reçu. Traitement sous 72h.")
+            return redirect("store:bonus_thanks")
+    else:
+        form = BonusUploadForm(initial={
+            "purchaser_email": request.user.email if request.user.is_authenticated else "",
+        })
+
+    context = {
+        "form": form,
+        "product_slug": product_slug,
+    }
+    return render(request, "store/bonus_upload.html", context)
+
+
+# ---------------------------------------------------------
+# 4️⃣ Page de remerciement après upload
+# ---------------------------------------------------------
+def bonus_thanks(request):
+    """
+    Simple page confirmant la bonne réception du document.
+    """
+    return render(request, "store/bonus_thanks.html")
+
+
+# ---------------------------------------------------------
+# 5️⃣ Page de réclamation (clients plateformes externes)
+# ---------------------------------------------------------
+@require_http_methods(["GET", "POST"])
+def bonus_claim(request):
+    if request.method == "GET":
+        # Même si le template n'utilise pas {{ form }}, on évite NameError côté vue
+        form = BonusRequestForm(initial={"product_slug": "audit-sans-peur"})
+        return render(request, "store/bonus_claim.html", {"form": form})
+
+    # POST — compat noms de champs (legacy + nouveaux)
+    email = request.POST.get("purchaser_email") or request.POST.get("email")
+    # 'platform' n'est pas stocké dans le modèle: il sert à la vérification manuelle
+    platform = request.POST.get("platform", "").strip()
+    order_ref = request.POST.get("order_ref") or request.POST.get("order_id")
+    purchaser_name = request.POST.get("purchaser_name") or (email.split("@")[0] if email else "")
+    delivery_email = request.POST.get("delivery_email") or email
+    service_role = request.POST.get("service_role", "")
+    service_mission = request.POST.get("service_mission", "")
+
+    files = {}
+    if request.FILES.get("uploaded_text"):
+        files["uploaded_text"] = request.FILES["uploaded_text"]
+    if request.FILES.get("proof_file"):
+        files["proof_file"] = request.FILES["proof_file"]
+    elif request.FILES.get("proof"):
+        files["proof_file"] = request.FILES["proof"]  # compat
+
+    data = {
+        "product_slug": "audit-sans-peur",
+        "order_ref": order_ref or None,
+        "purchaser_email": email,
+        "purchaser_name": purchaser_name,
+        "delivery_email": delivery_email,
+        "service_role": service_role,
+        "service_mission": service_mission,
+    }
+
+    form = BonusRequestForm(data=data, files=files)
+    if not email or not platform:
+        messages.error(request, "Email d’achat et Plateforme sont requis.")
+        return render(request, "store/bonus_claim.html", {"form": form})
+
+    if form.is_valid():
+        try:
+            with transaction.atomic():
+                form.save()
+            messages.success(
+                request,
+                "Votre demande a été enregistrée. Nous vérifierons votre preuve d’achat et vous enverrons un lien d’accès."
+            )
+            return redirect("bonus_claim")
+        except Exception:
+            logger.exception("Erreur lors de l'enregistrement BonusRequest")
+            messages.error(request, "Une erreur est survenue. L’équipe a été notifiée.")
+            return render(request, "store/bonus_claim.html", {"form": form})
+    else:
+        messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
+        return render(request, "store/bonus_claim.html", {"form": form})
+
+logger = logging.getLogger(__name__)

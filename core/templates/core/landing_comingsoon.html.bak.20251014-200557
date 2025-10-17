@@ -1,0 +1,190 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>AUDIT SANS PEUR — Lancement imminent</title>
+  <meta name="description" content="Transformez chaque audit en opportunité. Outils et techniques pratiques pour recevoir une mission d’audit en toute sérénité." />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <!-- Open Graph (pré-lancement) -->
+  <meta property="og:title" content="AUDIT SANS PEUR — Lancement imminent" />
+  <meta property="og:description" content="Le guide pratique qui transforme un audit en levier de crédibilité. Tenez-vous prêt." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://auditsanspeur.com/" />
+  <meta property="og:image" content="{% static 'brand/logo_img2_optimized_512.png' %}" />
+
+  <!-- Tailwind (si tu as déjà Tailwind en base, ça suffit) -->
+  <!-- Si tu utilises un CSS bundlé en prod, tu peux juste laisser la classe Tailwind existante -->
+  <style>
+    :root{
+      --brand-600: #005B96;
+      --brand-700: #004a79;
+      --ink: #0F172A;
+      --muted: #475569;
+      --ring: rgba(0, 91, 150, .35);
+      --bg-grad: linear-gradient(180deg, rgba(0,91,150,0.08) 0%, rgba(0,91,150,0.00) 60%);
+    }
+    .bg-brand-600{ background-color: var(--brand-600); }
+    .hover\:bg-brand-700:hover{ background-color: var(--brand-700); }
+    .ring-brand { box-shadow: 0 0 0 3px var(--ring); }
+  </style>
+
+  <script src="https://unpkg.com/alpinejs" defer></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-xxx" crossorigin="anonymous"></script>
+</head>
+<body class="min-h-screen bg-white text-[color:var(--ink)]">
+
+  <!-- HERO -->
+  <header class="relative overflow-hidden">
+    <div class="absolute inset-0" style="background: var(--bg-grad);"></div>
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+      <div class="grid lg:grid-cols-2 gap-10 items-center">
+        <div>
+          <span class="inline-block px-3 py-1 text-xs font-medium rounded-full bg-brand-600 text-white">Lancement {{ launch_window|default:"imminent" }}</span>
+          <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold leading-tight">
+            <span class="block">AUDIT <span class="tracking-widest">SANS</span> PEUR</span>
+            <span class="block text-3xl sm:text-4xl mt-2 text-[color:var(--muted)]">Transformez vos audits en opportunité</span>
+          </h1>
+          <p class="mt-6 text-lg sm:text-xl text-[color:var(--muted)] max-w-prose">
+            Les outils et techniques pratiques pour recevoir une mission d’audit en toute sérénité — comprendre les attentes, se préparer à l’avance, répondre avec assurance, réduire les risques d’irrégularités.
+          </p>
+
+          <!-- CTA -->
+          <div class="mt-8 flex flex-col sm:flex-row gap-3">
+            <a href="/media/extraits/extrait-audit-sans-peur.pdf" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">
+              Voir l’extrait gratuit
+            </a>
+            <a href="#alerte" class="inline-flex items-center justify-center px-5 py-3 rounded-xl border border-[color:var(--brand-600)] text-[color:var(--brand-600)] hover:bg-[color:var(--brand-600)] hover:text-white">
+              Être averti au lancement
+            </a>
+          </div>
+
+          <p class="mt-4 text-sm text-[color:var(--muted)]">
+            Acteurs cibles : Agents des services publics & collectivités territoriales, ONG & projets financés par bailleurs, DFM, responsables financiers et administratifs.
+          </p>
+        </div>
+
+        <div class="hidden lg:block">
+          <!-- Visuel mock / cover -->
+          <div class="aspect-[4/3] rounded-2xl border overflow-hidden shadow-sm ring-brand bg-white flex items-center justify-center">
+            <div class="p-8 text-center">
+              <div class="text-2xl font-bold">Extrait du guide</div>
+              <p class="mt-3 text-[color:var(--muted)]">“Ce que tout agent public doit savoir sur l’audit”</p>
+              <div class="mt-6 text-sm text-[color:var(--muted)]">PDF • Check-lists • Modèles Word & Excel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PROBLÈME -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14" id="probleme">
+    <h2 class="text-2xl sm:text-3xl font-semibold">Le problème</h2>
+    <p class="mt-4 text-[color:var(--muted)] leading-relaxed">
+      Les audits arrivent souvent comme des tempêtes : dossiers incomplets, justificatifs introuvables, registres non tenus. Résultat : stress, observations défavorables, risques sur les financements et la réputation.
+    </p>
+  </section>
+
+  <!-- DOULEUR & RISQUES -->
+  <section class="bg-slate-50/60 border-y">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <h2 class="text-2xl sm:text-3xl font-semibold">Ce que vous risquez si rien ne change</h2>
+      <ul class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-[color:var(--muted)]">
+        <li class="p-4 rounded-xl bg-white border">Financements suspendus</li>
+        <li class="p-4 rounded-xl bg-white border">Carrière freinée & réputation fragilisée</li>
+        <li class="p-4 rounded-xl bg-white border">Observations récurrentes dans les rapports</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SOLUTION -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14" id="solution">
+    <h2 class="text-2xl sm:text-3xl font-semibold">La solution : une préparation simple et concrète</h2>
+    <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-5 rounded-xl border">
+        <div class="font-medium">Comprendre les attentes</div>
+        <p class="mt-2 text-sm text-[color:var(--muted)]">Ce que les auditeurs vérifient toujours.</p>
+      </div>
+      <div class="p-5 rounded-xl border">
+        <div class="font-medium">Se préparer à l’avance</div>
+        <p class="mt-2 text-sm text-[color:var(--muted)]">Check-lists & registres à jour.</p>
+      </div>
+      <div class="p-5 rounded-xl border">
+        <div class="font-medium">Répondre avec assurance</div>
+        <p class="mt-2 text-sm text-[color:var(--muted)]">Scripts & guide des réponses.</p>
+      </div>
+      <div class="p-5 rounded-xl border">
+        <div class="font-medium">Réduire les risques</div>
+        <p class="mt-2 text-sm text-[color:var(--muted)]">Éviter les irrégularités fréquentes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- POUR QUI -->
+  <section class="bg-slate-50/60 border-y">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <h2 class="text-2xl sm:text-3xl font-semibold">Pour qui ?</h2>
+      <p class="mt-4 text-[color:var(--muted)]">Agents publics & DFM, collectivités territoriales, ONG & projets financés, responsables financiers et administratifs, cabinets.</p>
+    </div>
+  </section>
+
+  <!-- EXTRAIT GRATUIT -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14" id="extrait">
+    <h2 class="text-2xl sm:text-3xl font-semibold">Extrait gratuit</h2>
+    <p class="mt-4 text-[color:var(--muted)] max-w-prose">
+      📘 Téléchargez un extrait (Chapitre 1 : <em>Ce que tout agent public doit savoir sur l’audit</em>).  
+      <br>Vous y trouverez une vue claire des types d’audits, des attentes des auditeurs et des réflexes qui rassurent.
+    </p>
+    <!-- Tu peux pointer vers un PDF partiel ou un ancillaire existant -->
+    <div class="mt-6">
+      <a href="/media/extraits/extrait-audit-sans-peur.pdf" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">
+        Télécharger l’extrait
+      </a>
+    </div>
+  </section>
+
+  <!-- ALERTING (WAITLIST) -->
+  <section class="bg-slate-50/60 border-y" id="alerte">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <h2 class="text-2xl sm:text-3xl font-semibold">Soyez prévenu dès le lancement</h2>
+      <p class="mt-4 text-[color:var(--muted)]">Laissez votre email pour recevoir l’annonce d’ouverture et les liens d’achat.</p>
+
+      <form 
+        class="mt-6 flex flex-col sm:flex-row gap-3 max-w-2xl"
+        hx-post="{% url 'core:waitlist_signup' %}"
+        hx-trigger="submit"
+        hx-target="#waitlist-result"
+        hx-swap="innerHTML"
+      >
+        <input type="text" name="name" placeholder="Votre nom (optionnel)" class="flex-1 px-4 py-3 rounded-xl border" />
+        <input type="email" name="email" required placeholder="Votre email" class="flex-1 px-4 py-3 rounded-xl border" />
+        <button type="submit" class="px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">Je veux être informé</button>
+      </form>
+
+      <div id="waitlist-result" class="mt-3 text-sm text-[color:var(--muted)]"></div>
+      <p class="mt-4 text-xs text-[color:var(--muted)]">Aucun spam. Vous recevrez uniquement l'annonce de lancement et les liens officiels.</p>
+    </div>
+  </section>
+
+  <!-- BOTTOM CTA -->
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <div class="rounded-2xl border p-8 sm:p-10 bg-white">
+      <h3 class="text-xl sm:text-2xl font-semibold">Bientôt disponible sur auditsanspeur.com</h3>
+      <p class="mt-3 text-[color:var(--muted)]">
+        Le paiement en ligne sera proposé directement sur le site (CinetPay), ainsi que des liens vers des plateformes partenaires. 
+      </p>
+      <div class="mt-6">
+        <a href="#alerte" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700">Me prévenir au lancement</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-10 text-center text-sm text-[color:var(--muted)]">
+    © 2025 Bloom Shield Gouvernance — Audit Sans Peur
+  </footer>
+</body>
+</html>

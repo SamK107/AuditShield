@@ -1,0 +1,31 @@
+{% extends "store/base.html" %}
+{% load static %}
+{% block title %}Soumettre votre document — Bonus{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+  <h1 class="text-2xl md:text-3xl font-bold">Soumettre votre document (3 pages)</h1>
+
+  {% if ok %}
+    <p class="mt-3 text-green-700">{{ message }}</p>
+  {% endif %}
+
+  {% if order_ref %}
+    <p class="mt-2 text-sm text-slate-600">Commande : <strong>{{ order_ref }}</strong> — Email : <strong>{{ email }}</strong></p>
+  {% elif demo %}
+    <p class="mt-2 text-sm text-slate-600">Mode démo activé.</p>
+  {% endif %}
+
+  <form class="mt-6 space-y-4" method="post">
+    {% csrf_token %}
+    <label class="block">
+      <span class="block text-sm font-medium text-slate-700">Collez votre texte (max ~3 pages)</span>
+      <textarea name="text" rows="10" class="mt-1 w-full rounded-xl border px-4 py-3" placeholder="Votre texte..."></textarea>
+    </label>
+
+    <button type="submit" class="rounded-xl bg-brand-600 px-5 py-3 text-white font-semibold hover:bg-brand-700">
+      Envoyer
+    </button>
+  </form>
+</div>
+{% endblock %}
