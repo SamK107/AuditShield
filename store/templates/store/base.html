@@ -1,142 +1,17 @@
-{# store/base.html — version compatible "coming_soon" #}
-<!doctype html>
-<html lang="fr" class="h-full">
+{% extends "base.html" %}
 {% load static %}
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>{% block title %}Boutique{% endblock %} – Audit sans peur</title>
-  <meta name="description" content="Ebook et offres personnalisées pour se préparer aux missions d'audit." />
+{% block title %}{% if page_title %}{{ page_title }} – {% endif %}Boutique – Audit sans peur{% endblock %}
 
-  {# Hook SEO/OG/CSS additionnels depuis les pages enfants #}
-  {% block extra_head %}{% endblock %}
+{# Page-level head extras for store pages #}
+{% block head_extra %}{{ block.super }}{% endblock %}
 
-  <!-- Favicons -->
-  <link rel="icon" type="image/svg+xml" href="{% static 'brand/logo_img2.svg' %}">
-  <link rel="icon" href="{% static 'brand/logo_img2.svg' %}" sizes="16x16 32x32 48x48 64x64" type="image/x-icon">
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'brand/logo_img2_optimized_16.png' %}">
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'brand/logo_img2_optimized_32.png' %}">
-  <link rel="icon" type="image/png" sizes="48x48" href="{% static 'brand/logo_img2_optimized_48.png' %}">
-  <link rel="icon" type="image/png" sizes="64x64" href="{% static 'brand/logo_img2_optimized_64.png' %}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'brand/logo_img2_optimized_180.png' %}">
-  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'brand/logo_img2_optimized_512.png' %}">
+{% block content %}
+  {# Optional: section header that only the store uses #}
+  {% block store_content %}{% endblock %}
+{% endblock %}
 
-  <!-- CSS locaux -->
-  <link rel="stylesheet" href="{% static 'css/app.build.css' %}">
-  <link rel="stylesheet" href="{% static 'styles/grad-blur.css' %}">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
-
-  <script>
-    (function(){
-      const ok = CSS.supports('backdrop-filter','blur(2px)') || CSS.supports('-webkit-backdrop-filter','blur(2px)');
-      if(!ok){ document.documentElement.classList.add('no-bdf'); }
-    })();
-  </script>
-
-  <style>
-    /* Evite le FOUC Alpine */
-    [x-cloak]{display:none!important}
-  </style>
-</head>
-
-<body class="min-h-screen flex flex-col bg-white text-[color:var(--ink)]">
-  {% block site_header %}
-  <header x-data="{open:false}" class="sticky top-0 z-50 bg-brand-600 text-white border-b border-brand-700/30">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2" aria-label="Accueil Audit Ebooks">
-        <!-- LOGO -->
-        <img
-          src="{% static 'brand/logo_img2.svg' %}"
-          alt="Audit Ebooks"
-          class="h-9 w-auto select-none"
-          loading="eager" decoding="async">
-        <span class="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">Bloom Shield Gouvernance</span>
-      </a>
-
-      <!-- Pendant le pré-lancement :
-         - Si "coming_soon" == True, on masque la nav et le gros CTA
-         - Sinon, site normal -->
-      {% if not coming_soon %}
-      <nav class="hidden md:flex items-center gap-6 text-sm text-white">
-        <a href="{% url 'store:offers' %}" class="hover:text-brand-50">Offres</a>
-        <a href="{% url 'store:examples' %}" class="hover:text-brand-50">Exemples</a>
-        <a href="{% url 'core:about' %}" class="hover:text-brand-50">À propos</a>
-      </nav>
-
-      <a href="{% url 'store:offers' %}" class="hidden md:inline-flex btn-cta-yellow">
-        <i data-lucide="shopping-bag"></i> Obtenir l’ebook
-      </a>
-      <button @click="open = true" class="md:hidden inline-flex items-center p-2 text-gray-100">
-        <i data-lucide="menu"></i>
-      </button>
-      {% endif %}
-    </div>
-
-    {% if not coming_soon %}
-    <div x-show="open" @click.outside="open = false" class="md:hidden bg-brand-600 border-b border-brand-700/30">
-      <nav class="flex flex-col px-4 py-2 gap-2">
-        <a href="{% url 'store:offers' %}" class="py-2 hover:text-brand-50">Offres</a>
-        <a href="{% url 'store:examples' %}" class="py-2 hover:text-brand-50">Exemples</a>
-        <a href="{% url 'core:about' %}" class="py-2 hover:text-brand-50">À propos</a>
-      </nav>
-    </div>
-    {% endif %}
-  </header>
-  {% endblock site_header %}
-
-  <main class="flex-1 w-full">
-    {% block content %}{% endblock %}
-  </main>
-
-  {% block site_footer %}
-  <footer class="mt-10 border-t">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-slate-600">
-      <div>
-        © {{ now|date:"Y" }} Bloom Shield Gouvernance — AuditSansPeur.com. Tous droits réservés.
-      </div>
-      <nav class="flex items-center gap-4">
-        <a href="{% url 'legal:mentions' %}" class="hover:underline hidden md:inline">Mentions légales</a>
-        <a href="{% url 'legal:privacy' %}" class="hover:underline hidden md:inline">Confidentialité</a>
-        <a href="{% url 'legal:cookies' %}" class="hover:underline hidden md:inline">Cookies</a>
-        <button
-          class="inline-flex items-center gap-2 hover:underline md:hidden"
-          hx-get="{% url 'legal:mentions_modal' %}"
-          hx-target="body"
-          hx-swap="beforeend"
-          aria-label="Mentions légales (modal)">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
-          </svg>
-          Mentions légales
-        </button>
-        <a href="{% url 'legal:privacy' %}" class="hover:underline md:hidden">Confidentialité</a>
-        <a href="{% url 'legal:cookies' %}" class="hover:underline md:hidden">Cookies</a>
-      </nav>
-    </div>
-  </footer>
-  {% endblock site_footer %}
-
-  <!-- JS local bundle (Alpine, HTMX, Lucide, CSRF htmx) -->
-  <script src="{% static 'js/bundle.js' %}" defer></script>
-  
-  <!-- HTMX (obligatoire pour hx-post/hx-target/hx-swap) -->
-  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
-  
-  <!-- Lucide (CDN pour valider visuellement) -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- (Optionnel) Montre les erreurs HTMX dans la console -->
-  <script>
-    document.addEventListener('htmx:responseError', (e) => {
-      console.error('HTMX responseError', e.detail);
-      alert('Erreur réseau ou serveur. Réessaie plus tard.');
-    });
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
-    });
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-</body>
-</html>
+{% block scripts_extra %}
+  {{ block.super }}
+  {# Add any store-only JS here in the future #}
+{% endblock %}

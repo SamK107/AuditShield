@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Erreur – Audit sans peur{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.build.css" />
+  <style>
+    body { min-height: 100vh; background: white; color: #1f2937; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
+

@@ -1,5 +1,3 @@
-from django.urls import path
-from core.views_debug import healthcheck_view, whoami_view
 """
 URL configuration for config project.
 
@@ -17,34 +15,27 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-# config/urls.py
-
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    
-    path("", include(("core.urls", "core"), namespace="core")),
-     
-     
     path("admin/", admin.site.urls),
+    path("", include(("core.urls", "core"), namespace="core")),
     # Pages publiques de téléchargement (en racine)
     path(
         "",
-        include(("downloads.public_urls", "downloads_public"), namespace="downloads_public"),
+        include(
+            ("downloads.public_urls", "downloads_public"),
+            namespace="downloads_public"
+        ),
     ),
-    # Route technique /downloads/<slug> pour servir les fichiers par slug
+    # Route technique /downloads/<slug>
     path(
         "downloads/",
         include(("downloads.urls", "downloads"), namespace="downloads"),
     ),
-    # Apps existantes
-    # path(
-    #     "",
-    #     include(("core.urls", "core"), namespace="core"),
-    # ),
     path(
         "",
         include(("store.urls", "store"), namespace="store"),
@@ -53,12 +44,14 @@ urlpatterns = [
         "",
         include(("legal.urls", "legal"), namespace="legal"),
     ),
-    
-  
 ]
 
 # Servir les fichiers médias en dev (PDF, images, etc.)
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    # Optionnel : servir aussi les statiques via Django en dev (en prod, Whitenoise s'en charge)
-    # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
+    )
+
+# Custom error handlers
+handler404 = "core.views.custom_404"
+handler500 = "core.views.custom_500"

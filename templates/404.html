@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Page introuvable (404) – Audit sans peur{% endblock %}
+
+{# Avoid {% url %} here to prevent NoReverseMatch during errors #}
+{% block footer_links %}
+  <nav class="flex items-center gap-4">
+    <a href="/" class="hover:underline">Accueil</a>
+    <a href="/offres/" class="hover:underline">Offres</a>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-xl p-8 rounded-2xl shadow bg-white">
+  <div class="flex items-center gap-3 mb-4">
+    <i data-lucide="search-x" class="w-6 h-6"></i>
+    <h1 class="text-xl font-semibold">Oups — page introuvable</h1>
+  </div>
+  <p class="text-gray-700">Le contenu demandé n'existe pas ou n'est plus disponible.</p>
+  <div class="mt-6 flex gap-3">
+    <a href="/" class="px-4 py-2 rounded-xl border hover:bg-gray-50">Retour à l'accueil</a>
+    <a href="/offres/" class="px-4 py-2 rounded-xl border hover:bg-gray-50">Voir les offres</a>
+  </div>
+</div>
+{% endblock %}

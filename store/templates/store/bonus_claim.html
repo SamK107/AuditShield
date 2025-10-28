@@ -1,5 +1,5 @@
 {% extends "store/base.html" %}
-{% block content %}
+{% block store_content %}
 <div class="mx-auto max-w-3xl py-10 px-4">
   <div class="bg-white/80 border rounded-2xl shadow-sm overflow-hidden">
     <!-- Header -->
@@ -48,10 +48,9 @@
             <select id="id_platform" name="platform" required
                     class="w-full border rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               <option value="">— Sélectionnez —</option>
-              <option value="selar">Selar</option>
               <option value="publiseer">Publiseer</option>
               <option value="youscribe">YouScribe Afrique</option>
-        <option value="chariow">Chariow</option>
+              <option value="chariow">Chariow</option>
             </select>
           </div>
         </div>
@@ -174,4 +173,4 @@
     }
   }
 </script>
-{% endblock %}
+{% endblock store_content %}

@@ -1,6 +1,6 @@
 {% extends "store/base.html" %}
 {% block title %}Demande – Kit personnalisé{% endblock %}
-{% block content %}
+{% block store_content %}
 <section class="py-10 bg-gradient-to-br from-blue-50/60 to-emerald-50/40 min-h-[80vh]">
   <div class="max-w-2xl mx-auto px-4">
     <a href="{% url 'store:offers' %}#kit" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-blue-700 transition">
@@ -57,4 +57,4 @@
     </form>
   </div>
 </section>
-{% endblock %}
+{% endblock store_content %}

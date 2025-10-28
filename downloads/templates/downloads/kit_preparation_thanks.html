@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Merci{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+    <div class="mb-6">
+      <svg class="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+    </div>
+    
+    <h1 class="text-3xl font-bold text-gray-900 mb-4">Merci !</h1>
+    <p class="text-gray-600 mb-8">Votre fichier a été transmis avec succès.</p>
+    
+    <a href="/" class="inline-flex items-center px-6 py-3 bg-brand-600 text-white rounded-md hover:bg-brand-700 transition-colors font-medium">
+      Retour à l'accueil
+    </a>
+  </div>
+</div>
+{% endblock %}

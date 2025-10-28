@@ -351,12 +351,20 @@ def irregularities_table(request):
 
 
 # ---- Paiement ----
+# en haut du fichier
+SLUG_ALIASES = {
+    "cinetpay": "audit-sans-peur",   # alias public -> slug réel en DB
+}
 
 @require_http_methods(["GET", "POST"])
 def buy(request, slug):
-    product = get_object_or_404(Product, slug=slug, is_published=True)
+    # 1) Résolution d’alias (ex. /buy/cinetpay/ => product "audit-sans-peur")
+    canonical_slug = SLUG_ALIASES.get(slug, slug)
+
+    product = get_object_or_404(Product, slug=canonical_slug, is_published=True)
     standard_tier = OfferTier.objects.filter(product=product, kind="STANDARD").first()
     tier = None
+
     if request.method == "POST":
         form = CheckoutForm(request.POST)
         if form.is_valid():
@@ -397,13 +405,20 @@ def buy(request, slug):
             return redirect(payment_url)
     else:
         form = CheckoutForm()
+
+    # 2) Flag provider pour le template (affichage branding CinetPay)
     return render(
         request,
         "store/checkout.html",
-        {"form": form, "product": product, "tier": tier or standard_tier},
+        {
+            "form": form,
+            "product": product,
+            "tier": tier or standard_tier,
+            "provider": "cinetpay" if slug == "cinetpay" else "default",
+            "public_slug": slug,  # utile si tu veux garder l’URL /buy/cinetpay/
+        },
     )
-
-
+    
 def payment_success(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     product = order.product
