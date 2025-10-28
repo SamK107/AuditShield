@@ -3,7 +3,7 @@
 
 {% block title %}Autres moyens d’achat — Audit sans peur{% endblock %}
 
-{% block content %}
+{% block store_content %}
 <main class="w-full">
   <!-- Palette brand locale -->
   <style>
@@ -18,99 +18,111 @@
     .ring-brand-600{--tw-ring-color:var(--brand-600)}
   </style>
 
-  <!-- Bandeau header (on conserve l’espace) -->
-  <section class="relative">
-    <div class="absolute inset-0 bg-gradient-to-b from-[var(--brand-50)]/70 via-white to-white pointer-events-none"></div>
-    <div class="relative max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pt-6 pb-2">
-      <div class="h-4"></div>
-      <h1 class="mt-0 text-2xl md:text-3xl font-extrabold tracking-tight text-[color:var(--ink)]">
-        Autres moyens d’achat
+  <!-- Bandeau header -->
+  <section class="relative bg-gradient-to-b from-[var(--brand-50)]/70 via-white to-white">
+    <div class="relative max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pt-8 pb-6">
+      <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-[color:var(--ink)]">
+        Choisissez votre plateforme d'achat
       </h1>
+      <p class="mt-2 text-[15px] text-[color:var(--muted)] max-w-2xl">
+        Achetez l'ebook sur la plateforme de votre choix. Toutes les transactions sont sécurisées et vous donnent accès immédiat au contenu.
+      </p>
     </div>
   </section>
 
-  <!-- Contenu compact -->
-  <div class="relative max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-8">
-    <!-- Barre info : sécurisé + instantané + NOTE orange -->
-    <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2 text-[13px] text-slate-700 flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span class="inline-flex items-center gap-1.5">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path d="M12 3l8 4v6c0 5-8 8-8 8s-8-3-8-8V7l8-4z"/>
+  <!-- Contenu -->
+  <div class="relative max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-10">
+    <!-- Barre info avec note importante -->
+    <div class="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-sm text-blue-900">
+      <div class="flex items-start gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        Transactions protégées
-      </span>
-      <span class="opacity-60">•</span>
-      <span class="inline-flex items-center gap-1.5">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path d="M12 6v6l4 2"/>
-        </svg>
-        Accès immédiat après achat
-      </span>
-      <span class="opacity-60">•</span>
-      <span class="text-brand-600 font-medium">
-        Après achat, l’ebook contient des liens sécurisés vers vos bonus sur auditsanspeur.com.
-      </span>
+        <div>
+          <p class="font-medium">Accès aux bonus inclus</p>
+          <p class="mt-1 text-[13px] text-blue-800/90">
+            Après votre achat, l'ebook contient des liens sécurisés vers vos bonus sur auditsanspeur.com.
+          </p>
+        </div>
+      </div>
     </div>
 
-    <!-- Grille responsive 1→2 colonnes ; cards compactes & égales en hauteur -->
-    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 auto-rows-fr">
+    <!-- Grille responsive 1→3 colonnes pour 3 plateformes -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
 
       {# --- CAS 1 : EXTERNAL_BUY_LINKS['produit'] dict --- #}
       {% if platforms.items %}
         {% for key, p in platforms.items %}
           {% with k=key|lower %}
-          <article class="h-full flex flex-col rounded-xl border border-slate-200 bg-slate-50 hover:bg-white shadow-sm hover:shadow-md transition p-4 md:p-5">
-            <header class="flex items-start justify-between gap-3">
+          <article class="group h-full flex flex-col rounded-2xl border-2 border-slate-200 bg-white hover:border-brand-600 hover:shadow-lg transition-all duration-200 p-5 relative overflow-hidden">
+            {# Badge "Recommandé" en position absolue (coin supérieur droit) #}
+            {% if p.badge %}
+              <div class="absolute -top-0 -right-0">
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-1.5 text-[11px] font-bold shadow-md flex items-center gap-1"
+                     style="transform: translate(0%, 0%) rotate(0deg); border-bottom-left-radius: 0.5rem;">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {{ p.badge|upper }}
+                </div>
+              </div>
+            {% endif %}
+
+            <header class="flex items-start gap-3 mb-4">
               <div class="flex items-center gap-3 min-w-0">
                 {% if p.logo %}
-                  <img src="{{ p.logo }}" alt="{{ p.label|default:key|title }} logo"
-                       class="h-8 w-8 rounded-md border border-slate-200 bg-white shadow-sm object-contain"
-                       loading="lazy" decoding="async">
+                  <div class="h-12 w-12 rounded-xl border-2 border-slate-200 bg-slate-50 p-2 group-hover:border-brand-600 transition-colors">
+                    <img src="{{ p.logo }}" alt="{{ p.label|default:key|title }} logo"
+                         class="h-full w-full object-contain"
+                         loading="lazy" decoding="async">
+                  </div>
                 {% else %}
-                  <img src="{% static 'partners/' %}{{ k }}.svg" alt="{{ p.label|default:key|title }} logo"
-                       class="h-8 w-8 rounded-md border border-slate-200 bg-white shadow-sm object-contain"
-                       loading="lazy" decoding="async" onerror="this.style.display='none'">
+                  <div class="h-12 w-12 rounded-xl border-2 border-slate-200 bg-slate-50 p-2 group-hover:border-brand-600 transition-colors">
+                    <img src="{% static 'partners/' %}{{ k }}.svg" alt="{{ p.label|default:key|title }} logo"
+                         class="h-full w-full object-contain"
+                         loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">
+                  </div>
                 {% endif %}
-                <h2 class="text-base md:text-[17px] font-semibold truncate">
-                  {{ p.label|default:key|title }}
-                </h2>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-bold text-[color:var(--ink)] truncate">
+                    {{ p.label|default:key|title }}
+                  </h2>
+                </div>
               </div>
-              {% if p.badge %}
-                <span class="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
-                  {{ p.badge }}
-                </span>
-              {% endif %}
             </header>
 
             {% if p.description %}
-              <p class="mt-2 text-[13.5px] leading-snug text-[color:var(--muted)] line-clamp-2">
+              <p class="text-[14px] leading-relaxed text-[color:var(--muted)] mb-4">
                 {{ p.description }}
               </p>
             {% endif %}
 
-            <!-- Footer poussé en bas pour égaliser la hauteur -->
-            <footer class="mt-auto pt-3 flex items-center justify-between">
-              <ul class="flex items-center gap-2 text-[11.5px] text-slate-500">
-                <li class="inline-flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M12 3l8 4v6c0 5-8 8-8 8s-8-3-8-8V7l8-4z"/>
-                  </svg> Sécurisé
+            <!-- Avantages -->
+            <div class="mt-auto pt-4 border-t border-slate-100">
+              <ul class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-600 mb-4">
+                <li class="inline-flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Paiement sécurisé
                 </li>
-                <li class="inline-flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M12 6v6l4 2"/>
-                  </svg> Instantané
+                <li class="inline-flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Accès instantané
                 </li>
               </ul>
+              
               <a href="{{ p.url }}"
-                 class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 text-white px-3 py-1.5 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-1 ring-brand-600 transition text-[13px]"
-                 target="_blank" rel="noopener" aria-label="Continuer">
-                Continuer
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M7 17L17 7M7 7h10v10"/>
+                 class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 text-white px-4 py-3 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 ring-brand-600 transition-all text-sm font-semibold shadow-sm hover:shadow-md group-hover:scale-[1.02]"
+                 target="_blank" rel="noopener" aria-label="Acheter sur {{ p.label|default:key|title }}">
+                Acheter maintenant
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </a>
-            </footer>
+            </div>
           </article>
           {% endwith %}
         {% endfor %}
@@ -119,64 +131,85 @@
       {% else %}
         {% for p in platforms %}
           {% with k=p.key|default:''|lower %}
-          <article class="h-full flex flex-col rounded-xl border border-slate-200 bg-slate-50 hover:bg-white shadow-sm hover:shadow-md transition p-4 md:p-5">
-            <header class="flex items-start justify-between gap-3">
+          <article class="group h-full flex flex-col rounded-2xl border-2 border-slate-200 bg-white hover:border-brand-600 hover:shadow-lg transition-all duration-200 p-5 relative overflow-hidden">
+            {# Badge "Recommandé" en position absolue (coin supérieur droit) #}
+            {% if p.badge %}
+              <div class="absolute -top-0 -right-0">
+                <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-1.5 text-[11px] font-bold shadow-md flex items-center gap-1"
+                     style="transform: translate(0%, 0%) rotate(0deg); border-bottom-left-radius: 0.5rem;">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {{ p.badge|upper }}
+                </div>
+              </div>
+            {% endif %}
+
+            <header class="flex items-start gap-3 mb-4">
               <div class="flex items-center gap-3 min-w-0">
                 {% if p.logo %}
-                  <img src="{{ p.logo }}" alt="{{ p.label|default:p.key|title }} logo"
-                       class="h-8 w-8 rounded-md border border-slate-200 bg-white shadow-sm object-contain"
-                       loading="lazy" decoding="async">
+                  <div class="h-12 w-12 rounded-xl border-2 border-slate-200 bg-slate-50 p-2 group-hover:border-brand-600 transition-colors">
+                    <img src="{{ p.logo }}" alt="{{ p.label|default:p.key|title }} logo"
+                         class="h-full w-full object-contain"
+                         loading="lazy" decoding="async">
+                  </div>
                 {% else %}
-                  <img src="{% static 'partners/' %}{{ k }}.svg" alt="{{ p.label|default:p.key|title }} logo"
-                       class="h-8 w-8 rounded-md border border-slate-200 bg-white shadow-sm object-contain"
-                       loading="lazy" decoding="async" onerror="this.style.display='none'">
+                  <div class="h-12 w-12 rounded-xl border-2 border-slate-200 bg-slate-50 p-2 group-hover:border-brand-600 transition-colors">
+                    <img src="{% static 'partners/' %}{{ k }}.svg" alt="{{ p.label|default:p.key|title }} logo"
+                         class="h-full w-full object-contain"
+                         loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">
+                  </div>
                 {% endif %}
-                <h2 class="text-base md:text-[17px] font-semibold truncate">
-                  {{ p.label|default:p.key|title }}
-                </h2>
+                <div class="min-w-0">
+                  <h2 class="text-lg font-bold text-[color:var(--ink)] truncate">
+                    {{ p.label|default:p.key|title }}
+                  </h2>
+                </div>
               </div>
-              {% if p.badge %}
-                <span class="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
-                  {{ p.badge }}
-                </span>
-              {% endif %}
             </header>
 
             {% if p.description %}
-              <p class="mt-2 text-[13.5px] leading-snug text-[color:var(--muted)] line-clamp-2">
+              <p class="text-[14px] leading-relaxed text-[color:var(--muted)] mb-4">
                 {{ p.description }}
               </p>
             {% endif %}
 
-            <footer class="mt-auto pt-3 flex items-center justify-between">
-              <ul class="flex items-center gap-2 text-[11.5px] text-slate-500">
-                <li class="inline-flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M12 3l8 4v6c0 5-8 8-8 8s-8-3-8-8V7l8-4z"/>
-                  </svg> Sécurisé
+            <!-- Avantages -->
+            <div class="mt-auto pt-4 border-t border-slate-100">
+              <ul class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-600 mb-4">
+                <li class="inline-flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Paiement sécurisé
                 </li>
-                <li class="inline-flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M12 6v6l4 2"/>
-                  </svg> Instantané
+                <li class="inline-flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Accès instantané
                 </li>
               </ul>
+              
               <a href="{{ p.url }}"
-                 class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 text-white px-3 py-1.5 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-1 ring-brand-600 transition text-[13px]"
-                 target="_blank" rel="noopener" aria-label="Continuer">
-                Continuer
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M7 17L17 7M7 7h10v10"/>
+                 class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 text-white px-4 py-3 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 ring-brand-600 transition-all text-sm font-semibold shadow-sm hover:shadow-md group-hover:scale-[1.02]"
+                 target="_blank" rel="noopener" aria-label="Acheter sur {{ p.label|default:p.key|title }}">
+                Acheter maintenant
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </a>
-            </footer>
+            </div>
           </article>
           {% endwith %}
         {% empty %}
-          <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4">
-            <div class="text-[15px] font-medium text-amber-900">Aucune plateforme configurée</div>
-            <p class="mt-0.5 text-[12.5px] text-amber-800">
-              Ajoutez-les dans <code>EXTERNAL_BUY_LINKS["produit"]</code> dans vos settings.
+          <div class="col-span-full rounded-2xl border-2 border-amber-200 bg-amber-50/70 p-6 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto text-amber-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div class="text-base font-semibold text-amber-900 mb-2">Aucune plateforme configurée</div>
+            <p class="text-sm text-amber-800">
+              Ajoutez des plateformes dans <code class="px-2 py-1 bg-amber-100 rounded">EXTERNAL_BUY_LINKS["produit"]</code> dans vos settings.
             </p>
           </div>
         {% endfor %}
@@ -191,4 +224,4 @@
     if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
   });
 </script>
-{% endblock %}
+{% endblock store_content %}

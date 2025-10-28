@@ -13,7 +13,7 @@ from store.services.access import user_has_access
 from .models import BonusRequest
 from .forms_bonus import BonusRequestForm
 from django.core.files.storage import default_storage
-ALLOWED_PLATFORMS = {"selar", "publiseer", "youscribe", "chariow"}
+ALLOWED_PLATFORMS = {"publiseer", "youscribe", "chariow"}
 
 
 

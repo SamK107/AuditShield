@@ -36,11 +36,11 @@ cat >> config/settings.py <<'PYSET'
 EXTERNAL_BUY_LINKS = globals().get("EXTERNAL_BUY_LINKS", {})
 
 EXTERNAL_BUY_LINKS.setdefault("__STD_SLUG__", {}).update({
-    "selar": {
-        "label": "Selar",
-        "url": "https://selar.co/ta-page-produit",
+    "publiseer": {
+        "label": "Publiseer",
+        "url": "https://publiseer.com/ta-page-produit",
         "badge": "Recommandé",
-        "description": "Paiement Mobile Money/CB — adapté Afrique de l’Ouest.",
+        "description": "Distribution mondiale (Amazon, Google, Apple).",
         "help": "<p>Astuce : utilisez un numéro Mobile Money actif (Orange/MTN/Moov).</p>",
         "faq": "<ul><li><strong>Je reçois quoi ?</strong> L’ebook PDF. Les liens dans l’ebook ouvrent les bonus sécurisés sur auditsanspeur.com.</li><li><strong>Paiement en attente ?</strong> Réessayez ou contactez le support.</li></ul>",
     },
@@ -82,7 +82,7 @@ pprint(settings.EXTERNAL_BUY_LINKS.get('${STD_SLUG}'))
 
 # 5) Commit/push + restart
 git add config/settings.py
-git commit -m "settings: enrich EXTERNAL_BUY_LINKS (Selar/Publiseer/YouScribe/Chariow) with description/help/faq"
+git commit -m "settings: enrich EXTERNAL_BUY_LINKS (Publiseer/YouScribe/Chariow) with description/help/faq"
 git push
 touch tmp/restart.txt
 echo "[*] Done. Check: /buy/${STD_SLUG}/autres/"

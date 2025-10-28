@@ -5,7 +5,8 @@ app_name = "store"
 
 urlpatterns = [
     path("buy/<slug:slug>/", views.buy, name="buy"),
-    path("buy/", views.buy, name="buy"),
+    # par défaut, /buy/ redirige vers le produit via l'alias "cinetpay"
+    path("buy/", views.buy, {"slug": "cinetpay"}, name="buy_default"),
     # ----- BONUS Kit de préparation -----
     path("bonus/kit-preparation/", views.bonus_kit_landing, name="bonus_landing"),
     path("bonus/kit-preparation/start", views.bonus_kit_start, name="bonus_submit"),

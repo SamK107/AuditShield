@@ -214,3 +214,95 @@ def asset_serve_view(request, asset_id):
     asset = get_object_or_404(DownloadableAsset, pk=asset_id, is_published=True)
     filename = os.path.basename(asset.file.name)
     return FileResponse(asset.file.open("rb"), as_attachment=True, filename=filename)
+
+from django.conf import settings
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.core.mail import EmailMessage
+from django.urls import reverse
+from .forms import KitPreparationForm
+from .models import ExternalEntitlement
+
+def kit_preparation_start(request):
+    if request.method == "POST":
+        form = KitPreparationForm(request.POST, request.FILES)
+        if form.is_valid():
+            order_ref = form.cleaned_data["order_ref"].strip()
+            email = form.cleaned_data["email"].strip().lower()
+            submission_type = form.cleaned_data["submission_type"]
+
+            # Debug: Afficher les valeurs dans les logs
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Recherche entitlement: order_ref={order_ref}, email={email}")
+
+            # Vérifier si l'entitlement existe
+            exists = ExternalEntitlement.objects.filter(
+                order_ref__iexact=order_ref,
+                email__iexact=email,
+                category__slug="ebook",
+            ).exists()
+
+            # Debug: Afficher les entitlements trouvés
+            all_matching = ExternalEntitlement.objects.filter(
+                order_ref__iexact=order_ref,
+                email__iexact=email,
+            )
+            logger.info(f"Entitlements trouvés: {list(all_matching.values('order_ref', 'email', 'category__slug'))}")
+
+            if not exists:
+                messages.error(request, f"Référence '{order_ref}' et/ou email '{email}' introuvable(s). Vérifiez vos informations.")
+                logger.warning(f"Entitlement non trouvé: {order_ref} / {email}")
+            else:
+                to_email = getattr(settings, "CONTACT_INBOX_EMAIL", "contact@auditsanspeur.com")
+                subject = f"[BONUS Kit Préparation] Texte client - {order_ref} - {email}"
+                
+                # Préparer l'email selon le type de soumission
+                if submission_type == "file":
+                    body = (
+                        "Un client a soumis un fichier PDF pour le bonus Kit Préparation.\n\n"
+                        f"Référence: {order_ref}\n"
+                        f"Email: {email}\n"
+                        "Voir la pièce jointe."
+                    )
+                    file = form.cleaned_data["file"]
+                    msg = EmailMessage(subject=subject, body=body, to=[to_email])
+                    msg.attach(file.name, file.read(), "application/pdf")
+                else:
+                    text_content = form.cleaned_data["text_content"]
+                    body = (
+                        "Un client a soumis un texte pour le bonus Kit Préparation.\n\n"
+                        f"Référence: {order_ref}\n"
+                        f"Email: {email}\n\n"
+                        "=== TEXTE SOUMIS ===\n"
+                        f"{text_content}"
+                    )
+                    msg = EmailMessage(subject=subject, body=body, to=[to_email])
+                
+                # Log détaillé avant envoi
+                logger.info(f"📧 Préparation email pour {order_ref}")
+                logger.info(f"   Destinataire: {to_email}")
+                logger.info(f"   Sujet: {subject}")
+                logger.info(f"   Type: {submission_type}")
+                if submission_type == "file":
+                    logger.info(f"   Fichier joint: {file.name} ({file.size} bytes)")
+                else:
+                    text_preview = text_content[:100] + "..." if len(text_content) > 100 else text_content
+                    logger.info(f"   Texte (preview): {text_preview}")
+                
+                # Envoyer l'email avec gestion d'erreur
+                try:
+                    msg.send(fail_silently=False)
+                    logger.info(f"✅ Email envoyé avec succès à {to_email} pour {order_ref}")
+                    messages.success(request, "Merci ! Votre soumission a bien été transmise.")
+                    return redirect(reverse("downloads_public:kit_preparation_thanks"))
+                except Exception as e:
+                    logger.error(f"❌ Erreur lors de l'envoi de l'email: {e}")
+                    messages.error(request, f"Erreur lors de l'envoi: {str(e)}. Veuillez réessayer ou contacter le support.")
+    else:
+        form = KitPreparationForm()
+
+    return render(request, "downloads/kit_preparation_start.html", {"form": form})
+
+def kit_preparation_thanks(request):
+    return render(request, "downloads/kit_preparation_thanks.html")

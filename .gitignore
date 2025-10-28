@@ -1,77 +1,94 @@
-@'
-# Python / Django
+# ==========================================================
+# AUDITSHIELD / Django Project - .gitignore
+# ==========================================================
+
+# --- Python / Django ---
 __pycache__/
 *.py[cod]
 *.log
+*.pot
+*.mo
+*.pyc
+*.pyo
+*.pyd
 
-# SQLite (local)
+# SQLite (local dev only)
 *.sqlite3
 
-# Envs
+# Virtual environments
 .venv/
 venv/
 env/
-*.env
+
+# Django settings / environment variables
+.env
+.env.*
+*.bak
+*.backup
+*~
+
+# dans ton .gitignore
 
 # Django collectstatic & uploads
 staticfiles/
 media/
+private_media/
+var/
 
-# Node / builds
+# --- Frontend (Tailwind / Node) ---
 node_modules/
 dist/
 build/
+*.map
 
-# IDE / OS
+# --- IDE / OS files ---
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 
-# Tools: ignorer les fichiers temporaires, garder les scripts utiles
-/tools/*.log
-/tools/*.tmp
-/tools/_diag.txt
-
-@'
-# Coverage
+# --- Coverage / Tests ---
 .coverage
+htmlcov/
+tmp/
+tmp_test_media/
+.tox/
+pytest_cache/
+__snapshots__/
 
-# Uploads / médias (utiliser un storage ou Git LFS si besoin)
-media/
-
-# Backups / dumps
+# --- Backups / dumps ---
 backups/
-
-# SQLite (si local)
-*.sqlite3
-'@ | Add-Content .gitignore
-'@ | Set-Content -Encoding UTF8 .gitignore
-
-# Test artifacts
-/tmp_test_media/
-
-# Test artifacts
-/tmp_test_media/
-
-# Fichiers d'environnement (jamais en versionné)
-# secrets
-.env
-.env.*
-
-# Backup files - NE SERONT PAS PUSHÉS sur GitHub
-*.bak
-*.backup
-*~
+*.dump
+*.sql
 *.tmp
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# --- Compiled translations ---
+locale/**/*.mo
 
-# Environment
-.env
-.env.localprivate_media/
-var/
+# --- Miscellaneous temporary files ---
+*.swp
+*.swo
+*.orig
+*.rej
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Frontend build cache ---
+.next/
+.cache/
+
+# --- Passenger / deployment artifacts (LWS) ---
+passenger_wsgi.py.bak*
+*.pid
+*.sock
+
+# --- Tools ---
+tools/*.log
+tools/*.tmp
+tools/_diag.txt
+
+# --- OS-specific ---
+ehthumbs.db
+Icon?

@@ -1,0 +1,44 @@
+# Copiez ce fichier vers .env et ajustez les valeurs
+
+# Django Settings
+DJANGO_SETTINGS_MODULE=config.settings.dev
+DJANGO_DEBUG=True
+DJANGO_SECRET_KEY=dev-insecure-key-change-in-production
+
+# Database PostgreSQL (Development)
+DB_NAME=auditdb
+DB_USER=auditshield
+DB_PASSWORD=Evadame1077@
+DB_HOST=127.0.0.1
+DB_PORT=5432
+
+# Allowed Hosts
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000,http://localhost:8000
+
+# Email (Development - Console Backend)
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+EMAIL_HOST=localhost
+EMAIL_PORT=587
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+
+# CinetPay (Sandbox for Dev)
+CINETPAY_SITE_ID=
+CINETPAY_API_KEY=
+CINETPAY_SECRET_KEY=
+CINETPAY_MODE=SANDBOX
+CINETPAY_ENV=sandbox
+CINETPAY_BASE_URL=https://api-checkout.cinetpay.com/v2/payment
+CINETPAY_NOTIFY_URL=http://127.0.0.1:8000/offres/notify/
+CINETPAY_RETURN_URL=http://127.0.0.1:8000/offres/retour/
+CINETPAY_CANCEL_URL=http://127.0.0.1:8000/offres/cancel/
+
+# WhiteNoise
+USE_WHITENOISE=True
+
+# Bonus Kit
+ENABLE_BONUS_KIT=1
+

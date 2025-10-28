@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:13.18
+    container_name: auditshield_db13
+    restart: always
+    # Charge les variables depuis .env (voir modèle plus bas)
+    env_file:
+      - .env
+    environment:
+      # Valeurs par défaut au cas où une variable manque dans .env
+      POSTGRES_DB: ${POSTGRES_DB:-cp2660732p19_auditdb}
+      POSTGRES_USER: ${POSTGRES_USER:-cp2660732p19_auditshield}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      TZ: Africa/Bamako
+    ports:
+      # Mappe sur 5433 côté hôte pour ne pas entrer en conflit avec PG 17 local
+      - "5433:5432"
+    volumes:
+      - pg13data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cp2660732p19_auditshield} -d ${POSTGRES_DB:-cp2660732p19_auditdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - auditshield_net
+
+volumes:
+  pg13data: {}
+
+networks:
+  auditshield_net:
+    driver: bridge

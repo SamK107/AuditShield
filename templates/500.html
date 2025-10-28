@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Erreur serveur (500) – Audit sans peur{% endblock %}
+
+{# Avoid {% url %} here to prevent NoReverseMatch during errors #}
+{% block footer_links %}
+  <nav class="flex items-center gap-4">
+    <a href="/" class="hover:underline">Accueil</a>
+    <a href="/offres/" class="hover:underline">Offres</a>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-xl p-8 rounded-2xl shadow bg-white">
+  <div class="flex items-center gap-3 mb-4">
+    <i data-lucide="server-crash" class="w-6 h-6"></i>
+    <h1 class="text-xl font-semibold">Une erreur est survenue</h1>
+  </div>
+  <p class="text-gray-700">Désolé, un incident technique s'est produit. L'équipe a été informée.</p>
+  <div class="mt-6">
+    <a href="/" class="px-4 py-2 rounded-xl border hover:bg-gray-50">Retour à l'accueil</a>
+  </div>
+</div>
+{% endblock %}
+

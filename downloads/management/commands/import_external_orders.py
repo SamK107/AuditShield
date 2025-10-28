@@ -4,7 +4,7 @@ from downloads.models import ExternalEntitlement, DownloadCategory
 
 # CSV attendu: email,category_slug,platform,order_ref,claim_code
 # - category_slug: ex. bonus | checklists | outils-pratiques | irregularites
-# - platform: selar|publiseer|youscribe|chariow|other
+# - platform: publiseer|youscribe|chariow|other
 
 class Command(BaseCommand):
     help = "Importe des achats externes (CSV) et crée les entitlements pour l'accès aux téléchargements."

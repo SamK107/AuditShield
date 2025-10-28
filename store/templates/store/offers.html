@@ -1,6 +1,6 @@
 {% extends "store/base.html" %}
 {% block title %}Offres{% endblock %}
-{% block content %}
+{% block store_content %}
 <section class="py-10 md:py-14 bg-gradient-to-b from-slate-50 to-white">
   <div class="max-w-6xl mx-auto px-4">
     <h1 class="text-2xl md:text-3xl font-extrabold text-center">Choisissez l’offre qui correspond à vos besoins</h1>
@@ -26,7 +26,7 @@
         </ul>
         <div class="mt-6">
           {% if standard and standard.product and standard.product.slug %}
-            <a href="{% url 'store:buy' standard.product.slug %}" class="btn-brand w-full justify-center">
+            <a href="{% url 'store:buy' 'cinetpay' %}" class="btn-brand w-full justify-center">
               <i data-lucide="shopping-cart"></i> Acheter maintenant
             </a>
             
@@ -171,4 +171,4 @@
 
   </div>
 </section>
-{% endblock %}
+{% endblock store_content %}

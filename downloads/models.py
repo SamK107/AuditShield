@@ -106,7 +106,6 @@ class PurchaseClaim(models.Model):
 # --- Entitlements externes (achats réalisés hors du site) ---
 class ExternalEntitlement(models.Model):
     PLATFORM_CHOICES = [
-        ("selar", "Selar"),
         ("publiseer", "Publiseer"),
         ("youscribe", "YouScribe Afrique"),
         ("chariow", "Chariow"),
