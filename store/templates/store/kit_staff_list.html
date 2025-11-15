@@ -1,0 +1,107 @@
+{% extends "store/base.html" %}
+{% block title %}Traitements — Kit complet{% endblock %}
+{% block store_content %}
+<section class="py-8">
+  <div class="max-w-6xl mx-auto px-4">
+    <h1 class="text-2xl font-bold mb-4">Traitements — Kit complet</h1>
+    <div class="overflow-x-auto bg-white rounded-2xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="p-3 text-left">Nom</th>
+            <th class="p-3 text-left">Email</th>
+            <th class="p-3 text-left">Paiement</th>
+            <th class="p-3 text-left">État</th>
+            <th class="p-3 text-left">DL Draft</th>
+            <th class="p-3 text-left">Upload Final</th>
+            <th class="p-3 text-left">Publier</th>
+            <th class="p-3 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inquiry in inquiries %}
+          <tr class="border-t">
+            <td class="p-3">{{ inquiry.contact_name|default:"—" }}</td>
+            <td class="p-3">{{ inquiry.email }}</td>
+            <td class="p-3">
+              <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium
+                {% if inquiry.payment_status == 'PAID' %}bg-green-100 text-green-800
+                {% elif inquiry.payment_status == 'PENDING' %}bg-yellow-100 text-yellow-800
+                {% elif inquiry.payment_status == 'FAILED' %}bg-red-100 text-red-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ inquiry.get_payment_status_display }}
+              </span>
+            </td>
+            <td class="p-3">
+              <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium
+                {% if inquiry.processing_state == 'PUBLISHED' %}bg-emerald-100 text-emerald-800
+                {% elif inquiry.processing_state == 'FINAL_UPLOADED' %}bg-blue-100 text-blue-800
+                {% elif inquiry.processing_state == 'DRAFT_DONE' %}bg-purple-100 text-purple-800
+                {% elif inquiry.processing_state == 'IA_RUNNING' %}bg-yellow-100 text-yellow-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ inquiry.get_processing_state_display }}
+              </span>
+            </td>
+            <td class="p-3">
+              {% if inquiry.generated_draft and inquiry.generated_draft.docx %}
+                <a class="underline text-emerald-700 text-xs" href="{{ inquiry.generated_draft.docx.url }}" download>
+                  Télécharger (.docx)
+                </a>
+              {% elif inquiry.ai_doc %}
+                <a class="underline text-emerald-700 text-xs" href="{% url 'store:kit_download_staff' inquiry.id %}" download>
+                  Télécharger (.docx)
+                </a>
+              {% else %}
+                <span class="text-slate-400 text-xs">—</span>
+              {% endif %}
+            </td>
+            <td class="p-3">
+              <form method="post" enctype="multipart/form-data" action="{% url 'store:kit_upload_final' inquiry.id %}">
+                {% csrf_token %}
+                <input type="file" name="docx_file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="text-xs" />
+                <button class="ml-2 px-3 py-1 rounded-lg bg-slate-800 text-white text-xs">Uploader</button>
+              </form>
+              {% if inquiry.final_asset and inquiry.final_asset.docx %}
+                <div class="text-xs mt-1 text-green-600">✓ Document final chargé</div>
+              {% endif %}
+            </td>
+            <td class="p-3">
+              <form method="post" action="{% url 'store:kit_publish' inquiry.id %}">
+                {% csrf_token %}
+                <button class="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs {% if inquiry.payment_status != 'PAID' or inquiry.processing_state != 'FINAL_UPLOADED' %}opacity-50 cursor-not-allowed{% endif %}" 
+                        {% if inquiry.payment_status != 'PAID' or inquiry.processing_state != 'FINAL_UPLOADED' %}disabled{% endif %}>
+                  Publier
+                </button>
+              </form>
+            </td>
+            <td class="p-3">
+              <div class="flex items-center gap-2">
+                {% if inquiry.processing_state == 'DRAFT_DONE' and inquiry.ai_status == 'error' %}
+                  <form method="post" action="{% url 'store:kit_processing_retry' inquiry.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">
+                      Relancer IA
+                    </button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{% url 'store:kit_processing_delete' inquiry.id %}" class="inline" onsubmit="return confirm('Supprimer cette demande ? Cette action est irréversible.');">
+                  {% csrf_token %}
+                  <button type="submit" class="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700">
+                    Supprimer
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td class="p-6 text-center text-slate-400" colspan="8">Aucun dossier pour le moment.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock store_content %}
+

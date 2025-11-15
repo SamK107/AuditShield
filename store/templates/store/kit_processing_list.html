@@ -1,0 +1,80 @@
+{% extends "store/base.html" %}
+{% block title %}Traitements — Kit complet{% endblock %}
+{% block store_content %}
+<section class="py-8">
+  <div class="max-w-6xl mx-auto px-4">
+    <h1 class="text-2xl font-bold mb-4">Traitements — Kit complet</h1>
+    <div class="overflow-x-auto bg-white rounded-2xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="p-3 text-left">Nom</th>
+            <th class="p-3 text-left">Email</th>
+            <th class="p-3 text-left">DL Word</th>
+            <th class="p-3 text-left">Upload PDF</th>
+            <th class="p-3 text-left">Publier</th>
+            <th class="p-3 text-left">Statut IA</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inquiry in inquiries %}
+          <tr class="border-t">
+            <td class="p-3">{{ inquiry.contact_name }}</td>
+            <td class="p-3">{{ inquiry.email }}</td>
+            <td class="p-3">
+              {% if inquiry.ai_doc %}
+                <a class="underline text-emerald-700" href="{% url 'store:kit_download_staff' inquiry.id %}" download>Télécharger (.docx)</a>
+              {% else %}<span class="text-slate-400">—</span>{% endif %}
+            </td>
+            <td class="p-3">
+              <form method="post" enctype="multipart/form-data" action="{% url 'store:kit_processing_upload_pdf' inquiry.id %}">
+                {% csrf_token %}
+                <input type="file" name="pdf_file" accept="application/pdf" class="text-xs" />
+                <button class="ml-2 px-3 py-1 rounded-lg bg-slate-800 text-white">Uploader</button>
+              </form>
+              {% if inquiry.human_pdf %}
+                <div class="text-xs mt-1">
+                  <a class="underline" href="{% url 'store:kit_download_pdf_staff' inquiry.id %}" target="_blank">Voir PDF</a>
+                </div>
+              {% endif %}
+            </td>
+            <td class="p-3">
+              <form method="post" action="{% url 'store:kit_processing_publish' inquiry.id %}">
+                {% csrf_token %}
+                <button class="px-3 py-1 rounded-lg bg-emerald-600 text-white {% if not inquiry.human_pdf %}opacity-50 cursor-not-allowed{% endif %}" {% if not inquiry.human_pdf %}disabled{% endif %}>
+                  Publier
+                </button>
+              </form>
+            </td>
+            <td class="p-3">
+              <div class="flex items-center gap-2">
+                <span>{{ inquiry.get_ai_status_display|default:"—" }}</span>
+                {% if inquiry.ai_status == "error" or inquiry.ai_status == "pending" %}
+                  <form method="post" action="{% url 'store:kit_processing_retry' inquiry.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">
+                      Relancer
+                    </button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{% url 'store:kit_processing_delete' inquiry.id %}" class="inline" onsubmit="return confirm('Supprimer cette demande ? Cette action est irréversible.');">
+                  {% csrf_token %}
+                  <button type="submit" class="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700">
+                    Supprimer
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td class="p-6 text-center text-slate-400" colspan="6">Aucun dossier pour le moment.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock store_content %}
+

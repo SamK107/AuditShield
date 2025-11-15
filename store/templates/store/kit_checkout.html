@@ -1,0 +1,56 @@
+{% extends "store/base.html" %}
+{% block title %}Paiement — Kit Complet{% endblock %}
+
+{% block store_content %}
+<section class="py-14">
+  <div class="max-w-lg mx-auto px-4">
+    <h1 class="text-2xl font-bold mb-4">Finaliser votre commande</h1>
+    
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    
+    <div class="bg-white p-6 rounded-2xl border shadow mb-6">
+      <div class="space-y-3">
+        <div class="flex justify-between">
+          <span class="text-slate-600">Email :</span>
+          <span class="font-medium">{{ email }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-600">Montant :</span>
+          <span class="font-bold text-lg">{{ amount|floatformat:0 }} FCFA</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white p-6 rounded-2xl border shadow">
+      <h2 class="text-lg font-semibold mb-4">Choisissez votre mode de paiement</h2>
+      
+      <form method="post" action="{% url 'store:kit_pay_cinetpay_start' inquiry.id %}" class="mb-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary w-full">
+          Payer par CinetPay
+        </button>
+      </form>
+      
+      <form method="post" action="{% url 'store:kit_pay_om_start' inquiry.id %}" class="mt-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline w-full">
+          Payer par Orange Money ML
+        </button>
+      </form>
+      
+      <p class="text-sm text-gray-500 mt-4">
+        Après paiement, la confirmation peut prendre quelques secondes (webhook).
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock store_content %}
+

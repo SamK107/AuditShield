@@ -17,6 +17,7 @@ urlpatterns = [
     path("contact/", views.contact, name="contact"),
 
     path("waitlist/", views.waitlist_signup, name="waitlist_signup"),
+    path("waitlist/merci/", views.waitlist_success, name="waitlist_success"),
 
     # TEMP: Test route for 500 error (remove in production)
     path("boom/", views.boom, name="boom"),

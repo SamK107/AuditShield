@@ -48,7 +48,12 @@ class IrregularityCategoryAdmin(admin.ModelAdmin):
 
 admin.site.register(OfferTier)
 admin.site.register(MediaAsset)
-admin.site.register(Order)
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ("id", "product", "email", "amount_fcfa", "currency", "status", "provider_ref", "cinetpay_payment_id", "created_at", "paid_at")
+    list_filter = ("status", "currency", "created_at", "paid_at")
+    search_fields = ("id", "provider_ref", "cinetpay_payment_id", "email", "product__title")
+    readonly_fields = ("created_at", "paid_at")
 admin.site.register(DownloadToken)
 
 
@@ -80,7 +85,7 @@ class ExampleSlideAdmin(admin.ModelAdmin):
     ordering = ("product", "order", "id")
 
 
-from .models import ClientInquiry, InquiryDocument
+from .models import ClientInquiry, InquiryDocument, KitProcessingTask
 
 
 class InquiryDocumentInline(admin.TabularInline):
@@ -103,3 +108,34 @@ class ClientInquiryAdmin(admin.ModelAdmin):
     list_filter = ("kind", "status", "statut_juridique", "sector")
     search_fields = ("organization_name", "contact_name", "email", "phone")
     inlines = [InquiryDocumentInline]
+
+
+@admin.register(KitProcessingTask)
+class KitProcessingTaskAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "inquiry",
+        "status",
+        "created_at",
+        "finished_at",
+        "published_at",
+        "published_by",
+    )
+    list_filter = ("status",)
+    search_fields = ("inquiry__email", "inquiry__contact_name", "inquiry__organization_name")
+    readonly_fields = ("id", "created_at", "started_at", "finished_at", "published_at")
+    
+    fieldsets = (
+        ("Informations générales", {
+            "fields": ("id", "inquiry", "status")
+        }),
+        ("Fichiers", {
+            "fields": ("word_file", "pdf_file")
+        }),
+        ("Traitement", {
+            "fields": ("prompt_md", "error", "created_at", "started_at", "finished_at")
+        }),
+        ("Publication", {
+            "fields": ("published_at", "published_by")
+        }),
+    )

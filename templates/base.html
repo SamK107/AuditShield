@@ -48,6 +48,7 @@
       {% if not coming_soon %}
       <nav class="hidden md:flex items-center gap-6 text-sm text-white">
         <a href="{% url 'store:offers' %}" class="hover:text-brand-50">Offres</a>
+        <a href="{% url 'store:tariffs_kit' %}" class="hover:text-brand-50">Tarifs – Kit complet</a>
         <a href="{% url 'store:examples' %}" class="hover:text-brand-50">Exemples</a>
         <a href="{% url 'core:about' %}" class="hover:text-brand-50">À propos</a>
       </nav>
@@ -65,6 +66,7 @@
     <div x-show="open" @click.outside="open = false" class="md:hidden bg-brand-600 border-b border-brand-700/30">
       <nav class="flex flex-col px-4 py-2 gap-2">
         <a href="{% url 'store:offers' %}" class="py-2 hover:text-brand-50">Offres</a>
+        <a href="{% url 'store:tariffs_kit' %}" class="py-2 hover:text-brand-50">Tarifs – Kit complet</a>
         <a href="{% url 'store:examples' %}" class="py-2 hover:text-brand-50">Exemples</a>
         <a href="{% url 'core:about' %}" class="py-2 hover:text-brand-50">À propos</a>
       </nav>

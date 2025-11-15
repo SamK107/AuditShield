@@ -6,7 +6,7 @@ from django.http import (
     HttpResponseBadRequest,
     JsonResponse,
 )
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils.timezone import now
 
 from store.models import ExampleSlide, OfferTier, Product
@@ -16,6 +16,9 @@ def home(request):
     product = Product.objects.filter(is_published=True).first()
     offers = OfferTier.objects.select_related("product").all()
     examples = ExampleSlide.objects.all()[:3]
+
+    
+
     return render(
         request,
         "core/home.html",
@@ -100,7 +103,9 @@ def waitlist_signup(request):
         html = f'<span class="text-green-700">{msg}</span>'
         return HttpResponse(html)
 
-    # Sinon, garde l'API JSON (utile si appelée hors HTMX)
-    return JsonResponse(
-        {"ok": True, "message": msg, "ts": now().isoformat()}
-    )
+    # Sinon, redirige vers une page de confirmation dédiée
+    return redirect("core:waitlist_success")
+
+
+def waitlist_success(request):
+    return render(request, "core/waitlist_success.html")

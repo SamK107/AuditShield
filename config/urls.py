@@ -19,10 +19,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.shortcuts import redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include(("core.urls", "core"), namespace="core")),
+    # Specific fallback for test link to extrait
+    path(
+        "downloads/extrait-audit-sans-peur/",
+        lambda request: redirect("/", permanent=False),
+        name="downloads_extrait_fallback",
+    ),
     # Pages publiques de téléchargement (en racine)
     path(
         "",
@@ -43,6 +50,15 @@ urlpatterns = [
     path(
         "",
         include(("legal.urls", "legal"), namespace="legal"),
+    ),
+    # Redirection legacy: anciens liens médias d'extraits
+    # vers la route /downloads/<slug>/
+    path(
+        "media/extraits/<slug:slug>.pdf",
+        lambda request, slug: redirect(
+            "downloads:asset_download", slug=slug, permanent=True
+        ),
+        name="legacy_extract_redirect",
     ),
 ]
 

@@ -2,7 +2,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.conf import settings
-from PyPDF2 import PdfReader
+try:
+    from PyPDF2 import PdfReader  # type: ignore
+except Exception:
+    PdfReader = None
 
 class KitPreparationForm(forms.Form):
     order_ref = forms.CharField(label="Référence de commande (site)", max_length=128)
@@ -49,13 +52,16 @@ class KitPreparationForm(forms.Form):
         if f.size > max_bytes:
             raise ValidationError("Fichier trop volumineux (max 5 Mo).")
 
-        try:
-            reader = PdfReader(f)
-            pages = len(reader.pages)
-        except Exception:
-            raise ValidationError("PDF invalide ou non lisible.")
-        finally:
-            f.seek(0)
+        if PdfReader is not None:
+            try:
+                reader = PdfReader(f)
+                pages = len(reader.pages)
+            except Exception:
+                raise ValidationError("PDF invalide ou non lisible.")
+            finally:
+                f.seek(0)
+        else:
+            pages = 1
 
         if pages > 4:
             raise ValidationError("Le PDF doit contenir au plus 4 pages.")

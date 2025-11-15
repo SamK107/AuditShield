@@ -9,6 +9,31 @@
   <main class="max-w-3xl mx-auto p-6">
     <h1>Téléchargements – {{ order.product.title }}</h1>
     <p>Commande : <strong>{{ order.uuid }}</strong> — Email : {{ order.email }}</p>
+    {% if messages %}
+      <ul style="margin:8px 0;padding:10px;border-radius:8px;background:#eef6ff;border:1px solid #bfdbfe;">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <div style="margin:12px 0;padding:12px;border:1px solid #e5e7eb;background:#f9fafb;border-radius:8px;">
+      Merci pour votre achat 🎉 Vos liens de téléchargement sont disponibles ci‑dessous.
+      Un email vient de vous être envoyé avec:
+      <ul style="margin:8px 0 0 18px;">
+        <li>le lien vers la page unique listant toutes les ressources</li>
+        <li>le lien pour démarrer le bonus “Kit de préparation”</li>
+      </ul>
+      {% comment %} Optionnel: lien direct pratique vers la page ressources {% endcomment %}
+      <div style="margin-top:10px;">
+        <a href="{% url 'downloads:resources' order.uuid %}" style="display:inline-block;padding:8px 12px;border-radius:8px;background:#111;color:#fff;text-decoration:none;">Voir toutes les ressources</a>
+        <form method="post" action="{% url 'downloads:resend_fulfilment' order.uuid %}" style="display:inline-block;margin-left:8px;">
+          {% csrf_token %}
+          <button type="submit" style="padding:8px 12px;border-radius:8px;background:#2563eb;color:#fff;border:none;cursor:pointer;">
+            M'envoyer les liens de téléchargement
+          </button>
+        </form>
+      </div>
+    </div>
     {% if admin_message %}
       <div style="padding:8px;border:1px solid #f0c36d;background:#fff7e6">
         {{ admin_message }}

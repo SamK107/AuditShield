@@ -1,14 +1,12 @@
-from django.apps import apps
 from django.contrib import admin
 
 from .models import (
     DownloadableAsset,
     DownloadCategory,
     DownloadEntitlement,
+    ExternalEntitlement,
     PurchaseClaim,
 )
-
-DownloadCategory = apps.get_model("downloads", "DownloadCategory")
 
 
 @admin.register(DownloadCategory)
@@ -40,7 +38,9 @@ class DownloadCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(DownloadableAsset)
 class DownloadableAssetAdmin(admin.ModelAdmin):
-    list_display = ("title", "category", "get_ext", "is_published", "order", "updated_at")
+    list_display = (
+        "title", "category", "get_ext", "is_published", "order", "updated_at"
+    )
     exclude = ("order",)  # on ne demande pas 'order' dans le formulaire
     list_filter = ("category", "is_published")
     search_fields = ("title", "slug", "short_desc")
@@ -75,7 +75,9 @@ class PurchaseClaimAdmin(admin.ModelAdmin):
         for c in queryset:
             if c.status != "APPROVED":
                 DownloadEntitlement.objects.get_or_create(
-                    email=c.email, category=c.category, defaults={"source": "EXT"}
+                    email=c.email,
+                    category=c.category,
+                    defaults={"source": "EXT"}
                 )
                 c.status = "APPROVED"
                 c.save()
@@ -89,3 +91,26 @@ class PurchaseClaimAdmin(admin.ModelAdmin):
         self.message_user(request, f"{updated} demande(s) rejetée(s).")
 
     reject_claims.short_description = "Rejeter"
+
+
+@admin.register(ExternalEntitlement)
+class ExternalEntitlementAdmin(admin.ModelAdmin):
+    list_display = (
+        "email", "order_ref", "category", "platform",
+        "created_at", "redeemed_at"
+    )
+    list_filter = ("platform", "category", "created_at")
+    search_fields = ("email", "order_ref", "claim_code")
+    readonly_fields = ("created_at", "redeemed_at")
+    ordering = ("-created_at",)
+
+    fieldsets = (
+        ("Informations principales", {
+            "fields": (
+                "email", "order_ref", "category", "platform", "claim_code"
+            )
+        }),
+        ("Dates", {
+            "fields": ("created_at", "redeemed_at")
+        }),
+    )

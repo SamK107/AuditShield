@@ -1,70 +1,365 @@
 {% extends "store/base.html" %}
 {% block title %}Demande – Kit personnalisé{% endblock %}
 {% block store_content %}
-<section class="py-10">
-  <div class="max-w-3xl mx-auto px-4">
-    <a href="{% url 'store:offers' %}#kit" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800">
-      <i data-lucide="arrow-left"></i> Retour aux offres
-    </a>
-    <h1 class="mt-3 text-2xl font-extrabold">Demander mon Kit personnalisé</h1>
-    <p class="text-slate-600">Formulaire basé sur votre contexte (saisie + upload). Formats Word/Excel/PDF acceptés.</p>
-    <form method="post" enctype="multipart/form-data" class="mt-6 space-y-6">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      <!-- Essentiel -->
-      <div class="rounded-2xl border p-4 bg-white space-y-4">
-        <h2 class="text-lg font-semibold">Vos coordonnées (obligatoire)</h2>
-        <div class="grid md:grid-cols-3 gap-3">
-          <div>{{ form.contact_name.label_tag }}{{ form.contact_name }}{{ form.contact_name.errors }}</div>
-          <div>{{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}</div>
-          <div>{{ form.phone.label_tag }}{{ form.phone }}{{ form.phone.errors }}</div>
+
+<style>
+  .btn-submit-institutional {
+    background-color: #286782 !important;
+  }
+  .btn-submit-institutional:hover:not(:disabled) {
+    background-color: #1f566d !important;
+  }
+</style>
+
+<div x-data="kitInquiryForm()" class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-8 px-6 md:px-12 lg:px-24">
+  <div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <a href="{% url 'store:offers' %}#kit" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-4">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Retour aux offres</span>
+      </a>
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+          <i data-lucide="package" class="w-6 h-6 text-white"></i>
         </div>
-        <div class="grid md:grid-cols-2 gap-3">
-          <div>{{ form.organization_name.label_tag }}{{ form.organization_name }}{{ form.organization_name.errors }}</div>
-          <div>{{ form.statut_juridique.label_tag }}{{ form.statut_juridique }}{{ form.statut_juridique.errors }}</div>
+        <div>
+          <h1 class="text-3xl font-bold text-slate-900">Kit personnalisé</h1>
+          <p class="text-sm text-slate-600">Formulaire de demande sur mesure</p>
         </div>
-        <div class="grid md:grid-cols-3 gap-3">
-          <div>{{ form.location.label_tag }}{{ form.location }}{{ form.location.errors }}</div>
-          <div>{{ form.sector.label_tag }}{{ form.sector }}{{ form.sector.errors }}</div>
-          <div>{{ form.budget_range.label_tag }}{{ form.budget_range }}{{ form.budget_range.errors }}</div>
-        </div>
-        <div>{{ form.mission_text.label_tag }}{{ form.mission_text }}{{ form.mission_text.errors }}</div>
       </div>
-      <!-- Détails optionnels -->
-      <details class="group rounded-2xl border p-4 bg-white">
-        <summary class="cursor-pointer text-sm text-slate-700">Plus de détails (optionnel) — financement, audits, organisation, notes, fichiers</summary>
-        <div class="mt-4 space-y-4">
+    </div>
+
+    <form method="post" enctype="multipart/form-data" @submit="handleSubmit($event)" class="space-y-6">
+      {% csrf_token %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for message in messages %}
+            <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {{ form.non_field_errors }}
+
+      <!-- Section 1: Coordonnées -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-shadow hover:shadow-md">
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="text-xl font-semibold text-slate-900 flex items-center gap-2">
+            <i data-lucide="user" class="w-5 h-5 text-blue-600"></i>
+            Vos coordonnées
+          </h2>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label for="id_contact_name" class="block text-sm font-medium text-slate-700 mb-2">
+              Nom de contact <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="id_contact_name" name="contact_name" required
+                   value="{{ form.contact_name.value|default_if_none:'' }}"
+                   class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                   placeholder="Votre nom complet">
+            {{ form.contact_name.errors }}
+          </div>
+
+          <div>
+            <label for="id_email" class="block text-sm font-medium text-slate-700 mb-2">
+              Email <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="id_email" name="email" required
+                   value="{{ form.email.value|default_if_none:'' }}"
+                   class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                   placeholder="votre@email.com">
+            {{ form.email.errors }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Organisation -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-shadow hover:shadow-md">
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="text-xl font-semibold text-slate-900 flex items-center gap-2">
+            <i data-lucide="building-2" class="w-5 h-5 text-purple-600"></i>
+            Votre organisation
+          </h2>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label for="id_organization_name" class="block text-sm font-medium text-slate-700 mb-2">
+              Nom de l'organisation
+            </label>
+            <input type="text" id="id_organization_name" name="organization_name"
+                   value="{{ form.organization_name.value|default_if_none:'' }}"
+                   class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                   placeholder="Nom de votre structure">
+            {{ form.organization_name.errors }}
+          </div>
+
+          <div>
+            <label for="id_statut_juridique" class="block text-sm font-medium text-slate-700 mb-2">
+              Statut juridique
+            </label>
+            <input type="text" id="id_statut_juridique" name="statut_juridique"
+                   value="{{ form.statut_juridique.value|default_if_none:'' }}"
+                   class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                   placeholder="Association, ONG, Établissement public...">
+            {{ form.statut_juridique.errors }}
+          </div>
+
+          <div>
+            <label for="id_location" class="block text-sm font-medium text-slate-700 mb-2">
+              Localisation
+            </label>
+            <input type="text" id="id_location" name="location"
+                   value="{{ form.location.value|default_if_none:'' }}"
+                   class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                   placeholder="Ville, région, pays">
+            {{ form.location.errors }}
+          </div>
+
+          <div>
+            <label for="id_sector" class="block text-sm font-medium text-slate-700 mb-2">
+              Secteur d'activité
+            </label>
+            <input type="text" id="id_sector" name="sector"
+                   value="{{ form.sector.value|default_if_none:'' }}"
+                   class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                   placeholder="Secteur d'activité">
+            {{ form.sector.errors }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Contexte -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-shadow hover:shadow-md">
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="text-xl font-semibold text-slate-900 flex items-center gap-2">
+            <i data-lucide="file-text" class="w-5 h-5 text-emerald-600"></i>
+            Contexte et présentation
+          </h2>
+        </div>
+        
+        <div>
+          <label for="id_context_text" class="block text-sm font-medium text-slate-700 mb-2">
+            Décrivez votre structure, service, poste, objectifs, contraintes, échéances...
+          </label>
+          <textarea id="id_context_text" name="context_text" rows="6"
+                    class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
+                    placeholder="Présentez votre contexte pour que nous puissions personnaliser votre kit...">{{ form.context_text.value|default_if_none:'' }}</textarea>
+          {{ form.context_text.errors }}
+        </div>
+      </div>
+
+      <!-- Section 4: Détails optionnels (Collapsible avec Alpine) -->
+      <div x-data="{ open: false }" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <button type="button" @click="open = !open" 
+                class="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition-colors">
+          <h2 class="text-xl font-semibold text-slate-900 flex items-center gap-2">
+            <i data-lucide="settings" class="w-5 h-5 text-amber-600"></i>
+            Détails optionnels
+          </h2>
+          <i data-lucide="chevron-down" 
+             class="w-5 h-5 text-slate-400 transition-transform"
+             :class="{ 'rotate-180': open }"></i>
+        </button>
+
+        <div x-show="open" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             class="px-6 pb-6 space-y-6 border-t border-slate-200">
+          
+          <!-- Financement -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-3">
+              Sources de financement
+            </label>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {% for value, label in form.funding_sources.field.choices %}
+                <label class="flex items-center gap-2 p-3 rounded-lg border border-slate-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all">
+                  <input type="checkbox" name="funding_sources" value="{{ value }}"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                         {% if form.funding_sources.value and value in form.funding_sources.value %}checked{% endif %}>
+                  <span class="text-sm text-slate-700">{{ label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            {{ form.funding_sources.errors }}
+          </div>
+
+          <!-- Types d'audit -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-3">
+              Types d'audit / contrôle
+            </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {% for value, label in form.audits_types.field.choices %}
+                <label class="flex items-center gap-2 p-3 rounded-lg border border-slate-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all">
+                  <input type="checkbox" name="audits_types" value="{{ value }}"
+                         class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                         {% if form.audits_types.value and value in form.audits_types.value %}checked{% endif %}>
+                  <span class="text-sm text-slate-700">{{ label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            {{ form.audits_types.errors }}
+          </div>
+
           <div class="grid md:grid-cols-2 gap-4">
             <div>
-              <div class="text-sm font-medium">Sources de financement</div>
-              <div class="mt-2 space-y-1 text-sm">{{ form.funding_sources }}{{ form.funding_sources.errors }}</div>
+              <label for="id_audits_frequency" class="block text-sm font-medium text-slate-700 mb-2">
+                Fréquence des audits
+              </label>
+              <input type="text" id="id_audits_frequency" name="audits_frequency"
+                     value="{{ form.audits_frequency.value|default_if_none:'' }}"
+                     class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                     placeholder="Annuelle, trimestrielle...">
+              {{ form.audits_frequency.errors }}
             </div>
+
             <div>
-              <div class="text-sm font-medium">Types d’audit/contrôle</div>
-              <div class="mt-2 space-y-1 text-sm">{{ form.audits_types }}{{ form.audits_types.errors }}</div>
-              <div class="mt-2">{{ form.audits_frequency.label_tag }}{{ form.audits_frequency }}{{ form.audits_frequency.errors }}</div>
+              <label for="id_staff_size" class="block text-sm font-medium text-slate-700 mb-2">
+                Taille de l'équipe
+              </label>
+              <input type="text" id="id_staff_size" name="staff_size"
+                     value="{{ form.staff_size.value|default_if_none:'' }}"
+                     class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                     placeholder="Nombre d'employés">
+              {{ form.staff_size.errors }}
             </div>
           </div>
-          <div class="grid md:grid-cols-2 gap-3">
-            <div>{{ form.staff_size.label_tag }}{{ form.staff_size }}{{ form.staff_size.errors }}</div>
-            <div>{{ form.org_chart_text.label_tag }}{{ form.org_chart_text }}{{ form.org_chart_text.errors }}</div>
+
+          <div>
+            <label for="id_org_chart_text" class="block text-sm font-medium text-slate-700 mb-2">
+              Organisation / Organigramme
+            </label>
+            <textarea id="id_org_chart_text" name="org_chart_text" rows="3"
+                      class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
+                      placeholder="Décrivez brièvement votre structure organisationnelle...">{{ form.org_chart_text.value|default_if_none:'' }}</textarea>
+            {{ form.org_chart_text.errors }}
           </div>
-          <div>{{ form.notes_text.label_tag }}{{ form.notes_text }}{{ form.notes_text.errors }}</div>
-          <div class="flex items-center gap-4 mt-4">
-            <label class="text-sm font-medium mb-0">Uploader des documents (Word, Excel, PDF)</label>
-            <input type="file" name="documents" id="id_documents" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" class="px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+
+          <div>
+            <label for="id_notes_text" class="block text-sm font-medium text-slate-700 mb-2">
+              Notes complémentaires
+            </label>
+            <textarea id="id_notes_text" name="notes_text" rows="3"
+                      class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
+                      placeholder="Toute information supplémentaire qui pourrait nous aider...">{{ form.notes_text.value|default_if_none:'' }}</textarea>
+            {{ form.notes_text.errors }}
           </div>
-          <p class="mt-1 text-xs text-slate-500">Max 10 fichiers, 10 Mo/fichier.</p>
         </div>
-      </details>
-      <div class="hidden">{{ form.website }}</div>
-      <div class="pt-3">
-        <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:shadow">
-          <i data-lucide="send"></i> Envoyer ma demande
+      </div>
+
+      <!-- Section 5: Upload de fichiers -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-shadow hover:shadow-md">
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="text-xl font-semibold text-slate-900 flex items-center gap-2">
+            <i data-lucide="upload" class="w-5 h-5 text-indigo-600"></i>
+            Documents complémentaires
+          </h2>
+        </div>
+        
+        <div @dragover.prevent="dragOver = true" 
+             @dragleave.prevent="dragOver = false"
+             @drop.prevent="handleDrop($event)"
+             :class="{ 'border-blue-500 bg-blue-50': dragOver }"
+             class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center transition-all">
+          <input type="file" name="documents" id="id_documents" multiple 
+                 accept=".pdf,.doc,.docx,.xls,.xlsx"
+                 @change="handleFileSelect($event)"
+                 class="hidden">
+          <label for="id_documents" class="cursor-pointer">
+            <i data-lucide="file-plus" class="w-12 h-12 text-slate-400 mx-auto mb-4"></i>
+            <p class="text-sm font-medium text-slate-700 mb-1">
+              Cliquez pour téléverser ou glissez-déposez vos fichiers
+            </p>
+            <p class="text-xs text-slate-500">
+              Formats acceptés : PDF, Word, Excel (max 10 Mo par fichier)
+            </p>
+          </label>
+          <div x-show="selectedFiles.length > 0" class="mt-4 space-y-2">
+            <template x-for="file in selectedFiles" :key="file.name">
+              <div class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg text-sm">
+                <i data-lucide="file" class="w-4 h-4 text-slate-500"></i>
+                <span x-text="file.name" class="flex-1 text-slate-700"></span>
+                <span x-text="formatFileSize(file.size)" class="text-slate-500"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex items-center justify-between pt-4">
+        <p class="text-xs text-slate-500">
+          En envoyant, vous acceptez d'être contacté par email. Vos données sont confidentielles.
+        </p>
+        <button type="submit" 
+                :disabled="submitting"
+                class="btn-submit-institutional inline-flex items-center gap-2 px-6 py-3 
+                      text-white font-semibold rounded-lg shadow-lg 
+                      hover:shadow-xl transform hover:-translate-y-0.5 
+                      transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          <i data-lucide="send" class="w-5 h-5"></i>
+          <span x-text="submitting ? 'Envoi en cours...' : 'Envoyer ma demande'"></span>
         </button>
       </div>
-      <p class="text-xs text-slate-500">En envoyant, vous acceptez d’être contacté par email pour une proposition personnalisée. Aucune diffusion de vos données.</p>
     </form>
   </div>
-</section>
+</div>
+
+<script>
+function kitInquiryForm() {
+  return {
+    submitting: false,
+    dragOver: false,
+    selectedFiles: [],
+    
+    handleSubmit(e) {
+      this.submitting = true;
+      // Laisser le formulaire se soumettre normalement (pas de preventDefault)
+    },
+    
+    handleFileSelect(e) {
+      this.selectedFiles = Array.from(e.target.files);
+    },
+    
+    handleDrop(e) {
+      this.dragOver = false;
+      const files = Array.from(e.dataTransfer.files);
+      const fileInput = document.getElementById('id_documents');
+      const dt = new DataTransfer();
+      [...fileInput.files, ...files].forEach(file => dt.items.add(file));
+      fileInput.files = dt.files;
+      this.selectedFiles = Array.from(dt.files);
+    },
+    
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+  }
+}
+</script>
+
 {% endblock store_content %}
+
+{% block scripts_extra %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  });
+</script>
+{% endblock %}

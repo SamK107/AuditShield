@@ -2,6 +2,7 @@
 import uuid
 from uuid import uuid4
 
+from django.contrib.auth import get_user_model
 from django.core.validators import EmailValidator
 from django.db import models
 from django.utils import timezone
@@ -141,17 +142,71 @@ class Order(models.Model):
             self.provider_ref = f"ORDER-{uuid.uuid4().hex}"
         super().save(*args, **kwargs)
 
+    # ---- Helpers de paiement / fulfilment ----
+    def mark_paid(self, provider: str | None = None, provider_tx: str | None = None, trigger_fulfillment: bool = True, save: bool = True):
+        """
+        Marque la commande comme payée et déclenche le fulfilment.
+        'provider' est informatif ici (pas stocké en DB dans ce modèle minimal).
+        Si 'provider_tx' est renseigné, on l'enregistre dans cinetpay_payment_id par compat.
+        """
+        if provider_tx:
+            try:
+                self.cinetpay_payment_id = provider_tx
+            except Exception:
+                pass
+        self.status = "PAID"
+        self.paid_at = timezone.now()
+        if save:
+            try:
+                self.save(update_fields=["status", "paid_at", "cinetpay_payment_id"])
+            except Exception:
+                self.save()
+        if trigger_fulfillment:
+            try:
+                from store.services import fulfillment
+                fulfillment.after_payment(self)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception("[FULFILLMENT] Erreur post-paiement")
+
+    @property
+    def is_paid(self) -> bool:
+        return (self.status or "").upper() == "PAID"
+
+    @property
+    def offer_code(self) -> str:
+        # Si tu ajoutes plus tard un champ metadata JSON, adapte ici
+        return "STANDARD"
+
 
 class DownloadToken(models.Model):
-    order = models.OneToOneField(Order, on_delete=models.CASCADE)
-    token = models.UUIDField(default=uuid4, editable=False, unique=True)
-    expires_at = models.DateTimeField(default=get_expires_at)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, null=True, blank=True, related_name="download_token")
+    inquiry = models.ForeignKey("store.ClientInquiry", on_delete=models.CASCADE, null=True, blank=True, related_name="download_tokens")
+    token = models.CharField(max_length=255, unique=True, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    max_uses = models.PositiveIntegerField(default=1)
+    used_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def is_valid(self):
-        return timezone.now() < self.expires_at
+        if timezone.now() >= self.expires_at:
+            return False
+        return self.used_count < self.max_uses
 
     def __str__(self):
-        return f"Token for Order#{self.order.pk}"
+        if self.order:
+            return f"Token for Order#{self.order.pk}"
+        elif self.inquiry:
+            return f"Token for Inquiry#{self.inquiry.pk}"
+        return f"Token#{self.pk}"
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(order__isnull=False) | models.Q(inquiry__isnull=False),
+                name="downloadtoken_order_or_inquiry_required",
+            )
+        ]
 
 
 # --- NOUVEAU : Catégories (par fonction/structure) ---
@@ -285,7 +340,7 @@ class ClientInquiry(models.Model):
 
     # Contact
     contact_name = models.CharField(max_length=120, blank=True)
-    email = models.EmailField(validators=[EmailValidator()], blank=True)
+    email = models.EmailField(validators=[EmailValidator()])
     phone = models.CharField(max_length=64, blank=True)
 
     # Structure
@@ -294,6 +349,7 @@ class ClientInquiry(models.Model):
     location = models.CharField(max_length=120, blank=True)
     sector = models.CharField(max_length=64, blank=True)
     mission_text = models.TextField(blank=True)
+    context_text = models.TextField(blank=True)
 
     # Ressources / budget
     budget_range = models.CharField(max_length=64, blank=True)
@@ -313,9 +369,63 @@ class ClientInquiry(models.Model):
     # Payload brut du formulaire
     payload = JSONField(default=dict, blank=True)
 
+    # Payment & Processing states
+    order = models.ForeignKey("store.Order", null=True, blank=True, on_delete=models.SET_NULL, related_name="inquiries")
+    payment_status = models.CharField(
+        max_length=12,
+        choices=[
+            ("CREATED", "Créé"),
+            ("PENDING", "En attente"),
+            ("PAID", "Payé"),
+            ("FAILED", "Échoué"),
+        ],
+        default="CREATED",
+        db_index=True,
+    )
+    processing_state = models.CharField(
+        max_length=20,
+        choices=[
+            ("INQUIRY_RECEIVED", "Demande reçue"),
+            ("PAID", "Payé"),
+            ("IA_RUNNING", "IA en cours"),
+            ("DRAFT_DONE", "Brouillon terminé"),
+            ("FINAL_UPLOADED", "Final uploadé"),
+            ("PUBLISHED", "Publié"),
+        ],
+        default="INQUIRY_RECEIVED",
+        db_index=True,
+    )
+
+    # IA Processing (legacy, conservé pour compatibilité)
+    AI_STATUS_PENDING = "pending"
+    AI_STATUS_DONE = "done"
+    AI_STATUS_ERROR = "error"
+    AI_STATUS_CHOICES = [
+        (AI_STATUS_PENDING, "En attente"),
+        (AI_STATUS_DONE, "Terminé"),
+        (AI_STATUS_ERROR, "Erreur"),
+    ]
+    ai_status = models.CharField(
+        max_length=16, choices=AI_STATUS_CHOICES, default=AI_STATUS_PENDING, blank=True
+    )
+    ai_doc = models.FileField(
+        upload_to="kits/ai/", blank=True, null=True, help_text="Document Word généré par IA", storage=None
+    )
+    human_pdf = models.FileField(
+        upload_to="kits/pdf/", blank=True, null=True, help_text="PDF final validé par humain", storage=None
+    )
+    ai_done_at = models.DateTimeField(blank=True, null=True)
+
     def __str__(self):
         who = self.organization_name or self.contact_name or self.email or str(self.pk)
         return f"{self.get_kind_display()} – {who}"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["payment_status"]),
+            models.Index(fields=["processing_state"]),
+            models.Index(fields=["email"]),
+        ]
 
 
 def upload_inquiry_doc(instance, filename):
@@ -330,6 +440,89 @@ class InquiryDocument(models.Model):
 
     def __str__(self):
         return self.original_name or (self.file.name.split("/")[-1])
+
+
+class PaymentIntent(models.Model):
+    PROVIDER_CHOICES = [
+        ("cinetpay", "CINETPAY"),
+        ("om", "Orange Money"),
+    ]
+    STATUS_CHOICES = [
+        ("CREATED", "Créé"),
+        ("PENDING", "En attente"),
+        ("PAID", "Payé"),
+        ("FAILED", "Échoué"),
+    ]
+
+    inquiry = models.ForeignKey(ClientInquiry, on_delete=models.CASCADE, related_name="payment_intents")
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+    amount = models.IntegerField(help_text="Montant en XOF")
+    currency = models.CharField(max_length=8, default="XOF")
+    external_ref = models.CharField(max_length=120, blank=True, db_index=True, help_text="transaction_id/provider_ref")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="CREATED", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    webhook_payload = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return f"PaymentIntent #{self.pk} - {self.provider} - {self.status}"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["external_ref"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["inquiry", "status"]),
+        ]
+
+
+class GeneratedDraft(models.Model):
+    inquiry = models.OneToOneField(ClientInquiry, on_delete=models.CASCADE, related_name="generated_draft")
+    docx = models.FileField(upload_to="drafts/%Y/%m/")
+    built_at = models.DateTimeField(auto_now_add=True)
+    build_log = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"GeneratedDraft for Inquiry#{self.inquiry.pk}"
+
+
+class FinalAsset(models.Model):
+    inquiry = models.OneToOneField(ClientInquiry, on_delete=models.CASCADE, related_name="final_asset")
+    docx = models.FileField(upload_to="final/%Y/%m/")
+    uploaded_by = models.ForeignKey(
+        get_user_model(), null=True, blank=True, on_delete=models.SET_NULL, related_name="uploaded_final_assets"
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_ready = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"FinalAsset for Inquiry#{self.inquiry.pk}"
+
+
+# --- Kit Processing Task ---
+class KitProcessingTask(models.Model):
+    STATUS = [
+        ("PENDING", "En attente"),
+        ("RUNNING", "En cours"),
+        ("DONE", "Terminé"),
+        ("FAILED", "Échec"),
+        ("PUBLISHED", "Publié"),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    inquiry = models.ForeignKey(ClientInquiry, on_delete=models.CASCADE, related_name="tasks")
+    status = models.CharField(max_length=16, choices=STATUS, default="PENDING")
+    prompt_md = models.TextField(blank=True)
+    word_file = models.FileField(upload_to="kit/word/", blank=True, null=True)
+    pdf_file = models.FileField(upload_to="kit/pdf/", blank=True, null=True)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(blank=True, null=True)
+    finished_at = models.DateTimeField(blank=True, null=True)
+    published_at = models.DateTimeField(blank=True, null=True)
+    published_by = models.ForeignKey(
+        get_user_model(), blank=True, null=True, on_delete=models.SET_NULL
+    )
+
+    def __str__(self):
+        return f"KitProcessingTask({self.id}) - {self.inquiry.email} - {self.status}"
 
 
 # --- Paiement CinetPay ---

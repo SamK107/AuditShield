@@ -1,0 +1,24 @@
+<div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:#111;">
+  <h2 style="margin:0 0 16px;">Merci pour votre achat 🎉</h2>
+  <p>Voici vos liens de téléchargement (valides pour une durée limitée) :</p>
+  <ul>
+    {% for link in links %}
+      <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+    {% endfor %}
+  </ul>
+
+  {% if resources_url %}
+    <p style="margin-top:16px;">
+      Accédez à <strong>toutes les ressources organisées par catégorie</strong> sur une seule page&nbsp;:
+      <a href="{{ resources_url }}">Ouvrir la page des ressources</a>
+    </p>
+  {% endif %}
+
+  {% if bonus_link %}
+    <p>Bonus inclus : <a href="{{ bonus_link }}">Démarrer mon Kit de préparation</a></p>
+  {% endif %}
+
+  <p style="margin-top:24px; font-size:12px; color:#555;">Si un lien expire, répondez simplement à cet email et nous vous renverrons un nouveau lien.</p>
+</div>
+
+

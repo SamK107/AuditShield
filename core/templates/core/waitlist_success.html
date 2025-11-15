@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Merci — Demande reçue{% endblock %}
+{% block content %}
+<section class="py-16">
+  <div class="max-w-xl mx-auto px-4 text-center">
+    <h1 class="text-2xl font-extrabold">Merci !</h1>
+    <p class="mt-2 text-slate-600">
+      ✅ C'est noté ! Vous serez prévenu au lancement.
+    </p>
+    <a href="{% url 'core:coming_soon' %}" class="mt-6 inline-block px-4 py-2 rounded-xl border hover:bg-slate-50">
+      Retour
+    </a>
+  </div>
+  </section>
+{% endblock %}
+

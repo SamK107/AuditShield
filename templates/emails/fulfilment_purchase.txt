@@ -1,0 +1,19 @@
+Merci pour votre achat !
+
+Voici vos liens de téléchargement (valables pour une durée limitée) :
+{% for link in links %}
+- {{ link.title }}: {{ link.url }}
+{% endfor %}
+
+{% if resources_url %}
+Page de ressources (toutes les catégories) :
+- {{ resources_url }}
+{% endif %}
+
+{% if bonus_link %}
+Bonus inclus : Démarrer mon Kit de préparation → {{ bonus_link }}
+{% endif %}
+
+Si un lien expire, répondez à cet email pour recevoir un nouveau lien.
+
+

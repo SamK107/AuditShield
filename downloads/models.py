@@ -117,6 +117,11 @@ class ExternalEntitlement(models.Model):
     platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default="other")
     order_ref = models.CharField(max_length=120, blank=True, null=True)  # ref commande plateformes
     claim_code = models.CharField(max_length=32, blank=True, null=True, db_index=True)  # optionnel
+    # Champs additionnels pour ingestion IMAP/idempotence et parité specs
+    message_id = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Message-ID IMAP pour idempotence")
+    sku = models.CharField(max_length=64, blank=True, null=True, help_text="Code produit (ex: EBOOK_ASP)")
+    raw_payload = models.TextField(blank=True, null=True, help_text="Brut email parsé (en-têtes + extrait)")
+    processed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     redeemed_at = models.DateTimeField(blank=True, null=True)
 

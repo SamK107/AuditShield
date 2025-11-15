@@ -42,3 +42,12 @@ USE_WHITENOISE=True
 # Bonus Kit
 ENABLE_BONUS_KIT=1
 
+# Celery - Redis Broker
+CELERY_BROKER_URL=redis://localhost:6379/0
+
+# OpenAI API Key
+OPENAI_API_KEY=sk-votre_cle_openai_ici
+
+# Site URL (dev ou prod)
+SITE_URL=http://localhost:8000
+

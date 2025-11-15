@@ -19,6 +19,7 @@ from .models import (
     PurchaseClaim,
 )
 from .services import SignedUrlService, check_site_purchase, user_has_access
+from store.services.mailing import send_fulfilment_email
 
 
 class DownloadableAssetForm(forms.ModelForm):
@@ -210,10 +211,100 @@ def download_secure_with_token_view(request, order_uuid, token):
     return render(request, "downloads/secure.html", ctx)
 
 
+@require_http_methods(["POST"])
+def resend_fulfilment_email(request, order_uuid):
+    """
+    Ré-envoie l'email de fulfilment (liens de téléchargement + bonus) à l'email de la commande.
+    Accessible depuis la page sécurisée, avec les mêmes gardes d'accès.
+    """
+    order = get_object_or_404(Order, uuid=order_uuid)
+    if order.status != "PAID":
+        return HttpResponseForbidden("Commande non payée.")
+
+    session_email = request.session.get("order_email")
+    paid_orders = set(request.session.get("paid_orders", []))
+    valid_session = (
+        session_email
+        and session_email.lower() == order.email.lower()
+        and str(order.uuid) in paid_orders
+    )
+    if not valid_session:
+        return HttpResponseForbidden("Accès refusé.")
+
+    try:
+        # Utilise l'UUID comme référence; le service retrouvera l'URL ressources et le lien bonus
+        send_fulfilment_email(to_email=order.email, order_ref=str(order.uuid))
+        messages.success(request, "Les liens de téléchargement ont été renvoyés à votre adresse email.")
+    except Exception as e:
+        messages.error(request, f"Erreur lors de l'envoi de l'email: {e}")
+    return redirect("downloads:secure", order_uuid=order.uuid)
+
+
 def asset_serve_view(request, asset_id):
     asset = get_object_or_404(DownloadableAsset, pk=asset_id, is_published=True)
     filename = os.path.basename(asset.file.name)
     return FileResponse(asset.file.open("rb"), as_attachment=True, filename=filename)
+
+def resources_overview(request, order_uuid):
+    """
+    Page unique listant toutes les ressources (hors ebook) groupées par catégorie,
+    accessible après paiement via la session sécurisée (mêmes gardes que la page secure).
+    """
+    order = get_object_or_404(Order, uuid=order_uuid)
+    if order.status != "PAID":
+        return HttpResponseForbidden("Commande non payée.")
+    session_email = request.session.get("order_email")
+    paid_orders = set(request.session.get("paid_orders", []))
+    valid_session = (
+        session_email
+        and session_email.lower() == order.email.lower()
+        and str(order.uuid) in paid_orders
+    )
+    if not valid_session:
+        return HttpResponseForbidden("Accès refusé.")
+    # Récupère uniquement les catégories “ressources” (exclut ebooks)
+    allowed_slugs = ("checklists", "outils-pratiques", "irregularites", "bonus")
+    categories = (
+        DownloadCategory.objects.filter(slug__in=allowed_slugs)
+        .order_by("order", "slug")
+    )
+    data = []
+    for cat in categories:
+        if (cat.slug or "").lower() == "ebook":
+            continue
+        assets = (
+            DownloadableAsset.objects.filter(category=cat, is_published=True).order_by(
+                "order", "id"
+            )
+        )
+        if not assets.exists():
+            continue
+        items = []
+        for a in assets:
+            try:
+                signed = SignedUrlService.get_signed_url(a, expires=900)
+            except Exception:
+                signed = a.get_download_url()
+            items.append(
+                {
+                    "id": a.id,
+                    "title": a.title,
+                    "short_desc": a.short_desc,
+                    "extension": a.extension,
+                    "url": signed,
+                }
+            )
+        data.append(
+            {
+                "slug": cat.slug,
+                "title": cat.title,
+                "subtitle": cat.subtitle,
+                "description": cat.description,
+                "items": items,
+            }
+        )
+    ctx = {"order": order, "groups": data}
+    return render(request, "downloads/resources_overview.html", ctx)
 
 from django.conf import settings
 from django.shortcuts import render, redirect

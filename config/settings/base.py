@@ -4,6 +4,7 @@ Configuration de base Django - partagée entre dev et prod
 from pathlib import Path
 import importlib.util
 from environs import Env
+import os
 
 # -----------------------------------------------------------------------------
 # Base & .env
@@ -13,6 +14,40 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 env = Env()
 # Lecture du fichier .env à la racine
 env.read_env(path=str(BASE_DIR / ".env"))
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+
+def _clean_env_value(value):
+    """Nettoie une valeur d'environnement en ignorant les commentaires."""
+    if not value:
+        return None
+    value = value.strip()
+    # Ignorer si la valeur commence par #
+    if value.startswith('#'):
+        return None
+    # Extraire la partie avant le # (si commentaire inline)
+    if '#' in value:
+        value = value.split('#')[0].strip()
+    return value if value else None
+
+
+# Nettoyer les valeurs pour ignorer les commentaires et espaces
+_openai_org = os.getenv("OPENAI_ORG", "")
+OPENAI_ORG = _clean_env_value(_openai_org)
+
+_openai_project = os.getenv("OPENAI_PROJECT", "")
+OPENAI_PROJECT = _clean_env_value(_openai_project)
+
+_openai_base_url = os.getenv("OPENAI_BASE_URL", "")
+OPENAI_BASE_URL = _clean_env_value(_openai_base_url)
+
+# Choix du modèle principal + fallback(s)
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
+OPENAI_CHAT_MODEL_FALLBACKS = [
+    "gpt-4o",        # priorité 2
+    "gpt-4o-mini",   # priorité 3 (au cas où tu changes le principal)
+]
 
 # -----------------------------------------------------------------------------
 # Debug / Secret
@@ -134,10 +169,12 @@ DEFAULT_FROM_EMAIL = env.str(
     (
         f"Audit Sans Peur <{EMAIL_HOST_USER}>"
         if EMAIL_HOST_USER
-        else "webmaster@localhost"
+        else "contact@auditsanspeur.com"
     ),
 )
 SERVER_EMAIL = env.str("SERVER_EMAIL", EMAIL_HOST_USER or "root@localhost")
+# Expéditeur spécifique pour les emails de livraison (facultatif)
+FULFILMENT_SENDER = env.str("FULFILMENT_SENDER", DEFAULT_FROM_EMAIL)
 
 # -----------------------------------------------------------------------------
 # CinetPay
@@ -147,6 +184,15 @@ CINETPAY_API_KEY = env.str("CINETPAY_API_KEY", default=None)
 CINETPAY_SECRET_KEY = env.str("CINETPAY_SECRET_KEY", default=None)
 CINETPAY_MODE = env.str("CINETPAY_MODE", "PROD").upper()
 CINETPAY_ENV = env.str("CINETPAY_ENV", "sandbox")
+
+# -----------------------------------------------------------------------------
+# Kit Complet - Configuration
+# -----------------------------------------------------------------------------
+import os
+KIT_COVER_PATH = env.str(
+    "KIT_COVER_PATH",
+    os.path.join(BASE_DIR, "assets", "Kit_Complet_Preparation_Couverture_BSG.docx")
+)
 CINETPAY_BASE_URL = env.str(
     "CINETPAY_BASE_URL", "https://api-checkout.cinetpay.com/v2/payment"
 )
@@ -198,3 +244,13 @@ EXTERNAL_BUY_LINKS = {
 }
 for _alias in ("produit", "audit-services-publics", "ebook-audit-sans-peur"):
     EXTERNAL_BUY_LINKS[_alias] = EXTERNAL_BUY_LINKS["produit"]
+
+# -----------------------------------------------------------------------------
+# Celery, OpenAI, Site URL Configuration
+# Chargées depuis config/settings/__init__.py (utilise python-dotenv)
+# Le .env est déjà chargé dans __init__.py, on peut utiliser os.getenv ou importer
+# -----------------------------------------------------------------------------
+import os
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")

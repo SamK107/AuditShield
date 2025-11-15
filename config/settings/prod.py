@@ -114,3 +114,26 @@ LOGGING = {
         },
     },
 }
+
+# -----------------------------------------------------------------------------
+# Email - Production
+# -----------------------------------------------------------------------------
+# Utilise votre serveur SMTP auditsanspeur.com en SSL sur le port 465.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env.str('EMAIL_HOST', 'auditsanspeur.com')  # noqa: F405
+EMAIL_PORT = env.int('EMAIL_PORT', 465)  # noqa: F405
+EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', True)  # noqa: F405
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', False)  # noqa: F405
+EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', 'contact@auditsanspeur.com')  # noqa: F405
+EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD')  # noqa: F405
+EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', 20)  # noqa: F405
+
+DEFAULT_FROM_EMAIL = env.str(  # noqa: F405
+    'DEFAULT_FROM_EMAIL',
+    'Audit Sans Peur <contact@auditsanspeur.com>',
+)
+FULFILMENT_SENDER = env.str('FULFILMENT_SENDER', DEFAULT_FROM_EMAIL)  # noqa: F405
+SERVER_EMAIL = env.str('SERVER_EMAIL', DEFAULT_FROM_EMAIL)  # noqa: F405
+
+# Domaine public utilisé pour construire les URLs absolues dans les emails
+SITE_BASE_URL = env.str('SITE_BASE_URL', 'https://www.auditsanspeur.com')  # noqa: F405

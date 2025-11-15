@@ -1,0 +1,8 @@
+Votre Kit de préparation est prêt.
+
+Télécharger le PDF :
+{{ pdf_url }}
+
+Ce lien est personnel. Ne le partagez pas publiquement.
+
+

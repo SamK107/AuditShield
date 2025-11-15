@@ -100,4 +100,52 @@ def user_has_access(request, category):
 
     # ... reste de ta logique existante ...
     return False
+def _filesize_display(asset: DownloadableAsset) -> str | None:
+    try:
+        size = asset.file.size
+    except Exception:
+        return None
+    units = ["B", "KB", "MB", "GB"]
+    i = 0
+    while size >= 1024 and i < len(units) - 1:
+        size /= 1024.0
+        i += 1
+    return f"{size:.1f} {units[i]}"
+
+
+def attach_links_to_order(order):
+    """
+    Retourne une liste de liens de téléchargement pertinents pour la commande.
+    Stratégie:
+      - si Product.download_slug est renseigné → cet asset
+      - sinon, on tente de trouver 2 variantes (A4, 6x9) publiées
+    """
+    links = []
+    product = order.product
+    assets = []
+
+    if getattr(product, "download_slug", None):
+        a = DownloadableAsset.objects.filter(slug=product.download_slug, is_published=True).first()
+        if a:
+            assets = [a]
+    else:
+        by_title_a4 = {"title__iexact": "PDF A4"}  # heuristique
+        by_title_6x9 = {"title__icontains": "6x9"}
+        a4 = DownloadableAsset.objects.filter(is_published=True, **by_title_a4).first()
+        x69 = DownloadableAsset.objects.filter(is_published=True, **by_title_6x9).first()
+        assets = [a for a in [a4, x69] if a]
+
+    for asset in assets:
+        dl_url = asset.get_download_url() if hasattr(asset, "get_download_url") else None
+        if not dl_url:
+            from django.urls import reverse
+            dl_url = reverse("downloads:asset_download", kwargs={"slug": asset.slug})
+        links.append(
+            {
+                "title": asset.title,
+                "download_url": dl_url,
+                "filesize": _filesize_display(asset),
+            }
+        )
+    return links
 
