@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+  <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+    <h2 style="margin-bottom:8px;">Paiement confirmé ✅</h2>
+    <p>Bonjour {{ order.first_name }} {{ order.last_name }},</p>
+    <p>Merci pour votre achat. Voici vos informations :</p>
+    <ul>
+      <li><strong>Produit :</strong> {{ order.product.title }}</li>
+      <li><strong>Montant :</strong> {{ order.amount_fcfa }} {{ order.currency }}</li>
+      <li><strong>Référence :</strong> {{ order.provider_ref }}</li>
+    </ul>
+    {% if links and links|length %}
+      <h3>Téléchargements</h3>
+      <ul>
+        {% for l in links %}
+          <li><strong>{{ l.title }}</strong> — <a href="{{ l.download_url }}">Télécharger</a>{% if l.filesize %} ({{ l.filesize }}){% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Les liens seront envoyés ultérieurement (traitement en cours).</p>
+    {% endif %}
+    {% if is_kit %}
+      <h3>Bonus “Kit complet”</h3>
+      <p>
+        Soumettez votre texte (≤ 3 pages) :
+        <a href="{{ site_base_url }}/bonus/kit-preparation/start">Lancer le bonus</a>
+      </p>
+    {% endif %}
+    <p style="margin-top:24px;">Bien cordialement,<br>L’équipe AuditSansPeur</p>
+  </body>
+  </html>
+

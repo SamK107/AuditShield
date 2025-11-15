@@ -1,0 +1,128 @@
+{% extends "store/base.html" %}
+{% load static %}
+{% block title %}Paiement - {{ product.title }}{% endblock %}
+
+{% block store_content %}
+<section class="py-10">
+  <style>
+    .btn-om {
+      background-color: #476b6b;
+      color: #ffffff;
+    }
+    .btn-om:hover {
+      background-color: #3f6060;
+    }
+    .btn-om:focus {
+      outline: 2px solid rgba(71, 107, 107, 0.5);
+      outline-offset: 2px;
+    }
+  </style>
+  <div class="max-w-3xl mx-auto px-4">
+
+    {# Bandeaux réassurance — CinetPay à gauche, Orange à droite #}
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-2xl border bg-white p-5 shadow">
+        <div class="flex items-center gap-4">
+          <img src="https://docs.cinetpay.com/images/logo-new.png" alt="CinetPay" class="h-10 w-auto object-contain">
+          <div class="text-sm text-gray-700">
+            <div class="font-semibold">Paiement sécurisé par CinetPay</div>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+              <span class="inline-flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c.728 0 1.318-.59 1.318-1.318V7.318A1.318 1.318 0 0012 6a1.318 1.318 0 00-1.318 1.318v2.364C10.682 10.41 11.272 11 12 11z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10h14v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7z" /></svg>
+                Paiement chiffré SSL
+              </span>
+              <span class="inline-flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" /></svg>
+                Confirmation immédiate
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-2xl border bg-white p-5 shadow">
+        <div class="flex items-center gap-4 justify-end md:justify-start">
+          <img src="{% static 'partners/Orange_logo.webp' %}" alt="Orange Money" class="h-10 w-auto object-contain">
+          <div class="text-sm text-gray-700">
+            <div class="font-semibold">Paiement sécurisé par Orange&nbsp;Money</div>
+            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+              <span class="inline-flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10h14v7a2 2 0 01-2 2H7a2 2 0 01-2-2v-7z" /></svg>
+                Sécurisé / chiffrement
+              </span>
+              <span class="inline-flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" /></svg>
+                Réseau Orange Mali
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-4">Finaliser l’achat</h1>
+
+    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-900 rounded">
+      Ces informations nous permettront de vous envoyer votre reçu et de vous accompagner en cas de besoin.
+    </div>
+
+    <form method="post" class="space-y-4 bg-white p-6 rounded-2xl border shadow">
+      {% csrf_token %}
+
+      <div class="flex gap-4 max-sm:flex-col">
+        <div class="w-1/2 max-sm:w-full">
+          <label class="block font-medium mb-1" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+          <input type="text" name="last_name" id="{{ form.last_name.id_for_label }}" value="{{ form.last_name.value|default_if_none:'' }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="120" required>
+          {% if form.last_name.errors %}<div class="text-red-600 text-xs mt-1">{{ form.last_name.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="w-1/2 max-sm:w-full">
+          <label class="block font-medium mb-1" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+          <input type="text" name="first_name" id="{{ form.first_name.id_for_label }}" value="{{ form.first_name.value|default_if_none:'' }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="120" required>
+          {% if form.first_name.errors %}<div class="text-red-600 text-xs mt-1">{{ form.first_name.errors|striptags }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="flex gap-4 max-sm:flex-col">
+        <div class="w-1/2 max-sm:w-full">
+          <label class="block font-medium mb-1" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+          <input type="email" name="email" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default_if_none:'' }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          {% if form.email.errors %}<div class="text-red-600 text-xs mt-1">{{ form.email.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="w-1/2 max-sm:w-full">
+          <label class="block font-medium mb-1" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+          <input type="text" name="phone" id="{{ form.phone.id_for_label }}" value="{{ form.phone.value|default_if_none:'' }}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          {% if form.phone.errors %}<div class="text-red-600 text-xs mt-1">{{ form.phone.errors|striptags }}</div>{% endif %}
+        </div>
+      </div>
+
+      <input type="hidden" name="tier_id" value="{{ form.tier_id.value|default_if_none:'' }}">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button type="submit" name="provider" value="cinetpay"
+                class="w-full py-3 rounded-xl font-semibold transition
+                       bg-brand-600 hover:bg-brand-700 text-white
+                       ring-1 ring-brand-700/20 focus:outline-none focus:ring-2 focus:ring-brand-600">
+          Payer avec CinetPay
+        </button>
+
+        <button type="submit" name="provider" value="orange"
+                class="w-full py-3 rounded-xl font-semibold transition
+                       bg-brand-600 hover:bg-brand-700 text-white
+                       ring-1 ring-brand-700/20 focus:outline-none focus:ring-2 focus:ring-brand-600">
+          Payer avec Orange Money ML
+        </button>
+      </div>
+
+      <div class="mt-4 text-center text-gray-800">
+        <span class="font-semibold">Montant à payer&nbsp;:</span>
+        <span class="font-bold">{{ tier.price_fcfa|default:product.price_fcfa }} FCFA</span>
+      </div>
+
+      <p class="mt-3 text-center text-xs text-gray-500">
+        Aucune donnée sensible n’est stockée sur auditsanspeur.com. Les transactions sont traitées par le prestataire choisi.
+      </p>
+    </form>
+
+  </div>
+</section>
+{% endblock %}
+

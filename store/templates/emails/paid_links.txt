@@ -1,0 +1,24 @@
+Bonjour {{ order.first_name }} {{ order.last_name }},
+
+Votre paiement a été confirmé. Merci pour votre confiance.
+
+Produit : {{ order.product.title }}
+Montant : {{ order.amount_fcfa }} {{ order.currency }}
+
+{% if links and links|length %}
+Liens de téléchargement :
+{% for l in links %}- {{ l.title }} : {{ l.download_url }}
+{% endfor %}
+{% else %}
+Les liens seront envoyés ultérieurement (traitement en cours).
+{% endif %}
+
+{% if is_kit %}
+Bonus “Kit complet” :
+Soumettez votre texte (≤ 3 pages) :
+{{ site_base_url }}/bonus/kit-preparation/start
+{% endif %}
+
+Cordialement,
+L’équipe AuditSansPeur
+
