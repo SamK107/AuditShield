@@ -89,6 +89,79 @@ def get_webhook_header():
     """Return the configured HTTP header key for legacy/form CinetPay webhooks."""
     return os.getenv("CINETPAY_WEBHOOK_HEADER", "x-token")
 
+def _load_tariff_ranges_from_md() -> dict:
+    """
+    Parse auditshield/docs/tarifs_kit_complet_reference.md to extract
+    the 'Fourchette tarifaire (FCFA)' for each tier.
+    Returns a dict like:
+      {"Essentiel+": "45 000 – 65 000", "Complet Pro": "85 000 – 110 000", ...}
+    """
+    try:
+        md_path = Path(settings.BASE_DIR) / "docs" / "tarifs_kit_complet_reference.md"
+        if not md_path.exists():
+            # Fallback to app-relative path (in case BASE_DIR differs)
+            md_path = Path(__file__).resolve().parents[1] / "docs" / "tarifs_kit_complet_reference.md"
+        text = md_path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        logging.getLogger(__name__).exception("Unable to read tarifs_kit_complet_reference.md")
+        return {}
+
+    ranges: dict[str, str] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        # Skip non-table lines
+        if not line.startswith("|"):
+            continue
+        # Skip header divider rows
+        if set(line.replace(" ", "")) <= {"|", "-", ":"}:
+            continue
+        # Split markdown table row
+        parts = [c.strip() for c in line.split("|")]
+        # Expect at least 6 columns: '', Niveau, Nb docs, Délai, Fourchette, Contenu, ''
+        if len(parts) < 6:
+            continue
+        # Header row? skip
+        if "Niveau de personnalisation" in parts[1]:
+            continue
+        name = parts[1].strip().strip("*").strip()
+        price = parts[4].strip().replace("**", "").strip()
+        if not name or not price:
+            continue
+        # Normalize common HTML/markdown remnants
+        name = name.replace("<br>", " ").replace("<br/>", " ").replace("<br />", " ").strip()
+        price = price.replace("<br>", " ").replace("<br/>", " ").replace("<br />", " ").strip()
+        ranges[name] = price
+    return ranges
+
+def _get_kit_tiers() -> list[dict]:
+    """
+    Unified tiers definition used on tariffs page and inquiry form.
+    Pulls price ranges from the MD reference and uses consistent delays.
+    """
+    md_ranges = _load_tariff_ranges_from_md()
+    return [
+        {
+            "code": "essentiel_plus",
+            "name": "Essentiel+",
+            "docs_range": "1–3 docs",
+            "delay": "≈ 3 jours",
+            "price_range_fcfa": md_ranges.get("Essentiel+", "45 000 – 65 000"),
+        },
+        {
+            "code": "complete_pro",
+            "name": "Complet Pro",
+            "docs_range": "4–6 docs",
+            "delay": "≈ 4–5 jours",
+            "price_range_fcfa": md_ranges.get("Complet Pro", "85 000 – 110 000"),
+        },
+        {
+            "code": "expert_audit",
+            "name": "Expert Audit",
+            "docs_range": "7–10 docs",
+            "delay": "≈ 5–7 jours",
+            "price_range_fcfa": md_ranges.get("Expert Audit", "130 000 – 170 000"),
+        },
+    ]
 
 # ---- Pages ----
 
@@ -154,6 +227,12 @@ def kit_inquiry(request):
 
     def _total_size(files):
         return sum(getattr(f, "size", 0) for f in files)
+
+    tiers = _get_kit_tiers()
+    # Selected tier from querystring (GET) or form (POST)
+    selected_tier_code = (request.POST.get("tier") or request.GET.get("tier") or "").strip()
+    if selected_tier_code not in {t["code"] for t in tiers}:
+        selected_tier_code = tiers[1]["code"]  # default to Complet Pro
 
     if request.method == "POST":
         form = KitInquiryForm(request.POST)
@@ -230,14 +309,27 @@ def kit_inquiry(request):
                     "Votre demande est enregistrée. "
                     "Un souci d'email est survenu ; nous vous recontactons vite.",
                 )
-            return redirect(reverse("store:kit_inquiry_success"))
+            success_url = reverse("store:kit_inquiry_success")
+            # propagate selected tier to success page
+            return redirect(f"{success_url}?tier={selected_tier_code}")
     else:
         form = KitInquiryForm()
-    return render(request, "store/forms/kit_inquiry.html", {"form": form})
+    return render(
+        request,
+        "store/forms/kit_inquiry.html",
+        {
+            "form": form,
+            "tiers": tiers,
+            "selected_tier_code": selected_tier_code,
+        },
+    )
 
 
 def kit_inquiry_success(request):
-    return render(request, "store/forms/kit_inquiry_success.html")
+    tiers = _get_kit_tiers()
+    code = (request.GET.get("tier") or "").strip()
+    tier = next((t for t in tiers if t["code"] == code), None)
+    return render(request, "store/forms/kit_inquiry_success.html", {"tier": tier})
 
 
 MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
@@ -334,6 +426,48 @@ def examples(request):
     product = Product.objects.filter(is_published=True).first()
     slides = ExampleSlide.objects.filter(product=product) if product else []
     return render(request, "store/examples.html", {"product": product, "slides": slides})
+
+def tariffs_kit(request):
+    """
+    Page 'Tarifs – Kit complet' avec 3 paliers.
+    """
+    tiers = _get_kit_tiers()
+    # Features text for display only
+    tiers[0]["features"] = [
+        "Analyse de conformité de base",
+        "Plan d'action priorisé",
+        "Révisions limitées",
+    ]
+    tiers[1]["features"] = [
+        "Analyse approfondie multi-référentiels",
+        "Modèles et checklists personnalisés",
+        "Session d'échanges (1h) incluse",
+    ]
+    tiers[2]["features"] = [
+        "Accompagnement expert sur-mesure",
+        "Revue itérative illimitée (fenêtre projet)",
+        "Préparation à l'audit (simulation)",
+    ]
+    cta_url = reverse("store:kit_inquiry")
+    return render(request, "store/tariffs_kit.html", {"tiers": tiers, "cta_url": cta_url})
+
+@require_http_methods(["GET"])
+def estimate_kit(request):
+    """
+    Estimation simple de palier selon le nombre de documents.
+    Retourne un JSON: {"tier_code": "..."}.
+    """
+    try:
+        n_docs = int(request.GET.get("n_docs", "1"))
+    except ValueError:
+        n_docs = 1
+    if n_docs <= 3:
+        code = "essentiel_plus"
+    elif n_docs <= 8:
+        code = "complete_pro"
+    else:
+        code = "expert_audit"
+    return JsonResponse({"tier_code": code})
 
 
 @require_http_methods(["GET"])
@@ -852,9 +986,17 @@ def _cinetpay_secret_bytes():
     return secret.encode("utf-8")
 
 
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["GET", "POST"])
 def cinetpay_return(request):
     # CinetPay renvoie classiquement ?transaction_id=... ou ?cpm_trans_id=...
-    tx_id = request.GET.get("cpm_trans_id") or request.GET.get("transaction_id")
+    tx_id = (
+        request.GET.get("cpm_trans_id")
+        or request.GET.get("transaction_id")
+        or request.POST.get("cpm_trans_id")
+        or request.POST.get("transaction_id")
+    )
 
     # Si on ping la route sans param (curl, monitoring, etc.) -> 200, pas d'erreur
     if not tx_id:
@@ -867,9 +1009,29 @@ def cinetpay_return(request):
     if not order:
         return HttpResponse("Transaction inconnue", status=404)
 
-    # Crée le token de téléchargement et redirige vers le choix des versions
-    dt, _ = DownloadToken.objects.get_or_create(order=order)
-    return redirect("store:download_options", token=dt.token)
+    # Vérifier le statut et marquer payé si confirmé (mock compatible)
+    try:
+        is_paid, provider_tx_id = cinetpay.payment_check(tx_id)
+    except Exception:
+        is_paid, provider_tx_id = (False, None)
+    if is_paid:
+        try:
+            order.mark_paid(provider="cinetpay", provider_tx=provider_tx_id or tx_id)
+        except Exception:
+            logger.exception("[CINETPAY_RETURN] mark_paid error for %s", tx_id)
+
+    # Marquer la session locale (accès page sécurisée)
+    request.session["order_email"] = order.email
+    paid = set(request.session.get("paid_orders", []))
+    paid.add(str(order.uuid))
+    request.session["paid_orders"] = list(paid)
+    # Rediriger vers la page sécurisée (liens directs A4/6x9)
+    try:
+        return redirect("downloads:secure", order_uuid=order.uuid)
+    except Exception:
+        # Fallback vers l'ancien écran de choix si route indisponible
+        dt, _ = DownloadToken.objects.get_or_create(order=order)
+        return redirect("store:download_options", token=dt.token)
 
 
 def cinetpay_cancel(request):
@@ -878,10 +1040,34 @@ def cinetpay_cancel(request):
 
 @csrf_exempt
 def cinetpay_notify(request):
-    # Version simplifiée temporaire
-    if request.method == 'GET':
-        return HttpResponse('OK', status=200)
-    return HttpResponse('OK', status=200)
+    """
+    Notification serveur-à-serveur (webhook) CinetPay.
+    Utilise la vérification signée ou le mock en dev, puis marque la commande payée.
+    """
+    if request.method == "GET":
+        return HttpResponse("OK", status=200)
+    try:
+        payload = cinetpay.verify_webhook(request)
+    except Exception:
+        logger.exception("[CINETPAY_NOTIFY] verify_webhook exception")
+        return HttpResponse(status=400)
+    if not payload:
+        return HttpResponse(status=400)
+    ref = payload.get("transaction_id") or payload.get("cpm_trans_id")
+    if not ref:
+        return HttpResponse(status=400)
+    order = Order.objects.filter(Q(provider_ref=ref) | Q(cinetpay_payment_id=ref)).first()
+    if not order:
+        return HttpResponse(status=404)
+    # Statut provider → bool payé
+    status_val = (payload.get("status") or "").upper()
+    paid_ok = status_val in {"ACCEPTED", "PAID", "SUCCESS", "COMPLETED"} or False
+    if paid_ok:
+        try:
+            order.mark_paid(provider="cinetpay", provider_tx=payload.get("provider_tx_id") or ref)
+        except Exception:
+            logger.exception("[CINETPAY_NOTIFY] mark_paid error for %s", ref)
+    return JsonResponse({"ok": True})
 
 @require_http_methods(["GET"])
 def download_options(request, token):

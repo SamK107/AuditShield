@@ -11,7 +11,7 @@
 
     <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
       {% for t in tiers %}
-      <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-6 relative">
+      <div class="{% if forloop.counter == 2 %}bg-blue-50 ring-blue-200{% else %}bg-white ring-slate-200{% endif %} rounded-2xl shadow-sm ring-1 p-6 relative">
         {% if forloop.first %}
         <div class="absolute -top-3 right-4">
           <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-brand-600 text-white shadow">Populaire</span>
@@ -29,7 +29,7 @@
           {% endfor %}
         </ul>
         <div class="mt-6">
-          <a href="{{ cta_url }}" class="btn-kit w-full justify-center md:w-auto">
+          <a href="{{ cta_url }}?tier={{ t.code }}" class="btn-kit w-full justify-center md:w-auto">
             <i data-lucide="form-input"></i> Demander mon Kit personnalisé
           </a>
         </div>

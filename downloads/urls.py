@@ -6,6 +6,7 @@ app_name = "downloads"
 
 urlpatterns = [
     path("<slug:slug>/", views.asset_download, name="asset_download"),
+    path("resend-links/", views.resend_links, name="resend_links"),
     path(
         "secure/<uuid:order_uuid>/",
         views.download_secure_view,

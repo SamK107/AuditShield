@@ -184,6 +184,8 @@ CINETPAY_API_KEY = env.str("CINETPAY_API_KEY", default=None)
 CINETPAY_SECRET_KEY = env.str("CINETPAY_SECRET_KEY", default=None)
 CINETPAY_MODE = env.str("CINETPAY_MODE", "PROD").upper()
 CINETPAY_ENV = env.str("CINETPAY_ENV", "sandbox")
+# Mode mock CinetPay (DEV uniquement): activé si CINETPAY_MOCK=1
+CINETPAY_MOCK = os.getenv("CINETPAY_MOCK", "0") == "1"
 
 # -----------------------------------------------------------------------------
 # Kit Complet - Configuration

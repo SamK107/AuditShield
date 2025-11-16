@@ -20,6 +20,7 @@ from .models import (
 )
 from .services import SignedUrlService, check_site_purchase, user_has_access
 from store.services.mailing import send_fulfilment_email
+from .forms import ResendLinksForm
 
 
 class DownloadableAssetForm(forms.ModelForm):
@@ -238,6 +239,32 @@ def resend_fulfilment_email(request, order_uuid):
     except Exception as e:
         messages.error(request, f"Erreur lors de l'envoi de l'email: {e}")
     return redirect("downloads:secure", order_uuid=order.uuid)
+
+@require_http_methods(["GET", "POST"])
+def resend_links(request):
+    """
+    Formulaire public pour renvoyer les liens de téléchargement
+    à partir d'une adresse email (dernière commande payée).
+    """
+    form = ResendLinksForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = (form.cleaned_data["email"] or "").strip()
+        order = (
+            Order.objects.filter(email__iexact=email, status="PAID")
+            .order_by("-paid_at", "-created_at")
+            .first()
+        )
+        if not order:
+            messages.error(request, "Aucune commande payée trouvée pour cet email.")
+        else:
+            try:
+                order_ref = order.provider_ref or order.cinetpay_payment_id or str(order.uuid)
+                send_fulfilment_email(to_email=order.email, order_ref=order_ref)
+                messages.success(request, "Un email avec vos liens de téléchargement vient d’être envoyé.")
+                return redirect("downloads:resend_links")
+            except Exception as e:
+                messages.error(request, f"Erreur lors de l'envoi: {e}")
+    return render(request, "downloads/resend_links_form.html", {"form": form})
 
 
 def asset_serve_view(request, asset_id):

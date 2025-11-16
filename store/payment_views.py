@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
@@ -21,7 +21,10 @@ PROVIDERS = {
 
 def _compute_amount_xof(product: Product, tier_id: Optional[str]) -> int:
     # Ajuste ce calcul si tu as des tiers
-    amount_xof = getattr(product, "price_fcfa", None) or getattr(product, "price", None)
+    amount_xof = (
+        getattr(product, "price_fcfa", None)
+        or getattr(product, "price", None)
+    )
     try:
         return int(amount_xof or 0)
     except Exception:
@@ -86,10 +89,16 @@ def start_checkout(request, slug):
                     return redirect(redirect_url)
                 else:
                     # CinetPay: utilise provider_ref auto et init_payment_auto
-                    redirect_url = cinetpay.init_payment_auto(order=order, request=request)
+                    redirect_url = cinetpay.init_payment_auto(
+                        order=order,
+                        request=request,
+                    )
                     return redirect(redirect_url)
             except Exception as e:
-                messages.error(request, f"Erreur de paiement {provider_key}: {e}")
+                messages.error(
+                    request,
+                    f"Erreur de paiement {provider_key}: {e}",
+                )
                 logger.exception(e)
         else:
             messages.error(request, "Formulaire invalide.")
@@ -99,7 +108,12 @@ def start_checkout(request, slug):
     return render(
         request,
         "store/buy_cinetpay.html",
-        {"form": form, "product": product, "provider": provider_key, "tier": None},
+        {
+            "form": form,
+            "product": product,
+            "provider": provider_key,
+            "tier": None,
+        },
     )
 
 
@@ -111,7 +125,8 @@ def om_return(request):
     is_paid, provider_tx = orange_money.check_transaction_status(ref)
     if is_paid:
         order.mark_paid(provider="orange", provider_tx=provider_tx)
-        # Marquer la session pour autoriser l'accès à la page de téléchargement sécurisée
+        # Marquer la session pour autoriser l'accès
+        # à la page de téléchargement sécurisée
         request.session["order_email"] = order.email
         paid = set(request.session.get("paid_orders", []))
         paid.add(str(order.uuid))
@@ -119,8 +134,15 @@ def om_return(request):
         # Email de fulfilment (liens ebook/bonus/ressources)
         try:
             from store.services.mailing import send_fulfilment_email
-            order_ref = order.provider_ref or order.cinetpay_payment_id or str(order.uuid)
-            send_fulfilment_email(to_email=order.email, order_ref=order_ref)
+            order_ref = (
+                order.provider_ref
+                or order.cinetpay_payment_id
+                or str(order.uuid)
+            )
+            send_fulfilment_email(
+                to_email=order.email,
+                order_ref=order_ref,
+            )
         except Exception:
             logger.exception("[OM_RETURN] Erreur envoi email de fulfilment")
         messages.success(request, "Paiement confirmé avec succès ✅")
@@ -145,13 +167,23 @@ def om_notify(request):
         return HttpResponse(status=404)
 
     if orange_money.map_provider_status_to_paid(status):
-        order.mark_paid(provider="orange", provider_tx=payload.get("provider_tx_id") or ref)
+        order.mark_paid(
+            provider="orange",
+            provider_tx=payload.get("provider_tx_id") or ref,
+        )
         logger.info(f"[OM_NOTIFY] Paiement confirmé pour {ref}")
         # Email de fulfilment (liens ebook/bonus/ressources)
         try:
             from store.services.mailing import send_fulfilment_email
-            order_ref = order.provider_ref or order.cinetpay_payment_id or str(order.uuid)
-            send_fulfilment_email(to_email=order.email, order_ref=order_ref)
+            order_ref = (
+                order.provider_ref
+                or order.cinetpay_payment_id
+                or str(order.uuid)
+            )
+            send_fulfilment_email(
+                to_email=order.email,
+                order_ref=order_ref,
+            )
         except Exception:
             logger.exception("[OM_NOTIFY] Erreur envoi email de fulfilment")
 
@@ -167,3 +199,19 @@ def om_mock_checkout(request):
     if not tx:
         return HttpResponse("transaction_id manquant", status=400)
     return render(request, "store/om_mock_checkout.html", {"tx": tx})
+
+
+def cinetpay_mock_checkout(request):
+    """
+    Page locale simulant le checkout CinetPay (mode mock).
+    Par défaut, redirige immédiatement vers la vue
+    de retour avec le tx.
+    """
+    tx = request.GET.get("transaction_id") or ""
+    if not tx:
+        return HttpResponse("transaction_id manquant", status=400)
+    logger.info(f"[CINETPAY MOCK] checkout page for tx={tx}")
+    # Redirection immédiate vers la vue de retour
+    # (peut être remplacée par une page avec bouton)
+    from django.urls import reverse
+    return redirect(f"{reverse('store:cinetpay_return')}?transaction_id={tx}")

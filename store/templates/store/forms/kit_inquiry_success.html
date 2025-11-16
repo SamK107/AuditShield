@@ -6,11 +6,21 @@
     <h1 class="text-2xl font-extrabold">Merci !</h1>
     <p class="mt-2 text-slate-600">
       Votre demande de Kit personnalisé a bien été envoyée.<br>
-      Nous vous contactons sous 24–48 h avec une proposition adaptée à votre contexte.
+      {% if tier %}
+        Offre choisie: <span class="font-semibold">{{ tier.name }}</span> — délai indicatif: <span class="font-semibold">{{ tier.delay }}</span>.<br>
+        Le document personnalisé vous sera envoyé par email conformément à ce délai, après validation de la proposition.
+      {% else %}
+        Nous vous contactons sous 24–48 h avec une proposition adaptée à votre contexte.
+      {% endif %}
     </p>
-    <a href="{% url 'store:offers' %}#kit" class="mt-6 inline-block px-4 py-2 rounded-xl border hover:bg-slate-50">
-      Retour aux offres
-    </a>
+    <div class="mt-6 flex items-center justify-center gap-3">
+      <a href="{% url 'store:offers' %}#kit" class="inline-block px-4 py-2 rounded-xl border hover:bg-slate-50">
+        Retour aux offres
+      </a>
+      <a href="{% url 'core:home' %}" class="inline-block px-4 py-2 rounded-xl btn text-white">
+        Revenir à l’accueil
+      </a>
+    </div>
   </div>
 </section>
 {% endblock store_content %}

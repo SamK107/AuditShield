@@ -124,7 +124,7 @@ EMAIL_HOST = env.str('EMAIL_HOST', 'auditsanspeur.com')  # noqa: F405
 EMAIL_PORT = env.int('EMAIL_PORT', 465)  # noqa: F405
 EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', True)  # noqa: F405
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', False)  # noqa: F405
-EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', 'contact@auditsanspeur.com')  # noqa: F405
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'contact@auditsanspeur.com')
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD')  # noqa: F405
 EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', 20)  # noqa: F405
 
@@ -132,8 +132,38 @@ DEFAULT_FROM_EMAIL = env.str(  # noqa: F405
     'DEFAULT_FROM_EMAIL',
     'Audit Sans Peur <contact@auditsanspeur.com>',
 )
-FULFILMENT_SENDER = env.str('FULFILMENT_SENDER', DEFAULT_FROM_EMAIL)  # noqa: F405
-SERVER_EMAIL = env.str('SERVER_EMAIL', DEFAULT_FROM_EMAIL)  # noqa: F405
+FULFILMENT_SENDER = os.getenv('FULFILMENT_SENDER', DEFAULT_FROM_EMAIL)
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
 
 # Domaine public utilisé pour construire les URLs absolues dans les emails
-SITE_BASE_URL = env.str('SITE_BASE_URL', 'https://www.auditsanspeur.com')  # noqa: F405
+SITE_BASE_URL = os.getenv('SITE_BASE_URL', 'https://www.auditsanspeur.com')
+
+# -----------------------------------------------------------------------------
+# Paiements - Production (désactive tout mock, URLs publiques)
+# -----------------------------------------------------------------------------
+# Sécurité: forcer la désactivation du mode mock en production
+CINETPAY_MOCK = False
+
+# URLs CinetPay (fallbacks prod si non fournis en env)
+CINETPAY_NOTIFY_URL = os.getenv(
+    "CINETPAY_NOTIFY_URL",
+    f"{SITE_BASE_URL}/payments/cinetpay/notify/",
+)
+CINETPAY_RETURN_URL = os.getenv(
+    "CINETPAY_RETURN_URL",
+    f"{SITE_BASE_URL}/payments/cinetpay/return/",
+)
+CINETPAY_CANCEL_URL = os.getenv(
+    "CINETPAY_CANCEL_URL",
+    f"{SITE_BASE_URL}/payments/cinetpay/cancel/",
+)
+
+# Orange Money: URLs de retour/notification (fallbacks prod)
+OM_NOTIFY_URL = os.getenv(
+    "OM_NOTIFY_URL",
+    f"{SITE_BASE_URL}/payments/om/notify/",
+)
+OM_RETURN_URL = os.getenv(
+    "OM_RETURN_URL",
+    f"{SITE_BASE_URL}/payments/om/return/",
+)

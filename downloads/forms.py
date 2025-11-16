@@ -1,4 +1,10 @@
 from django import forms
+
+
+class ResendLinksForm(forms.Form):
+    email = forms.EmailField(label="Votre adresse email", max_length=254)
+
+from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.conf import settings

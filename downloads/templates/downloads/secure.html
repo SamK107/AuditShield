@@ -1,53 +1,102 @@
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Téléchargements — {{ order.product.title }}</title>
-</head>
-<body>
-  <main class="max-w-3xl mx-auto p-6">
-    <h1>Téléchargements – {{ order.product.title }}</h1>
-    <p>Commande : <strong>{{ order.uuid }}</strong> — Email : {{ order.email }}</p>
-    {% if messages %}
-      <ul style="margin:8px 0;padding:10px;border-radius:8px;background:#eef6ff;border:1px solid #bfdbfe;">
+{% extends "base.html" %}
+{% block title %}Téléchargements — {{ order.product.title }}{% endblock %}
+
+{% block content %}
+<main class="max-w-3xl mx-auto px-4 py-8">
+  <header class="mb-4">
+    <h1 class="text-2xl md:text-3xl font-extrabold">Téléchargements – {{ order.product.title }}</h1>
+    <p class="mt-1 text-sm text-slate-600">Commande : <strong class="font-semibold">{{ order.uuid }}</strong> — Email : {{ order.email }}</p>
+  </header>
+
+  {% if messages %}
+    <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900">
+      <ul class="list-disc pl-5 space-y-1">
         {% for message in messages %}
           <li>{{ message }}</li>
         {% endfor %}
       </ul>
-    {% endif %}
-    <div style="margin:12px 0;padding:12px;border:1px solid #e5e7eb;background:#f9fafb;border-radius:8px;">
-      Merci pour votre achat 🎉 Vos liens de téléchargement sont disponibles ci‑dessous.
-      Un email vient de vous être envoyé avec:
-      <ul style="margin:8px 0 0 18px;">
-        <li>le lien vers la page unique listant toutes les ressources</li>
-        <li>le lien pour démarrer le bonus “Kit de préparation”</li>
-      </ul>
-      {% comment %} Optionnel: lien direct pratique vers la page ressources {% endcomment %}
-      <div style="margin-top:10px;">
-        <a href="{% url 'downloads:resources' order.uuid %}" style="display:inline-block;padding:8px 12px;border-radius:8px;background:#111;color:#fff;text-decoration:none;">Voir toutes les ressources</a>
-        <form method="post" action="{% url 'downloads:resend_fulfilment' order.uuid %}" style="display:inline-block;margin-left:8px;">
-          {% csrf_token %}
-          <button type="submit" style="padding:8px 12px;border-radius:8px;background:#2563eb;color:#fff;border:none;cursor:pointer;">
-            M'envoyer les liens de téléchargement
-          </button>
-        </form>
+    </div>
+  {% endif %}
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="mb-3 text-slate-800">
+      <p class="font-semibold">Félicitations pour votre achat 🎉</p>
+      <p class="mt-1">Voici les liens de téléchargement de votre ebook en deux formats :</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-slate-200 p-4 bg-slate-50">
+        <h3 class="font-bold">PDF A4</h3>
+        <p class="mt-1 text-sm text-slate-600">
+          Idéal pour l’impression et la lecture sur ordinateur : marges confortables, pagination optimisée A4.
+        </p>
+        {% for a in assets %}
+          {% if "A4" in a.title or "a4" in a.title %}
+            <a href="{% url 'downloads:asset' a.id %}"
+               class="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600">
+              Audit Sans Peur {{ a.title }}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="rounded-xl border border-slate-200 p-4 bg-slate-50">
+        <h3 class="font-bold">PDF 6×9</h3>
+        <p class="mt-1 text-sm text-slate-600">
+          Format “livre” compact : lecture agréable sur mobile/liseuse, fichier plus léger.
+        </p>
+        {% for a in assets %}
+          {% if "6x9" in a.title|lower or "6×9" in a.title %}
+            <a href="{% url 'downloads:asset' a.id %}"
+               class="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600">
+              Audit Sans Peur {{ a.title }}
+            </a>
+          {% endif %}
+        {% endfor %}
       </div>
     </div>
-    {% if admin_message %}
-      <div style="padding:8px;border:1px solid #f0c36d;background:#fff7e6">
-        {{ admin_message }}
-      </div>
+
+    {% if assets|length == 0 %}
+      <p class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        Les fichiers ne sont pas encore publiés. Merci de réessayer plus tard.
+      </p>
     {% endif %}
-    <ul>
-      {% for a in assets %}
-        <li>
-          <a href="{% url 'downloads:asset' a.id %}">{{ a.title }}</a>
-        </li>
-      {% empty %}
-        <li>Aucun fichier disponible.</li>
-      {% endfor %}
+  </section>
+
+  <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <p class="text-slate-800">
+      Un email vient de vous être envoyé avec :
+    </p>
+    <ul class="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
+      <li>le lien vers la page unique listant toutes les ressources</li>
+      <li>le lien pour démarrer le bonus “Kit de préparation”</li>
     </ul>
-  </main>
-</body>
-</html>
+
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <a href="{% url 'downloads:resources' order.uuid %}"
+         class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-slate-900">
+        Ressources téléchargeables
+      </a>
+      <form method="post" action="{% url 'downloads:resend_fulfilment' order.uuid %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+          M'envoyer les liens de téléchargement
+        </button>
+      </form>
+    </div>
+
+    <p class="mt-3 text-sm text-slate-600">
+      Sur la page des ressources : checklists (audit des projets, des collectivités, des structures publiques),
+      bonus (guide des réponses), outils‑pratiques (grilles d’audit, plan d’action correctif), et
+      tableau des irrégularités.
+    </p>
+  </section>
+
+  {% if admin_message %}
+    <div class="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+      {{ admin_message }}
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

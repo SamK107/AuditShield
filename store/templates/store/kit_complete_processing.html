@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Traitement des Kits complets{% endblock %}
+
+{% block content %}
+<main class="max-w-6xl mx-auto px-4 py-8">
+  <h1 class="text-2xl md:text-3xl font-extrabold mb-6">Traitement des Kits complets de préparation à l’audit</h1>
+
+  {% if messages %}
+    <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900">
+      <ul class="list-disc pl-5 space-y-1">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-700">
+        <tr>
+          <th class="text-left px-4 py-3">Nom & prénom</th>
+          <th class="text-left px-4 py-3">Email</th>
+          <th class="text-left px-4 py-3">Statut</th>
+          <th class="text-left px-4 py-3">Voir la demande</th>
+          <th class="text-left px-4 py-3">Traiter</th>
+          <th class="text-left px-4 py-3">Télécharger (IA)</th>
+          <th class="text-left px-4 py-3">Upload</th>
+          <th class="text-left px-4 py-3">Publier</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for inquiry in inquiries %}
+          <tr class="{% if inquiry.processing_state == 'PUBLISHED' %}bg-emerald-50{% endif %}">
+            <td class="px-4 py-3">{{ inquiry.contact_name|default:"—" }}</td>
+            <td class="px-4 py-3">{{ inquiry.email }}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold
+                {% if inquiry.processing_state == 'PAID' %} bg-blue-50 text-blue-700 ring-1 ring-blue-200
+                {% elif inquiry.processing_state == 'IA_RUNNING' %} bg-amber-50 text-amber-700 ring-1 ring-amber-200
+                {% elif inquiry.processing_state == 'DRAFT_DONE' %} bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200
+                {% elif inquiry.processing_state == 'FINAL_UPLOADED' %} bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-200
+                {% elif inquiry.processing_state == 'PUBLISHED' %} bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200
+                {% else %} bg-slate-100 text-slate-700 ring-1 ring-slate-200 {% endif %}">
+                {{ inquiry.processing_state }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <a href="#" class="text-blue-600 hover:underline opacity-60 pointer-events-none" title="À relier à une vue détail existante">Voir la demande</a>
+            </td>
+            <td class="px-4 py-3">
+              {% if inquiry.processing_state in 'PAID,IA_RUNNING' %}
+                <form method="post" action="{% url 'store:kit_complete_process' inquiry.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                    Traiter
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-xs text-slate-500">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if inquiry.generated_draft and inquiry.generated_draft.docx %}
+                <a href="{{ inquiry.generated_draft.docx.url }}" class="text-blue-600 hover:underline">Télécharger (IA)</a>
+              {% elif inquiry.ai_doc %}
+                <a href="{{ inquiry.ai_doc.url }}" class="text-blue-600 hover:underline">Télécharger (IA)</a>
+              {% else %}
+                <span class="text-xs text-slate-400">Non généré</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <form method="post" action="{% url 'store:kit_complete_upload' inquiry.pk %}" enctype="multipart/form-data" class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="file" name="file" required class="block w-full text-xs file:mr-3 file:px-2 file:py-1 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700">
+                <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-slate-800 text-white hover:bg-black">
+                  Upload
+                </button>
+              </form>
+            </td>
+            <td class="px-4 py-3">
+              {% if inquiry.processing_state == 'FINAL_UPLOADED' and (inquiry.human_pdf or (inquiry.generated_draft and inquiry.generated_draft.docx)) %}
+                <form method="post" action="{% url 'store:kit_complete_publish' inquiry.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+                    Publier
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-xs text-slate-400">En attente</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="px-4 py-6 text-center text-slate-500">Aucune demande à afficher.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
+{% endblock %}
+
+
