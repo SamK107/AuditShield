@@ -1,0 +1,159 @@
+{% extends "store/base.html" %}
+{% block title %}Test API Orange Money - Sandbox{% endblock %}
+
+{% block store_content %}
+<section class="py-14">
+  <div class="max-w-3xl mx-auto px-4">
+
+    <h1 class="text-3xl font-bold mb-6">🧪 Test API Orange Money Sandbox</h1>
+
+    {% if error %}
+    <div class="mb-6 rounded-xl border bg-red-50 border-red-200 p-6">
+      <div class="flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="font-semibold text-red-900">Erreur</span>
+      </div>
+      <p class="mt-2 text-red-700">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    {# Configuration #}
+    <div class="mb-6 rounded-xl border bg-white p-6 shadow">
+      <h2 class="text-xl font-semibold mb-4">📋 Configuration Orange Money</h2>
+      
+      {% if config_loaded %}
+      <div class="space-y-2">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-gray-600">Environnement:</span>
+            <span class="font-medium ml-2">{{ config.env }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Base URL:</span>
+            <span class="font-medium ml-2 font-mono text-sm">{{ config.base_url }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Merchant MSISDN:</span>
+            <span class="font-medium ml-2">{{ config.merchant_msisdn }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Merchant Code:</span>
+            <span class="font-medium ml-2">{{ config.merchant_code }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Login:</span>
+            <span class="font-medium ml-2">{{ config.login }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Password:</span>
+            <span class="font-medium ml-2">{{ config.password }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Test Subscriber:</span>
+            <span class="font-medium ml-2">{{ config.test_subscriber_msisdn }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Currency:</span>
+            <span class="font-medium ml-2">{{ config.currency }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Country:</span>
+            <span class="font-medium ml-2">{{ config.country }}</span>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <p class="text-yellow-800">⚠️ Configuration Orange Money non chargée. Vérifiez votre fichier .env</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Résultat du test #}
+    {% if test_result %}
+    <div class="mb-6 rounded-xl border {% if test_result.success %}bg-green-50 border-green-200{% else %}bg-red-50 border-red-200{% endif %} p-6">
+      <h2 class="text-xl font-semibold mb-4">
+        {% if test_result.success %}✅ Test réussi{% else %}❌ Test échoué{% endif %}
+      </h2>
+      
+      {% if test_result.success %}
+      <div class="space-y-2">
+        <div>
+          <span class="text-gray-600">Provider Reference:</span>
+          <span class="font-mono font-medium ml-2">{{ test_result.provider_reference }}</span>
+        </div>
+        <div>
+          <span class="text-gray-600">Status:</span>
+          <span class="font-medium ml-2">{{ test_result.status }}</span>
+        </div>
+        {% if test_result.api_response %}
+        <div class="mt-4">
+          <span class="text-gray-600 font-semibold">Réponse API:</span>
+          <pre class="mt-2 p-4 bg-gray-100 rounded-lg overflow-auto text-sm"><code>{{ test_result.api_response|safe }}</code></pre>
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="space-y-2">
+        <div>
+          <span class="font-semibold text-red-900">Erreur:</span>
+          <p class="mt-1 text-red-700">{{ test_result.error }}</p>
+        </div>
+        {% if test_result.traceback %}
+        <details class="mt-4">
+          <summary class="cursor-pointer text-sm text-red-600 hover:text-red-800">Afficher les détails techniques</summary>
+          <pre class="mt-2 p-4 bg-red-100 rounded-lg overflow-auto text-xs"><code>{{ test_result.traceback }}</code></pre>
+        </details>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# Bouton de test #}
+    <div class="mb-6 rounded-xl border bg-white p-6 shadow">
+      <h2 class="text-xl font-semibold mb-4">🚀 Lancer un test API</h2>
+      <p class="text-gray-600 mb-4">
+        Cliquez sur le bouton ci-dessous pour tester la connexion à l'API Orange Money.
+        Une transaction de test de 1 FCFA sera créée.
+      </p>
+      
+      <form method="post" class="flex gap-4">
+        {% csrf_token %}
+        <button type="submit" name="test_api" 
+                class="px-6 py-3 rounded-xl font-semibold transition-all
+                       bg-orange-600 hover:bg-orange-700 text-white
+                       ring-1 ring-orange-700/20 focus:outline-none focus:ring-2 focus:ring-orange-600">
+          🧪 Tester l'API Orange Money
+        </button>
+      </form>
+    </div>
+
+    {# Instructions #}
+    <div class="mb-6 rounded-xl border bg-blue-50 p-6">
+      <h3 class="text-lg font-semibold mb-3 text-blue-900">📝 Instructions</h3>
+      <div class="text-sm text-blue-800 space-y-2">
+        <p>1. Vérifiez que toutes les variables sont définies dans votre fichier <code class="bg-blue-100 px-1 rounded">.env</code></p>
+        <p>2. Assurez-vous que les credentials Orange Money sont corrects</p>
+        <p>3. Cliquez sur "Tester l'API Orange Money" pour lancer un test</p>
+        <p>4. Consultez les résultats ci-dessus pour voir si l'appel a réussi</p>
+        <p>5. Vérifiez les logs Django dans la console pour plus de détails</p>
+      </div>
+    </div>
+
+    {# Lien vers le script de test CLI #}
+    <div class="mb-6 rounded-xl border bg-gray-50 p-6">
+      <h3 class="text-lg font-semibold mb-3">💻 Test en ligne de commande</h3>
+      <p class="text-sm text-gray-600 mb-2">
+        Vous pouvez aussi tester l'API depuis la ligne de commande :
+      </p>
+      <pre class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-auto"><code>python manage.py test_orange_money_api
+# ou
+python test_orange_money_api.py</code></pre>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

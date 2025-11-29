@@ -369,6 +369,43 @@ class ClientInquiry(models.Model):
     # Payload brut du formulaire
     payload = JSONField(default=dict, blank=True)
 
+    # Kit-specific fields (for KIT inquiries)
+    selected_tier_code = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Code interne du palier (essentiel_plus / complete_pro / expert_audit).",
+    )
+    docs_count = models.PositiveIntegerField(
+        default=1,
+        help_text="Nombre de documents transmis / à traiter."
+    )
+    complexity = models.CharField(
+        max_length=20,
+        choices=[
+            ("simple", "Dossiers simples"),
+            ("standard", "Standard"),
+            ("complexe", "Complexes / sensibles"),
+        ],
+        default="standard",
+        blank=True,
+    )
+    estimated_price_fcfa = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Montant TTC estimé en FCFA au moment du devis."
+    )
+    inquiry_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("DRAFT", "Brouillon"),
+            ("QUOTED", "Devis généré"),
+            ("PAID", "Payé"),
+        ],
+        default="DRAFT",
+        blank=True,
+        help_text="Statut de la demande de kit (distinct du status général).",
+    )
+
     # Payment & Processing states
     order = models.ForeignKey("store.Order", null=True, blank=True, on_delete=models.SET_NULL, related_name="inquiries")
     payment_status = models.CharField(
@@ -476,12 +513,17 @@ class PaymentIntent(models.Model):
 
 class GeneratedDraft(models.Model):
     inquiry = models.OneToOneField(ClientInquiry, on_delete=models.CASCADE, related_name="generated_draft")
-    docx = models.FileField(upload_to="drafts/%Y/%m/")
-    built_at = models.DateTimeField(auto_now_add=True)
+    docx = models.FileField(upload_to="kits/drafts/")
+    created_at = models.DateTimeField(auto_now_add=True)
+    model_name = models.CharField(max_length=100, blank=True, help_text="Modèle LLM utilisé (ex: gpt-4o-mini)")
+    token_usage = models.IntegerField(blank=True, null=True, help_text="Nombre de tokens utilisés")
+    log = models.TextField(blank=True, help_text="Log de génération, prompt, debug info, etc.")
+    # Legacy field for backward compatibility
+    built_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     build_log = models.TextField(blank=True)
 
     def __str__(self):
-        return f"GeneratedDraft for Inquiry#{self.inquiry.pk}"
+        return f"Draft for inquiry #{self.inquiry_id}"
 
 
 class FinalAsset(models.Model):
@@ -520,6 +562,9 @@ class KitProcessingTask(models.Model):
     published_by = models.ForeignKey(
         get_user_model(), blank=True, null=True, on_delete=models.SET_NULL
     )
+
+    class Meta:
+        ordering = ["-created_at"]  # Trier par date de création décroissante
 
     def __str__(self):
         return f"KitProcessingTask({self.id}) - {self.inquiry.email} - {self.status}"
@@ -624,8 +669,157 @@ class BonusRequest(models.Model):
         ]
 
     def clean(self):
-        # 👉 règle simple : au moins l’un des deux
+        # 👉 règle simple : au moins l'un des deux
         if not self.order_ref and not self.proof_file:
             raise ValidationError(
-                "Fournissez l’ID/la référence de commande OU téléversez une preuve d’achat (PDF/PNG/JPG)."
+                "Fournissez l'ID/la référence de commande OU téléversez une preuve d'achat (PDF/PNG/JPG)."
             )
+
+
+class KitOrder(models.Model):
+    """
+    Modèle pour le suivi des commandes de Kit personnalisé.
+    Créé après confirmation de paiement.
+    """
+    OFFER_ESSENTIEL_PLUS = "ESSENTIEL_PLUS"
+    OFFER_COMPLET_PRO = "COMPLET_PRO"
+    OFFER_EXPERT_AUDIT = "EXPERT_AUDIT"
+    OFFER_CHOICES = [
+        (OFFER_ESSENTIEL_PLUS, "Essentiel+"),
+        (OFFER_COMPLET_PRO, "Complet Pro"),
+        (OFFER_EXPERT_AUDIT, "Expert Audit"),
+    ]
+
+    STATUS_PAYMENT_RECEIVED = "PAYMENT_RECEIVED"
+    STATUS_ANALYSIS = "ANALYSIS"
+    STATUS_WRITING = "WRITING"
+    STATUS_REVIEW = "REVIEW"
+    STATUS_DONE = "DONE"
+    STATUS_CHOICES = [
+        (STATUS_PAYMENT_RECEIVED, "Paiement reçu"),
+        (STATUS_ANALYSIS, "Analyse des documents"),
+        (STATUS_WRITING, "Rédaction en cours"),
+        (STATUS_REVIEW, "Relecture & consolidation"),
+        (STATUS_DONE, "Livraison finale"),
+    ]
+
+    tracking_id = models.CharField(
+        max_length=20,
+        unique=True,
+        db_index=True,
+        help_text="ID de suivi unique (ex: KCP-00001)",
+    )
+    full_name = models.CharField(
+        max_length=200,
+        help_text="Nom complet du client",
+    )
+    email = models.EmailField(
+        help_text="Email du client",
+    )
+    offer = models.CharField(
+        max_length=20,
+        choices=OFFER_CHOICES,
+        help_text="Offre choisie",
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        help_text="Montant payé en FCFA",
+    )
+    estimated_delay_hours = models.PositiveIntegerField(
+        default=72,
+        help_text="Délai estimé en heures ouvrables",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PAYMENT_RECEIVED,
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    delivery_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date de livraison estimée ou confirmée",
+    )
+    starter_pack_delivered = models.BooleanField(
+        default=False,
+        help_text="Indique si le lien Starter Pack a été fourni",
+    )
+
+    # Relations avec les modèles existants
+    inquiry = models.ForeignKey(
+        ClientInquiry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="kit_orders",
+        help_text="Lien vers la demande ClientInquiry originale",
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="kit_orders",
+        help_text="Lien vers l'Order de paiement",
+    )
+
+    class Meta:
+        verbose_name = "Commande Kit personnalisé"
+        verbose_name_plural = "Commandes Kit personnalisé"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["tracking_id"]),
+            models.Index(fields=["status", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tracking_id} - {self.full_name} ({self.get_offer_display()})"
+
+    def save(self, *args, **kwargs):
+        """
+        Génère automatiquement le tracking_id si non défini.
+        """
+        if not self.tracking_id:
+            from django.db.models import Max
+            last_order = KitOrder.objects.aggregate(Max("id"))
+            last_id = last_order.get("id__max") or 0
+            next_number = last_id + 1
+            self.tracking_id = f"KCP-{next_number:05d}"
+        super().save(*args, **kwargs)
+
+    def get_tracking_url(self) -> str:
+        """
+        Retourne l'URL absolue vers la page de suivi.
+        """
+        from django.urls import reverse
+        from django.contrib.sites.models import Site
+        from django.conf import settings
+
+        try:
+            current_site = Site.objects.get_current()
+            base_url = f"https://{current_site.domain}"
+        except Exception:
+            base_url = getattr(
+                settings, "SITE_URL", "http://127.0.0.1:8000"
+            )
+        return f"{base_url}{reverse('store:kit_tracking', args=[self.tracking_id])}"
+
+    def get_starter_pack_url(self) -> str:
+        """
+        Retourne l'URL vers le Starter Pack.
+        """
+        from django.urls import reverse
+        from django.contrib.sites.models import Site
+        from django.conf import settings
+
+        try:
+            current_site = Site.objects.get_current()
+            base_url = f"https://{current_site.domain}"
+        except Exception:
+            base_url = getattr(
+                settings, "SITE_URL", "http://127.0.0.1:8000"
+            )
+        return f"{base_url}{reverse('store:kit_starter_pack')}"

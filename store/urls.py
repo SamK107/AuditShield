@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from . import payment_views as pay
 from . import views_admin_kit as views_admin_kit
+from . import kit_views
 
 app_name = "store"
 
@@ -9,10 +10,39 @@ urlpatterns = [
     # Checkout unifié (CinetPay + Orange Money)
     path("buy/<slug:slug>/", pay.start_checkout, name="buy"),
     path("buy/", pay.start_checkout, {"slug": "cinetpay"}, name="buy_default"),
-    # Orange Money: retours & webhook + sandbox mock
-    path("payments/om/return/", pay.om_return, name="om_return"),
-    path("payments/om/notify/", pay.om_notify, name="om_notify"),
+    
+    # Orange Money: checkout ebook (nouveau flux API réel)
+    path("buy/om/<slug:product_slug>/", pay.orange_start_payment, name="orange_start"),
+    # Orange Money: checkout ebook (legacy)
+    path("buy/orange/<slug:product_slug>/", pay.orange_checkout, name="orange_checkout"),
+    path("orange/mock/<str:provider_ref>/", pay.orange_mock_checkout, name="orange_mock_checkout"),
+    path("orange/mock/<str:provider_ref>/success/", pay.orange_mock_success, name="orange_mock_success"),
+    path("orange/mock/<str:provider_ref>/failure/", pay.orange_mock_failure, name="orange_mock_failure"),
+    path("orange/callback/", pay.orange_callback, name="orange_callback"),
+    path("orange/test/", pay.orange_api_test, name="orange_api_test"),
+    
+    # Orange Money: routes avec préfixe /store/ pour compatibilité
+    path("store/orange/mock/<str:provider_ref>/", pay.orange_mock_checkout, name="orange_mock_checkout_store"),
+    path("store/orange/mock/<str:provider_ref>/success/", pay.orange_mock_success, name="orange_mock_success_store"),
+    path("store/orange/mock/<str:provider_ref>/failure/", pay.orange_mock_failure, name="orange_mock_failure_store"),
+    path("store/orange/test/", pay.orange_api_test, name="orange_api_test_store"),
+    
+    # Orange Money: retours & webhook (nouveau flux API réel - conforme PDF)
+    path("payments/om/return/", pay.orange_return, name="orange_return"),
+    path("payments/om/notify/", pay.orange_notify, name="orange_notify"),
+    # Orange Money: retours & webhook (legacy pour Kit - gardé pour compatibilité)
+    path("payments/om/return-legacy/", pay.om_return, name="om_return"),
+    path("payments/om/notify-legacy/", pay.om_notify, name="om_notify"),
     path("payments/om/mock/", pay.om_mock_checkout, name="om_mock_checkout"),
+    path("payments/om/mock/confirm/", pay.om_mock_confirm, name="om_mock_confirm"),
+    # Orange Money: démarrage paiement Kit complet
+    path(
+        "payments/kit/om/start/<int:inquiry_id>/",
+        pay.kit_pay_om_start,
+        name="kit_pay_om_start",
+    ),
+    # Orange Money: nouvelles routes modulaires (payments/orange_money/)
+    path("payments/", include(("store.payments.orange_money.urls", "store"), namespace="orange_money")),
     # CinetPay: retours & webhook
     path(
         "payments/cinetpay/return/",
@@ -36,6 +66,11 @@ urlpatterns = [
         name="kit_complete_processing",
     ),
     path(
+        "kit-complet/demande/<int:pk>/",
+        views_admin_kit.kit_complete_inquiry_detail,
+        name="kit_complete_inquiry_detail",
+    ),
+    path(
         "kit-complet-traitement/<int:pk>/process/",
         views_admin_kit.kit_complete_process,
         name="kit_complete_process",
@@ -49,6 +84,16 @@ urlpatterns = [
         "kit-complet-traitement/<int:pk>/publish/",
         views_admin_kit.kit_complete_publish,
         name="kit_complete_publish",
+    ),
+    path(
+        "kit-complet-traitement/<int:pk>/status/",
+        views_admin_kit.kit_complete_status,
+        name="kit_complete_status",
+    ),
+    path(
+        "kit-complet/demande/<int:pk>/draft/",
+        views_admin_kit.kit_generated_draft_download,
+        name="kit_generated_draft_download",
     ),
     # Tarifs Kit complet
     path("tarifs/kit-complet/", views.tariffs_kit, name="tariffs_kit"),
@@ -101,6 +146,11 @@ urlpatterns = [
         ),
     path("kit/inquiry/", views.kit_inquiry, name="kit_inquiry"),
     path(
+        "kit/inquiry/<int:pk>/devis/",
+        views.kit_quote,
+        name="kit_quote",
+    ),
+    path(
         "kit/inquiry/merci/",
         views.kit_inquiry_success,
         name="kit_inquiry_success",
@@ -109,5 +159,21 @@ urlpatterns = [
         "training/inquiry/",
         views.training_inquiry,
         name="training_inquiry",
+    ),
+    # Kit Order Tracking & Success
+    path(
+        "kit/payment/success/<str:tracking_id>/",
+        kit_views.kit_payment_success,
+        name="kit_payment_success",
+    ),
+    path(
+        "kit/track/<str:tracking_id>/",
+        kit_views.kit_tracking,
+        name="kit_tracking",
+    ),
+    path(
+        "kit/starter-pack/",
+        kit_views.kit_starter_pack_view,
+        name="kit_starter_pack",
     ),
 ]

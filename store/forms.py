@@ -4,10 +4,10 @@ from .models import ClientInquiry
 # Placeholders minimaux pour éviter ImportError dans store/views.py
 # (À remplacer par les vraies implémentations si nécessaire)
 class CheckoutForm(forms.Form):
-    email = forms.EmailField(required=True)
-    first_name = forms.CharField(required=False)
-    last_name = forms.CharField(required=False)
-    phone = forms.CharField(required=False)
+    email = forms.EmailField(required=True, label="Email")
+    first_name = forms.CharField(required=True, max_length=120, label="Prénom")
+    last_name = forms.CharField(required=True, max_length=120, label="Nom")
+    phone = forms.CharField(required=False, max_length=32, label="Téléphone")
     amount_fcfa = forms.IntegerField(required=False)
 
 
@@ -60,6 +60,21 @@ class KitInquiryForm(forms.ModelForm):
             "class": "w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-blue-500"
         })
     )
+    docs_count = forms.IntegerField(
+        min_value=1,
+        label="Nombre de documents",
+        help_text="Nombre de textes / dossiers à analyser pour préparer votre kit.",
+        initial=1,
+    )
+    complexity = forms.ChoiceField(
+        label="Complexité estimée des dossiers",
+        choices=[
+            ("simple", "Dossiers simples (procédures standard)"),
+            ("standard", "Standard"),
+            ("complexe", "Complexes / sensibles (bailleurs, grands projets…)"),
+        ],
+        initial="standard",
+    )
 
     class Meta:
         model = ClientInquiry
@@ -71,6 +86,7 @@ class KitInquiryForm(forms.ModelForm):
             "context_text",
             "funding_sources", "audits_types", "audits_frequency",
             "staff_size", "org_chart_text", "notes_text",
+            "docs_count", "complexity",
         ]
         widgets = {
             "context_text": forms.Textarea(attrs={

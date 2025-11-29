@@ -1,5 +1,5 @@
 {% extends "store/base.html" %}
-{% block title %}Paiement réussi - {{ order.product.title }}{% endblock %}
+{% block title %}Paiement réussi - Orange Money{% endblock %}
 
 {% block store_content %}
 <section class="py-14">
@@ -17,10 +17,11 @@
       
       <h1 class="text-2xl font-bold text-green-900 mb-2">Paiement réussi !</h1>
       <p class="text-green-700">
-        Votre commande a été traitée avec succès.
+        Votre paiement Orange Money a été traité avec succès.
       </p>
     </div>
 
+    {% if order %}
     {# Détails de la commande #}
     <div class="mb-6 rounded-2xl border bg-white p-6 shadow">
       <h2 class="text-lg font-semibold mb-4 text-gray-900">Récapitulatif de votre achat</h2>
@@ -33,7 +34,7 @@
         
         <div class="flex justify-between items-center">
           <span class="text-gray-600">Montant payé :</span>
-          <span class="font-bold text-lg text-green-600">{{ order.amount_fcfa }} FCFA</span>
+          <span class="font-bold text-lg text-green-600">{{ payment.amount }} {{ payment.currency }}</span>
         </div>
         
         <div class="flex justify-between items-center">
@@ -43,19 +44,20 @@
         
         <div class="flex justify-between items-center">
           <span class="text-gray-600">Référence :</span>
-          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ order.provider_ref }}</span>
+          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ payment.reference }}</span>
         </div>
         
-        {% if order.paid_at %}
+        {% if payment.external_transaction_id %}
         <div class="flex justify-between items-center">
-          <span class="text-gray-600">Date de paiement :</span>
-          <span class="text-sm">{{ order.paid_at|date:"d/m/Y à H:i" }}</span>
+          <span class="text-gray-600">Transaction Orange Money :</span>
+          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ payment.external_transaction_id }}</span>
         </div>
         {% endif %}
       </div>
     </div>
 
-    {# Instructions de téléchargement #}
+    {# Instructions selon le type de commande #}
+    {% if is_paid %}
     <div class="mb-6 rounded-2xl border bg-blue-50 p-6">
       <h3 class="text-md font-semibold mb-3 text-blue-900 flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,24 +67,18 @@
       </h3>
       <div class="text-sm text-blue-800 space-y-2">
         <p>• Un email de confirmation a été envoyé à <strong>{{ order.email }}</strong></p>
-        <p>• Cet email contient les liens de téléchargement de votre ebook</p>
+        <p>• Cet email contient les liens de téléchargement</p>
         <p>• Les liens sont valables 72 heures</p>
-        <p>• Si vous ne recevez pas l'email, vérifiez vos spams</p>
       </div>
     </div>
+    {% endif %}
+    {% endif %}
 
-    {# Bouton d'accès direct #}
-    <div class="text-center">
-      <a href="{% url 'downloads:secure' order_uuid=order.uuid %}" 
-         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all
-                bg-brand-600 hover:bg-brand-700 text-white
-                ring-1 ring-brand-700/20 focus:outline-none focus:ring-2 focus:ring-brand-600">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Accéder aux téléchargements
-      </a>
+    {% if error %}
+    <div class="mb-6 rounded-2xl border bg-yellow-50 p-6">
+      <p class="text-yellow-800">{{ error }}</p>
     </div>
+    {% endif %}
 
     {# Support #}
     <div class="mt-8 text-center text-sm text-gray-500">
@@ -97,3 +93,4 @@
   </div>
 </section>
 {% endblock %}
+

@@ -2,11 +2,13 @@
 import hashlib
 import hmac
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 logger.warning("STORE.VIEWS LOADED FROM %s", __file__)
 import os
 import uuid
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -21,6 +23,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 import store.services.cinetpay as cinetpay
 from store.services.cinetpay import verify_signature, payment_check
+from store.services import orange_money
 from downloads.models import DownloadableAsset
 from store.content.faqs import FAQ_ITEMS
 from downloads.services import user_has_access
@@ -68,6 +71,7 @@ def downloads_irregularites(request):
   # ta logique d'entitlement
 
 from .models import (
+    ClientInquiry,
     DownloadToken,
     ExampleSlide,
     InquiryDocument,
@@ -132,6 +136,148 @@ def _load_tariff_ranges_from_md() -> dict:
         price = price.replace("<br>", " ").replace("<br/>", " ").replace("<br />", " ").strip()
         ranges[name] = price
     return ranges
+
+# ---- Helpers d'estimation de prix ----
+
+PRICE_CLEAN_RE = re.compile(r"[^\d]")  # retire tout sauf les chiffres
+
+def _parse_price_range(range_str: str) -> tuple[int | None, int | None]:
+    """
+    Convertit une chaîne '45 000 – 65 000' en (45000, 65000).
+    Retourne (None, None) si parsing impossible.
+    """
+    if not range_str:
+        return (None, None)
+    parts = re.split(r"[–\-—]+", range_str)
+    nums: list[int] = []
+    for part in parts:
+        digits = PRICE_CLEAN_RE.sub("", part)
+        if digits:
+            nums.append(int(digits))
+    if not nums:
+        return (None, None)
+    if len(nums) == 1:
+        return (nums[0], nums[0])
+    return (min(nums), max(nums))
+
+def _compute_org_factor_from_data(data: dict) -> float:
+    """
+    Calcule un coefficient organisation entre ~0.9 et ~1.3
+    selon le type de structure, le secteur et les sources de financement.
+    Idée générale :
+    - Structures publiques / grandes institutions / bailleurs : facteur > 1
+    - ONG / associations de taille moyenne : proche de 1
+    - Petites structures sans bailleurs : léger discount (≈ 0.95)
+    """
+    base = 1.0
+    statut = (data.get("statut_juridique") or "").lower()
+    sector = (data.get("sector") or "").lower()
+    funding = data.get("funding_sources") or []
+    audits = data.get("audits_types") or []
+
+    # 1) Type de structure / statut juridique
+    if any(word in statut for word in ["ministère", "ministere", "établissement public", "etablissement public", "epa", "epic", "collectivité", "collectivite"]):
+        base += 0.12
+    elif any(word in statut for word in ["ong", "organisation non gouvernementale"]):
+        base += 0.05
+    elif any(word in statut for word in ["sarl", "sa", "sas"]):
+        base += 0.03
+
+    # 2) Secteur d'activité : secteurs sensibles / régulés
+    if any(word in sector for word in ["santé", "sante", "éducation", "education", "financier", "banque", "microfinance", "énergie", "energie"]):
+        base += 0.05
+
+    # 3) Financement par bailleurs / projets
+    funding_str = " ".join(map(str, funding)).lower()
+    if any(word in funding_str for word in ["bailleur", "banque mondiale", "bm", "bad", "ue", "union européenne", "union europeenne", "afd", "pnud"]):
+        base += 0.10
+
+    # 4) Types d'audits : externes / bailleurs / conformité
+    audits_str = " ".join(map(str, audits)).lower()
+    if any(word in audits_str for word in ["audit externe", "bailleurs", "projet financé", "projet finance", "audit de conformité", "audit de conformite"]):
+        base += 0.05
+
+    # 5) Plancher pour petites structures sans bailleurs
+    if not funding and not audits and not statut and not sector:
+        base = 1.0
+    elif not funding and "ong" not in statut and "ministere" not in statut and "ministère" not in statut:
+        base -= 0.05
+
+    base = max(0.90, min(1.30, base))
+    return base
+
+def _compute_org_factor_from_inquiry(inquiry) -> float:
+    data = {
+        "statut_juridique": getattr(inquiry, "statut_juridique", ""),
+        "sector": getattr(inquiry, "sector", ""),
+        "funding_sources": getattr(inquiry, "funding_sources", []) or [],
+        "audits_types": getattr(inquiry, "audits_types", []) or [],
+    }
+    return _compute_org_factor_from_data(data)
+
+def _estimate_kit_price(
+    tier_code: str,
+    docs_count: int,
+    complexity: str = "standard",
+    org_factor: float = 1.0,
+) -> dict:
+    """
+    Calcule un prix conseillé pour le kit complet, en FCFA.
+    org_factor permet d'ajuster la position dans la fourchette selon le
+    type d'organisation / financement (0.9 ~ 1.3).
+    """
+    tiers = _get_kit_tiers()
+    tier = next((t for t in tiers if t["code"] == tier_code), None)
+    if not tier:
+        tier = next((t for t in tiers if t["code"] == "complete_pro"), tiers[0])
+
+    min_price, max_price = _parse_price_range(tier.get("price_range_fcfa", ""))
+    if min_price is None or max_price is None:
+        if tier["code"] == "complete_pro":
+            min_price, max_price = (85000, 110000)
+        elif tier["code"] == "expert_audit":
+            min_price, max_price = (130000, 170000)
+        else:
+            min_price, max_price = (45000, 65000)
+
+    docs_range = tier["docs_range"]
+    m = re.search(r"(\d+)\D+(\d+)", docs_range)
+    if m:
+        dmin, dmax = int(m.group(1)), int(m.group(2))
+        docs_count = max(dmin, min(docs_count, dmax))
+        if dmax > dmin:
+            ratio_docs = (docs_count - dmin) / (dmax - dmin)
+        else:
+            ratio_docs = 0.5
+    else:
+        ratio_docs = 0.5
+
+    complexity_weights = {
+        "simple": 0.2,
+        "standard": 0.5,
+        "complexe": 0.8,
+    }
+    c_weight = complexity_weights.get(complexity, 0.5)
+
+    base_factor = 0.7 * ratio_docs + 0.3 * c_weight  # ∈ [0,1]
+    factor_with_org = base_factor * org_factor
+    factor_with_org = max(0.0, min(1.0, factor_with_org))
+
+    price_span = max_price - min_price
+    raw_price = min_price + factor_with_org * price_span
+    
+    # Arrondir à un multiple de 1000 FCFA pour faciliter le paiement
+    # Diviser par 1000, arrondir, puis multiplier par 1000
+    suggested = int(round(raw_price / 1000) * 1000)
+    
+    # S'assurer que le prix reste dans la fourchette
+    suggested = max(min_price, min(suggested, max_price))
+
+    return {
+        "min_price": min_price,
+        "max_price": max_price,
+        "suggested_price": suggested,
+    }
 
 def _get_kit_tiers() -> list[dict]:
     """
@@ -252,22 +398,39 @@ def kit_inquiry(request):
             for err in file_errors:
                 form.add_error("documents", err)
         if form.is_valid() and not file_errors:
-            inquiry = form.save()
+            data = form.cleaned_data
+            docs_count = data.get("docs_count") or 1
+            complexity = data.get("complexity") or "standard"
+            org_factor = _compute_org_factor_from_data(data)
+            estimate = _estimate_kit_price(
+                tier_code=selected_tier_code,
+                docs_count=docs_count,
+                complexity=complexity,
+                org_factor=org_factor,
+            )
+            inquiry: ClientInquiry = form.save(commit=False)
+            inquiry.selected_tier_code = selected_tier_code
+            inquiry.docs_count = docs_count
+            inquiry.complexity = complexity
+            inquiry.estimated_price_fcfa = estimate["suggested_price"]
+            inquiry.inquiry_status = "QUOTED"
+            inquiry.save()
             for f in files:
                 InquiryDocument.objects.create(inquiry=inquiry, file=f, original_name=f.name)
-            data = form.cleaned_data
             subject = "Demande – Kit personnalisé"
             lines = [
                 "Nouvelle demande de Kit personnalisé :",
                 f"- Nom          : {data['contact_name']}",
                 f"- Email        : {data['email']}",
-                f"- Organisation : {data['organization_name']}",
+                f"- Organisation : {data.get('organization_name') or '—'}",
                 f"- Téléphone    : {data.get('phone') or '—'}",
                 f"- Statut       : {data.get('statut_juridique') or '—'}",
                 f"- Localisation : {data.get('location') or '—'}",
                 f"- Secteur      : {data.get('sector') or '—'}",
-                f"- Budget       : {data.get('budget_range') or '—'}",
-                f"- Missions     : {data.get('mission_text') or '—'}",
+                f"- Nb docs      : {docs_count}",
+                f"- Complexité   : {complexity}",
+                f"- Offre        : {selected_tier_code}",
+                f"- Devis (FCFA) : {estimate['suggested_price']}",
                 "",
                 "DÉTAILS (optionnels) :",
                 f"- Financement  : {', '.join(data.get('funding_sources', [])) or '—'}",
@@ -297,21 +460,10 @@ def kit_inquiry(request):
                         names = "\n".join(f"- {f.name}" for f in files)
                         email.body += "\n\nFichiers reçus (non attachés car volumineux) :\n" + names
                 email.send(fail_silently=True)
-                messages.success(
-                    request,
-                    "Merci, votre demande a bien été envoyée. "
-                    "Nous vous contactons sous 24–48 h avec une proposition adaptée.",
-                )
             except Exception:
                 logging.getLogger(__name__).exception("Erreur d'envoi email (kit)")
-                messages.info(
-                    request,
-                    "Votre demande est enregistrée. "
-                    "Un souci d'email est survenu ; nous vous recontactons vite.",
-                )
-            success_url = reverse("store:kit_inquiry_success")
-            # propagate selected tier to success page
-            return redirect(f"{success_url}?tier={selected_tier_code}")
+            # Redirection vers la page de devis
+            return redirect("store:kit_quote", pk=inquiry.pk)
     else:
         form = KitInquiryForm()
     return render(
@@ -329,7 +481,111 @@ def kit_inquiry_success(request):
     tiers = _get_kit_tiers()
     code = (request.GET.get("tier") or "").strip()
     tier = next((t for t in tiers if t["code"] == code), None)
-    return render(request, "store/forms/kit_inquiry_success.html", {"tier": tier})
+    
+    # Vérifier si c'est après un paiement réussi
+    paid = request.GET.get("paid") == "1"
+    
+    return render(
+        request,
+        "store/forms/kit_inquiry_success.html",
+        {"tier": tier, "paid": paid}
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def kit_quote(request, pk: int):
+    """
+    Page de devis après la demande de kit.
+    GET  => affiche le devis et le récap.
+    POST => crée la commande et lance le paiement (CinetPay / Orange Money).
+    """
+    inquiry = get_object_or_404(ClientInquiry, pk=pk, kind=ClientInquiry.KIND_KIT)
+    tiers = _get_kit_tiers()
+    tier = next((t for t in tiers if t["code"] == inquiry.selected_tier_code), None)
+    if not tier:
+        tier = next((t for t in tiers if t["code"] == "complete_pro"), tiers[0])
+
+    org_factor = _compute_org_factor_from_inquiry(inquiry)
+    estimate = _estimate_kit_price(
+        tier_code=tier["code"],
+        docs_count=inquiry.docs_count or 1,
+        complexity=inquiry.complexity or "standard",
+        org_factor=org_factor,
+    )
+
+    if not inquiry.estimated_price_fcfa:
+        inquiry.estimated_price_fcfa = estimate["suggested_price"]
+        inquiry.inquiry_status = "QUOTED"
+        inquiry.save(update_fields=["estimated_price_fcfa", "inquiry_status"])
+
+    if request.method == "POST":
+        provider = request.POST.get("provider", "cinetpay")
+        product = Product.objects.filter(slug="audit-sans-peur").first()
+        if not product:
+            return render(
+                request,
+                "store/payment_error.html",
+                {"message": "Produit 'Audit Sans Peur' introuvable pour le kit."},
+                status=500,
+            )
+
+        kit_tier = OfferTier.objects.filter(product=product, kind="KIT").first() \
+                   or OfferTier.objects.filter(product=product, kind="STANDARD").first()
+
+        amount = inquiry.estimated_price_fcfa or estimate["suggested_price"]
+        order = Order.objects.create(
+            product=product,
+            tier_id=kit_tier.id if kit_tier else None,
+            email=inquiry.email,
+            first_name=inquiry.contact_name or "",
+            last_name="",
+            phone=getattr(inquiry, "phone", ""),
+            amount_fcfa=amount,
+            currency="XOF",
+            status="CREATED",
+            provider_ref=f"KIT-{uuid.uuid4().hex}",
+        )
+        # Stocker les métadonnées dans le champ meta si disponible, sinon utiliser un champ texte
+        # Pour l'instant, on stocke juste la référence dans provider_ref
+
+        try:
+            if provider == "orange_money_ml":
+                redirect_url, external_ref = orange_money.create_checkout(
+                    inquiry_id=inquiry.id,
+                    amount=order.amount_fcfa,
+                    currency="XOF",
+                    request=request,
+                )
+                order.provider_ref = external_ref
+                order.save(update_fields=["provider_ref"])
+                pay_url = redirect_url
+            else:
+                pay_url = cinetpay.init_payment_auto(order=order, request=request)
+        except Exception:
+            order.status = "FAILED"
+            order.save(update_fields=["status"])
+            return render(
+                request,
+                "store/payment_error.html",
+                {"message": "Erreur lors de l'initialisation du paiement."},
+                status=500,
+            )
+
+        # Lier l'inquiry à l'order
+        inquiry.order = order
+        inquiry.save(update_fields=["order"])
+
+        return redirect(pay_url)
+
+    return render(
+        request,
+        "store/forms/kit_quote.html",
+        {
+            "inquiry": inquiry,
+            "tier": tier,
+            "estimate": estimate,
+        },
+    )
 
 
 MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
@@ -492,7 +748,7 @@ SLUG_ALIASES = {
 
 @require_http_methods(["GET", "POST"])
 def buy(request, slug):
-    # 1) Résolution d’alias (ex. /buy/cinetpay/ => product "audit-sans-peur")
+    # 1) Résolution d'alias (ex. /buy/cinetpay/ => product "audit-sans-peur")
     canonical_slug = SLUG_ALIASES.get(slug, slug)
 
     product = get_object_or_404(Product, slug=canonical_slug, is_published=True)
@@ -500,8 +756,18 @@ def buy(request, slug):
     tier = None
 
     if request.method == "POST":
+        logger.info(f"[BUY] POST request received - POST data: {dict(request.POST)}")
         form = CheckoutForm(request.POST)
+        # 🔹 Récupérer le provider envoyé par le formulaire (radio buttons)
+        provider = request.POST.get("provider", "").strip()
+        if not provider:
+            # Fallback si aucun provider n'est fourni (ne devrait pas arriver)
+            provider = "cinetpay"
+            logger.warning(f"[BUY] No provider in POST, defaulting to cinetpay")
+        logger.info(f"[BUY] POST request - provider={provider}, form valid={form.is_valid()}")
+
         if form.is_valid():
+            logger.info(f"[BUY] Form is valid, proceeding with payment (provider={provider})")
             data = form.cleaned_data
             tier_id = standard_tier.id if standard_tier else None
             if not tier_id:
@@ -514,6 +780,8 @@ def buy(request, slug):
             tier = get_object_or_404(OfferTier, id=tier_id, product=product)
             transaction_id = uuid.uuid4().hex[:24].upper()
             amount = tier.price_fcfa or product.price_fcfa
+
+            # Création de la commande
             order = Order.objects.create(
                 product=product,
                 tier_id=tier.id if tier else None,
@@ -526,21 +794,72 @@ def buy(request, slug):
                 status="CREATED",
                 provider_ref=f"ORDER-{uuid.uuid4().hex}",
             )
+
             try:
-                payment_url = cinetpay.init_payment_auto(order=order, request=request)
-            except Exception:
-                order.delete()
+                if provider == "orange_money_ml":
+                    # 🔸 Appel réel de l'API Orange Money (sandbox)
+                    logger.info(f"[BUY] Initializing Orange Money payment for order {order.id}")
+                    res = orange_money.create_payment_request(order, request=request)
+                    pay_url = res["payment_url"]
+                    logger.info(f"[BUY] Orange Money payment URL obtained: {pay_url[:100]}...")
+                else:
+                    # 🔸 Comportement historique CinetPay
+                    logger.info(f"[BUY] Initializing CinetPay payment for order {order.id}")
+                    pay_url = cinetpay.init_payment_auto(order=order, request=request)
+            except Exception as e:
+                logger.exception(f"[BUY] Error initializing payment (provider={provider}, order={order.id}): {e}")
+                order.status = "FAILED"
+                order.save(update_fields=["status"])
+                
+                # Message d'erreur spécifique pour Orange Money
+                if provider == "orange_money_ml":
+                    from store.services.orange_money import OrangeMoneyAPIError
+                    if isinstance(e, OrangeMoneyAPIError):
+                        # Utiliser le message d'erreur détaillé d'Orange Money
+                        error_msg = str(e)
+                    else:
+                        error_msg = (
+                            "Erreur lors de l'initialisation du paiement Orange Money.\n\n"
+                            "Si vous voyez une erreur concernant localhost/127.0.0.1, "
+                            "vous devez configurer ngrok pour le développement local.\n\n"
+                            "Voir les logs Django pour plus de détails."
+                        )
+                else:
+                    error_msg = f"Erreur lors de l'initialisation du paiement avec {provider}."
+                
                 return render(
                     request,
                     "store/payment_error.html",
-                    {"message": "Erreur lors de l'initialisation du paiement."},
+                    {"message": error_msg},
                     status=500,
                 )
-            return redirect(payment_url)
+
+            return redirect(pay_url)
+        else:
+            # Formulaire invalide - réafficher avec les erreurs
+            logger.warning(f"[BUY] Form is invalid (provider={provider}): {form.errors}")
+            # Réafficher le formulaire avec les erreurs
+            return render(
+                request,
+                "store/checkout.html",
+                {
+                    "form": form,
+                    "product": product,
+                    "tier": tier or standard_tier,
+                    "provider": provider,
+                    "public_slug": slug,
+                },
+            )
     else:
         form = CheckoutForm()
+        # 🔹 En GET, déterminer le provider pour affichage + hidden input
+        provider = request.GET.get("provider", "").strip()
+        if not provider:
+            # Si slug == "cinetpay", on force CinetPay ; sinon, "default"
+            provider = "cinetpay" if slug == "cinetpay" else "default"
+        logger.info(f"[BUY] GET request - slug={slug}, provider={provider}")
 
-    # 2) Flag provider pour le template (affichage branding CinetPay)
+    # 2) Rendu de la page de paiement
     return render(
         request,
         "store/checkout.html",
@@ -548,8 +867,8 @@ def buy(request, slug):
             "form": form,
             "product": product,
             "tier": tier or standard_tier,
-            "provider": "cinetpay" if slug == "cinetpay" else "default",
-            "public_slug": slug,  # utile si tu veux garder l’URL /buy/cinetpay/
+            "provider": provider,
+            "public_slug": slug,
         },
     )
     
@@ -808,9 +1127,44 @@ def payment_notify(request):
         if status in ("ACCEPTED", "SUCCESS", "PAID"):
             order.status = Order.PAID
             order.save(update_fields=["status"])
-            from store.services import deliver_order
-            deliver_order(order)
-            send_download_email(order)
+            
+            # Vérifier si c'est un Kit complet ou un ebook standard
+            from store.models import ClientInquiry
+            inquiry = ClientInquiry.objects.filter(
+                order=order, kind=ClientInquiry.KIND_KIT
+            ).first()
+            
+            if inquiry:
+                # Pour le Kit complet : créer KitOrder et envoyer son email spécifique
+                try:
+                    from store.services.kit_orders import (
+                        create_kit_order_from_payment,
+                        send_kit_order_confirmation_email,
+                    )
+                    kit_order = create_kit_order_from_payment(order, inquiry)
+                    send_kit_order_confirmation_email(kit_order)
+                    logger.info(
+                        f"[payment_notify] KitOrder créé: {kit_order.tracking_id}"
+                    )
+                except Exception:
+                    logger.exception("[payment_notify] Erreur création KitOrder")
+            else:
+                # Pour l'ebook standard : envoyer email de fulfillment complet
+                from store.services import deliver_order
+                from store.services.mailing import send_fulfilment_email
+                deliver_order(order)
+                order_ref = (
+                    order.provider_ref
+                    or order.cinetpay_payment_id
+                    or str(order.uuid)
+                )
+                send_fulfilment_email(
+                    to_email=order.email,
+                    order_ref=order_ref,
+                )
+                logger.info(
+                    f"[payment_notify] Email fulfillment envoyé pour ebook"
+                )
         elif status in ("REFUSED", "CANCELED", "FAILED"):
             order.status = Order.FAILED
             order.save(update_fields=["status"])
@@ -1025,6 +1379,61 @@ def cinetpay_return(request):
     paid = set(request.session.get("paid_orders", []))
     paid.add(str(order.uuid))
     request.session["paid_orders"] = list(paid)
+    
+    # Rediriger selon le type de commande
+    # Vérifier si c'est un Kit complet
+    try:
+        from store.models import ClientInquiry
+        inquiry = ClientInquiry.objects.filter(
+            order=order, kind=ClientInquiry.KIND_KIT
+        ).first()
+        if inquiry:
+            # Pour le Kit complet : créer KitOrder et rediriger vers la page de succès
+            try:
+                from store.services.kit_orders import (
+                    create_kit_order_from_payment,
+                    send_kit_order_confirmation_email,
+                )
+                kit_order = create_kit_order_from_payment(order)
+                send_kit_order_confirmation_email(kit_order)
+                logger.info(
+                    f"[CINETPAY_RETURN] KitOrder créé: {kit_order.tracking_id}"
+                )
+                return redirect(
+                    "store:kit_payment_success",
+                    tracking_id=kit_order.tracking_id,
+                )
+            except Exception:
+                logger.exception(
+                    "[CINETPAY_RETURN] Erreur création KitOrder, fallback"
+                )
+                # Fallback vers l'ancienne page
+                if inquiry.selected_tier_code:
+                    return redirect(
+                        f"{reverse('store:kit_inquiry_success')}?tier={inquiry.selected_tier_code}&paid=1"
+                    )
+                return redirect(f"{reverse('store:kit_inquiry_success')}?paid=1")
+    except Exception:
+        logger.exception("[CINETPAY_RETURN] Erreur vérification Kit complet")
+    
+    # Pour l'ebook standard : envoyer email de fulfillment et rediriger
+    try:
+        from store.services.mailing import send_fulfilment_email
+        order_ref = (
+            order.provider_ref
+            or order.cinetpay_payment_id
+            or str(order.uuid)
+        )
+        send_fulfilment_email(
+            to_email=order.email,
+            order_ref=order_ref,
+        )
+        logger.info(
+            f"[CINETPAY_RETURN] Email fulfillment envoyé pour ebook"
+        )
+    except Exception:
+        logger.exception("[CINETPAY_RETURN] Erreur envoi email de fulfilment")
+    
     # Rediriger vers la page sécurisée (liens directs A4/6x9)
     try:
         return redirect("downloads:secure", order_uuid=order.uuid)
@@ -1065,6 +1474,41 @@ def cinetpay_notify(request):
     if paid_ok:
         try:
             order.mark_paid(provider="cinetpay", provider_tx=payload.get("provider_tx_id") or ref)
+            
+            # Gérer le Kit complet ou l'ebook standard
+            try:
+                from store.models import ClientInquiry
+                inquiry = ClientInquiry.objects.filter(
+                    order=order, kind=ClientInquiry.KIND_KIT
+                ).first()
+                if inquiry:
+                    # Pour le Kit complet : créer KitOrder et envoyer son email spécifique
+                    from store.services.kit_orders import (
+                        create_kit_order_from_payment,
+                        send_kit_order_confirmation_email,
+                    )
+                    kit_order = create_kit_order_from_payment(order, inquiry)
+                    send_kit_order_confirmation_email(kit_order)
+                    logger.info(
+                        f"[CINETPAY_NOTIFY] KitOrder créé: {kit_order.tracking_id}"
+                    )
+                else:
+                    # Pour l'ebook standard : envoyer email de fulfillment
+                    from store.services.mailing import send_fulfilment_email
+                    order_ref = (
+                        order.provider_ref
+                        or order.cinetpay_payment_id
+                        or str(order.uuid)
+                    )
+                    send_fulfilment_email(
+                        to_email=order.email,
+                        order_ref=order_ref,
+                    )
+                    logger.info(
+                        f"[CINETPAY_NOTIFY] Email fulfillment envoyé pour ebook"
+                    )
+            except Exception:
+                logger.exception("[CINETPAY_NOTIFY] Erreur gestion fulfillment")
         except Exception:
             logger.exception("[CINETPAY_NOTIFY] mark_paid error for %s", ref)
     return JsonResponse({"ok": True})

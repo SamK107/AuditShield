@@ -1,34 +1,35 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+
 """
 Configuration Django pour l'environnement de développement
 """
 from .base import *  # noqa: F403, F401
 
-# Surcharge pour le développement
+# === DEBUG & HOSTS ===
 DEBUG = True
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '[::1]']
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+# === CHARGEMENT DU .env EN DEV ===
+# dev.py est dans config/settings → le dossier projet (avec manage.py et .env) est parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(PROJECT_DIR / ".env")
 
-# Email backend pour le développement (affichage en console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Base de données PostgreSQL pour le développement
+# === BASE DE DONNÉES (PostgreSQL) ===
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env.str('DB_NAME', 'auditshield'),  # noqa: F405
-        'USER': env.str('DB_USER', 'postgres'),  # noqa: F405
+        'NAME': env.str('DB_NAME', 'auditshield'),        # noqa: F405
+        'USER': env.str('DB_USER', 'postgres'),           # noqa: F405
         'PASSWORD': env.str('DB_PASSWORD', 'tata1000@'),  # noqa: F405
-        'HOST': env.str('DB_HOST', '127.0.0.1'),  # noqa: F405
-        'PORT': env.int('DB_PORT', 5432),  # PostgreSQL 17 utilise souvent le port 5433
-        # Désactivé en dev pour éviter les problèmes de connexion
+        'HOST': env.str('DB_HOST', '127.0.0.1'),          # noqa: F405
+        'PORT': env.int('DB_PORT', 5432),                 # noqa: F405
         'CONN_MAX_AGE': 300,
     }
 }
 
-# Templates avec mode debug
+# === TEMPLATES ===
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -45,125 +46,125 @@ TEMPLATES = [
     },
 ]
 
-# Désactiver la mise en cache en développement
+# === CACHE (désactivé en dev) ===
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
     }
 }
 
-# Sécurité désactivée en développement
+# === SÉCURITÉ (relâchée en dev) ===
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
 
-# Logging plus verbeux en développement
+# === EMAILS EN CONSOLE EN DEV ===
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "contact@auditsanspeur.com")
+
+# Compatibilité: si BONUS_DESTINATION_EMAIL est défini, il domine CONTACT_INBOX_EMAIL
+CONTACT_INBOX_EMAIL = os.environ.get(
+    "BONUS_DESTINATION_EMAIL",
+    os.environ.get("CONTACT_INBOX_EMAIL", "contact@auditsanspeur.com")
+)
+RECEIPTS_INBOX_EMAIL = os.environ.get("RECEIPTS_INBOX_EMAIL", "receipts@auditsanspeur.com")
+UPLOAD_MAX_BYTES = int(os.environ.get("UPLOAD_MAX_BYTES", "5242880"))
+
+SITE_BASE_URL = "http://127.0.0.1:8000"
+
+# === CELERY : TÂCHES SYNCHRONES EN DEV ===
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# === IMAP RECEIPTS (pour fetch_receipts) ===
+RECEIPTS_IMAP_HOST = os.environ.get("RECEIPTS_IMAP_HOST")
+RECEIPTS_IMAP_PORT = int(os.environ.get("RECEIPTS_IMAP_PORT", "993"))
+RECEIPTS_IMAP_SSL = str(os.environ.get("RECEIPTS_IMAP_SSL", "true")).lower() in ("1", "true", "yes")
+RECEIPTS_IMAP_USER = os.environ.get("RECEIPTS_IMAP_USER")
+RECEIPTS_IMAP_PASSWORD = os.environ.get("RECEIPTS_IMAP_PASSWORD")
+RECEIPTS_IMAP_FOLDER = os.environ.get("RECEIPTS_IMAP_FOLDER", "INBOX")
+
+# === LOGGING DÉTAILLÉ EN DEV (inclut Orange Money) ===
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
     'formatters': {
         'verbose': {
             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
         },
-        'simple': {'format': '%(levelname)s: %(message)s'},
+        'simple': {
+            'format': '%(levelname)s: %(message)s'
+        },
     },
+
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
     },
+
+    # Logger racine (tout ce qui n'a pas de logger spécifique)
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
+
     'loggers': {
+        # Logs Django généraux
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
+
+        # Requêtes SQL (très verbeux en DEBUG)
         'django.db.backends': {
             'handlers': ['console'],
-            # Affiche les requêtes SQL en dev
             'level': 'DEBUG',
+            'propagate': False,
+        },
+
+        # 🔴 Logger spécifique pour ton service Orange Money
+        'store.services.orange_money': {
+            'handlers': ['console'],
+            'level': 'DEBUG',   # DEBUG pour voir tous les détails (payload, réponses, etc.)
             'propagate': False,
         },
     },
 }
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "contact@auditsanspeur.com")
-FULFILMENT_SENDER = DEFAULT_FROM_EMAIL
-SITE_BASE_URL = "http://127.0.0.1:8000"
-CONTACT_INBOX_EMAIL = os.environ.get("CONTACT_INBOX_EMAIL", "contact@auditsanspeur.com")
-RECEIPTS_INBOX_EMAIL = os.environ.get("RECEIPTS_INBOX_EMAIL", "receipts@auditsanspeur.com")
-UPLOAD_MAX_BYTES = int(os.environ.get("UPLOAD_MAX_BYTES", "5242880"))
 
-# Charge le fichier .env à la racine du projet en DEV
-BASE_DIR_DEV = Path(__file__).resolve().parents[2]
-load_dotenv(BASE_DIR_DEV / '.env')
+# === ORANGE MONEY WEBPAY DEV CONFIGURATION ===
+from dataclasses import dataclass
 
+@dataclass
+class OrangeMoneyConfig:
+    env: str
+    base_url: str
+    merchant_msisdn: str
+    merchant_code: str
+    login: str
+    password: str
+    test_subscriber_msisdn: str
+    currency: str
+    country: str
+    callback_url: str
+    return_success_url: str
+    return_failure_url: str
 
-# === AUTOCONFIG: DOTENV (project .env) ===
-import os
-from pathlib import Path
-try:
-    from dotenv import load_dotenv  # type: ignore
-    # dev.py est dans config/settings → le dossier projet (avec manage.py et .env) est parents[1]
-    PROJECT_DIR = Path(__file__).resolve().parents[1]
-    load_dotenv(PROJECT_DIR / ".env")
-except Exception:
-    pass
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "contact@auditsanspeur.com")
-
-# Compatibilité: si BONUS_DESTINATION_EMAIL est défini, il domine CONTACT_INBOX_EMAIL
-CONTACT_INBOX_EMAIL = os.environ.get("BONUS_DESTINATION_EMAIL",
-                        os.environ.get("CONTACT_INBOX_EMAIL", "contact@auditsanspeur.com"))
-
-RECEIPTS_INBOX_EMAIL = os.environ.get("RECEIPTS_INBOX_EMAIL", "receipts@auditsanspeur.com")
-UPLOAD_MAX_BYTES = int(os.environ.get("UPLOAD_MAX_BYTES", "5242880"))
-
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-
-# Configuration Celery pour développement sans Redis
-# SOLUTION RECOMMANDÉE : Exécution synchrone (pas besoin de worker ni Redis)
-CELERY_TASK_ALWAYS_EAGER = True  # Exécute les tâches immédiatement
-CELERY_TASK_EAGER_PROPAGATES = True
-
-# Alternative 1: Utiliser la base de données Django comme broker
-# (Décommentez si vous préférez un worker asynchrone)
-# PRÉREQUIS: pip install "kombu[db]"
-# CELERY_BROKER_URL = "db+postgresql://{}:{}@{}:{}/{}".format(
-#     DATABASES['default']['USER'],
-#     DATABASES['default']['PASSWORD'],
-#     DATABASES['default']['HOST'],
-#     DATABASES['default']['PORT'],
-#     DATABASES['default']['NAME']
-# )
-# CELERY_RESULT_BACKEND = "db+postgresql://{}:{}@{}:{}/{}".format(
-#     DATABASES['default']['USER'],
-#     DATABASES['default']['PASSWORD'],
-#     DATABASES['default']['HOST'],
-#     DATABASES['default']['PORT'],
-#     DATABASES['default']['NAME']
-# )
-# CELERY_TASK_ALWAYS_EAGER = False
-
-# Alternative 2: Utiliser Redis (si installé)
-# CELERY_BROKER_URL = "redis://localhost:6379/0"
-# CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-# CELERY_TASK_ALWAYS_EAGER = False
-
-
-# === AUTOCONFIG: IMAP RECEIPTS → settings ===
-# Expose les variables IMAP au namespace Django settings (utilisées par fetch_receipts)
-RECEIPTS_IMAP_HOST = os.environ.get("RECEIPTS_IMAP_HOST")
-RECEIPTS_IMAP_PORT = int(os.environ.get("RECEIPTS_IMAP_PORT", "993"))
-RECEIPTS_IMAP_SSL  = str(os.environ.get("RECEIPTS_IMAP_SSL", "true")).lower() in ("1", "true", "yes")
-RECEIPTS_IMAP_USER = os.environ.get("RECEIPTS_IMAP_USER")
-RECEIPTS_IMAP_PASSWORD = os.environ.get("RECEIPTS_IMAP_PASSWORD")
-RECEIPTS_IMAP_FOLDER = os.environ.get("RECEIPTS_IMAP_FOLDER", "INBOX")
-
+ORANGE_MONEY = OrangeMoneyConfig(
+    env=os.getenv("OM_ENV", "sandbox"),
+    base_url=os.getenv("OM_BASE_URL", "https://api.orange.com/orange-money-webpay/dev"),
+    merchant_msisdn=os.getenv("OM_MERCHANT_MSISDN", ""),
+    merchant_code=os.getenv("OM_MERCHANT_CODE", ""),
+    login=os.getenv("OM_LOGIN", ""),
+    password=os.getenv("OM_PASSWORD", ""),
+    test_subscriber_msisdn=os.getenv("OM_TEST_SUBSCRIBER_MSISDN", "77011011234"),
+    currency=os.getenv("OM_CURRENCY", "XOF"),
+    country=os.getenv("OM_COUNTRY", "ML"),
+    callback_url=os.getenv("OM_CALLBACK_URL", "http://127.0.0.1:8000/store/orange/callback/"),
+    return_success_url=os.getenv("OM_RETURN_SUCCESS_URL", "http://127.0.0.1:8000/store/orange/success/"),
+    return_failure_url=os.getenv("OM_RETURN_FAILURE_URL", "http://127.0.0.1:8000/store/orange/failure/"),
+)

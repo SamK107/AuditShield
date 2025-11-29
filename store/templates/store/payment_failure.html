@@ -1,0 +1,147 @@
+{% extends "store/base.html" %}
+{% block title %}Paiement échoué - {{ order.product.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Styles inline pour garantir les couleurs de fond */
+  .pf-header-card {
+    background-color: #fef2f2;
+    background: #fef2f2;
+  }
+  
+  .pf-details-card {
+    background-color: #ffffff;
+    background: #ffffff;
+  }
+  
+  .pf-actions-card {
+    background-color: #fefce8;
+    background: #fefce8;
+  }
+  
+  .pf-support-card {
+    background-color: #f9fafb;
+    background: #f9fafb;
+  }
+  
+  .pf-button-orange {
+    background-color: #ea580c;
+    background: #ea580c;
+  }
+  
+  .pf-button-orange:hover {
+    background-color: #c2410c;
+    background: #c2410c;
+  }
+  
+  .pf-button-gray {
+    background-color: #e5e7eb;
+    background: #e5e7eb;
+  }
+  
+  .pf-button-gray:hover {
+    background-color: #d1d5db;
+    background: #d1d5db;
+  }
+  
+  /* Fallback pour les classes Tailwind */
+  .bg-red-50 { background-color: #fef2f2 !important; }
+  .bg-red-100 { background-color: #fee2e2 !important; }
+  .bg-yellow-50 { background-color: #fefce8 !important; }
+  .bg-white { background-color: #ffffff !important; }
+  .bg-gray-100 { background-color: #f3f4f6 !important; }
+  .bg-gray-200 { background-color: #e5e7eb !important; }
+  .bg-orange-600 { background-color: #ea580c !important; }
+  .bg-orange-700 { background-color: #c2410c !important; }
+</style>
+{% endblock %}
+
+{% block store_content %}
+<section class="py-14" style="background-color: #f9fafb; min-height: 100vh;">
+  <div class="max-w-lg mx-auto px-4">
+
+    {# Message d'échec #}
+    <div class="mb-6 rounded-2xl border bg-red-50 p-6 text-center pf-header-card" style="background-color: #fef2f2;">
+      <div class="flex justify-center mb-4">
+        <div class="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full" style="background-color: #fee2e2;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+      
+      <h1 class="text-2xl font-bold text-red-900 mb-2">Paiement échoué</h1>
+      <p class="text-red-700">
+        Votre paiement n'a pas pu être traité.
+      </p>
+    </div>
+
+    {# Détails de la commande #}
+    <div class="mb-6 rounded-2xl border bg-white p-6 shadow pf-details-card" style="background-color: #ffffff;">
+      <h2 class="text-lg font-semibold mb-4 text-gray-900">Détails de la commande</h2>
+      
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Produit :</span>
+          <span class="font-medium">{{ order.product.title }}</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Montant :</span>
+          <span class="font-bold text-lg text-gray-700">{{ order.amount_fcfa }} FCFA</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Référence :</span>
+          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded" style="background-color: #f3f4f6;">{{ order.provider_ref }}</span>
+        </div>
+      </div>
+    </div>
+
+    {# Raisons possibles #}
+    <div class="mb-6 rounded-2xl border bg-yellow-50 p-6 pf-actions-card" style="background-color: #fefce8;">
+      <h3 class="text-md font-semibold mb-3 text-yellow-900">Que faire maintenant ?</h3>
+      <div class="text-sm text-yellow-800 space-y-2">
+        <p>• Vérifiez que votre solde Orange Money est suffisant</p>
+        <p>• Assurez-vous que votre numéro Orange Money est correct</p>
+        <p>• Réessayez le paiement en cliquant sur le bouton ci-dessous</p>
+        <p>• Si le problème persiste, contactez notre support</p>
+      </div>
+    </div>
+
+    {# Boutons d'action #}
+    <div class="space-y-4">
+      <a href="{% url 'store:orange_checkout' product_slug=order.product.slug %}" 
+         class="block w-full py-3 rounded-xl font-semibold text-center transition-all
+                bg-orange-600 hover:bg-orange-700 text-white
+                ring-1 ring-orange-700/20 focus:outline-none focus:ring-2 focus:ring-orange-600 pf-button-orange"
+         style="background-color: #ea580c; color: #ffffff; display: block; text-decoration: none;"
+         onmouseover="this.style.backgroundColor='#c2410c';"
+         onmouseout="this.style.backgroundColor='#ea580c';">
+        Réessayer le paiement
+      </a>
+
+      <a href="{% url 'store:product_detail' slug=order.product.slug %}" 
+         class="block w-full py-3 rounded-xl font-semibold text-center transition-all
+                bg-gray-200 hover:bg-gray-300 text-gray-800
+                focus:outline-none focus:ring-2 focus:ring-gray-400 pf-button-gray"
+         style="background-color: #e5e7eb; color: #1f2937; display: block; text-decoration: none;"
+         onmouseover="this.style.backgroundColor='#d1d5db';"
+         onmouseout="this.style.backgroundColor='#e5e7eb';">
+        Retour à la page produit
+      </a>
+    </div>
+
+    {# Support #}
+    <div class="mt-8 text-center text-sm text-gray-500 rounded-xl border p-4 pf-support-card" style="background-color: #f9fafb;">
+      <p>
+        Besoin d'aide ? Contactez-nous à 
+        <a href="mailto:contact@auditsanspeur.com" class="text-brand-600 hover:text-brand-700" style="color: #2563eb; text-decoration: none;">
+          contact@auditsanspeur.com
+        </a>
+      </p>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

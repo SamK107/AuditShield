@@ -1,5 +1,14 @@
-<div class="max-w-xl mx-auto py-16 text-center">
-  <h1 class="text-2xl font-bold mb-4">Erreur de paiement</h1>
-  <p>Une erreur est survenue lors de l'initialisation du paiement.<br>Merci de réessayer ou de contacter le support.</p>
-  {% if message %}<div class="mt-4 text-sm text-gray-500">{{ message }}</div>{% endif %}
+<div class="max-w-xl mx-auto py-16 px-4">
+  <div class="text-center mb-6">
+    <h1 class="text-2xl font-bold mb-4">Erreur de paiement</h1>
+    <p>Une erreur est survenue lors de l'initialisation du paiement.</p>
+  </div>
+  {% if message %}
+  <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+    <div class="text-sm text-red-800 whitespace-pre-line">{{ message }}</div>
+  </div>
+  {% endif %}
+  <div class="mt-6 text-center">
+    <a href="javascript:history.back()" class="text-blue-600 hover:text-blue-800 underline">← Retour</a>
+  </div>
 </div>

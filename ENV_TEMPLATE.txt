@@ -51,3 +51,61 @@ OPENAI_API_KEY=sk-votre_cle_openai_ici
 # Site URL (dev ou prod)
 SITE_URL=http://localhost:8000
 
+# --- ORANGE MONEY WEBPAY DEV (Mali, Sandbox) ---
+# Configuration pour le paiement de l'ebook "Audit Sans Peur"
+OM_ENV=sandbox
+OM_BASE_URL=https://api.orange.com/orange-money-webpay/dev
+
+# Credentials Orange Money (fournis par Orange)
+OM_MERCHANT_MSISDN=
+OM_MERCHANT_CODE=
+OM_LOGIN=MerchantWP0xxxxx
+OM_PASSWORD=
+
+# Numéro de test sandbox (pour les simulations)
+OM_TEST_SUBSCRIBER_MSISDN=77011011234
+
+# Paramètres de paiement
+OM_CURRENCY=XOF
+OM_COUNTRY=ML
+
+# URLs de retour et callback
+OM_CALLBACK_URL=http://127.0.0.1:8000/store/orange/callback/
+OM_RETURN_SUCCESS_URL=http://127.0.0.1:8000/store/orange/success/
+OM_RETURN_FAILURE_URL=http://127.0.0.1:8000/store/orange/failure/
+
+# --- ORANGE MONEY WEBPAY (Legacy - pour Kit complet) ---
+OM_API_URL=https://api.orange.com/orange-money-webpay/ml/v1
+OM_OAUTH_URL=https://api.orange.com/oauth/v2/token
+OM_MERCHANT_KEY=
+OM_MERCHANT_ID=
+OM_CLIENT_ID=
+OM_CLIENT_SECRET=
+OM_WEBHOOK_SECRET=changeme_om_webhook_secret
+# IMPORTANT: Orange Money n'accepte PAS localhost/127.0.0.1
+# Pour le développement en mode sandbox sur http://127.0.0.1:8000/ :
+#
+# Option 1 - URL publique de test simple (recommandé pour sandbox):
+# Utilisez une URL publique de test (comme dans les exemples du guide Orange Money)
+# Cette URL n'a pas besoin de pointer vers votre serveur, c'est juste pour que l'API accepte
+# Exemple du guide: http://myvirtualshop.webnode.es
+# Vous pouvez utiliser n'importe quelle URL publique valide
+OM_TEST_PUBLIC_URL=http://myvirtualshop.webnode.es
+#
+# Option 2 - Utiliser ngrok (pour recevoir les webhooks en local):
+# 1. Installez ngrok: https://ngrok.com/
+# 2. Lancez: ngrok http 8000
+# 3. Copiez l'URL HTTPS (ex: https://xxxx.ngrok.io)
+# 4. Configurez OM_NGROK_URL avec cette URL (pour recevoir les webhooks)
+# OM_NGROK_URL=https://xxxx.ngrok.io
+#
+# Note: Si aucune URL n'est configurée, le code utilisera automatiquement
+# une URL de test par défaut (http://myvirtualshop.webnode.es) pour le sandbox
+#
+# Ces URLs seront utilisées si OM_TEST_PUBLIC_URL ou OM_NGROK_URL ne sont pas définis
+# (ne fonctionnera pas avec Orange Money car contient localhost)
+OM_RETURN_URL=http://127.0.0.1:8000/payments/om/return/
+OM_NOTIFY_URL=http://127.0.0.1:8000/payments/om/notify/
+OM_CANCEL_URL=http://127.0.0.1:8000/payments/om/cancel/
+OM_SANDBOX_MOCK=1
+

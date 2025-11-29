@@ -1,33 +1,181 @@
 {% extends "store/base.html" %}
-{% block title %}Orange Money (sandbox mock){% endblock %}
-{% block store_content %}
-<section class="py-16">
-  <div class="max-w-xl mx-auto px-4">
-    <div class="rounded-2xl border bg-white p-6 shadow">
-      <div class="flex items-center gap-3 mb-4">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white font-bold">OM</span>
-        <h1 class="text-xl font-semibold">Paiement Orange Money (Sandbox)</h1>
-      </div>
-      <p class="text-gray-700 mb-6">
-        Ceci est une page de test locale (sandbox). Référence transaction&nbsp;:
-        <span class="font-mono text-gray-900">{{ tx }}</span>
-      </p>
-      <div class="space-y-3">
-        <a href="{% url 'store:om_return' %}?transaction_id={{ tx }}"
-           class="block w-full text-center py-3 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-700 text-white">
-          Simuler un paiement réussi
-        </a>
-        <a href="javascript:history.back();" class="block w-full text-center py-3 rounded-xl font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700">
-          Annuler / Revenir
-        </a>
-      </div>
-    </div>
-  </div>
-  <p class="text-center text-xs text-gray-500 mt-6">
-    Sandbox local — pour tests uniquement.
-  </p>
-  </section>
+{% block title %}Paiement Orange Money Mali - Mode Test{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Styles inline pour garantir les couleurs de fond */
+  .om-header-card {
+    background: linear-gradient(to right, #f97316, #ea580c);
+    background-color: #f97316;
+  }
+  
+  .om-details-card {
+    background-color: #ffffff;
+    background: #ffffff;
+  }
+  
+  .om-instructions-card {
+    background-color: #eff6ff;
+    background: #eff6ff;
+  }
+  
+  .om-note-card {
+    background-color: #f9fafb;
+    background: #f9fafb;
+  }
+  
+  .om-button-success {
+    background-color: #16a34a;
+    background: #16a34a;
+  }
+  
+  .om-button-success:hover {
+    background-color: #15803d;
+    background: #15803d;
+  }
+  
+  .om-button-failure {
+    background-color: #dc2626;
+    background: #dc2626;
+  }
+  
+  .om-button-failure:hover {
+    background-color: #b91c1c;
+    background: #b91c1c;
+  }
+  
+  /* Fallback pour les classes Tailwind */
+  .bg-white { background-color: #ffffff !important; }
+  .bg-blue-50 { background-color: #eff6ff !important; }
+  .bg-orange-500 { background-color: #f97316 !important; }
+  .bg-orange-600 { background-color: #ea580c !important; }
+  .bg-green-600 { background-color: #16a34a !important; }
+  .bg-green-700 { background-color: #15803d !important; }
+  .bg-red-600 { background-color: #dc2626 !important; }
+  .bg-red-700 { background-color: #b91c1c !important; }
+</style>
 {% endblock %}
 
+{% block store_content %}
+<section class="py-14" style="background-color: #f9fafb; min-height: 100vh;">
+  <div class="max-w-lg mx-auto px-4">
 
+    {# En-tête Orange Money #}
+    <div class="mb-6 rounded-2xl border bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white shadow-lg om-header-card" style="background: linear-gradient(to right, #f97316, #ea580c); background-color: #f97316;">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="flex items-center justify-center w-12 h-12 bg-white rounded-full">
+          <span class="text-orange-600 font-bold text-lg">OM</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold">Orange Money Mali</h1>
+          <p class="text-orange-100 text-sm">Paiement mobile sécurisé</p>
+        </div>
+      </div>
+      
+      <div class="bg-orange-400/30 rounded-lg p-3 text-sm">
+        <div class="flex items-center gap-2 mb-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="font-medium">Mode test / sandbox</span>
+        </div>
+        <p class="text-orange-100 text-xs">
+          Vous êtes en environnement de test. Aucun vrai paiement ne sera effectué.
+        </p>
+      </div>
+    </div>
 
+    {# Détails de la commande #}
+    <div class="mb-6 rounded-2xl border bg-white p-6 shadow om-details-card" style="background-color: #ffffff;">
+      <h2 class="text-lg font-semibold mb-4 text-gray-900">Détails de votre commande</h2>
+      
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Produit :</span>
+          <span class="font-medium">{{ product.title }}</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Montant :</span>
+          <span class="font-bold text-lg text-orange-600">{{ payment.amount_fcfa }} FCFA</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Email :</span>
+          <span class="font-medium">{{ payment.email }}</span>
+        </div>
+        
+        {% if payment.phone %}
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Téléphone :</span>
+          <span class="font-medium">{{ payment.phone }}</span>
+        </div>
+        {% endif %}
+        
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600">Référence :</span>
+          <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{{ payment.provider_ref }}</span>
+        </div>
+      </div>
+    </div>
+
+    {# Instructions de test #}
+    <div class="mb-6 rounded-2xl border bg-blue-50 p-6 om-instructions-card" style="background-color: #eff6ff;">
+      <h3 class="text-md font-semibold mb-3 text-blue-900">Instructions de test</h3>
+      <div class="text-sm text-blue-800 space-y-2">
+        <p>• Cliquez sur <strong>"Simuler un paiement réussi"</strong> pour tester le parcours complet</p>
+        <p>• Vous recevrez un email avec les liens de téléchargement de l'ebook</p>
+        <p>• Cliquez sur <strong>"Simuler un paiement échoué"</strong> pour tester le cas d'erreur</p>
+      </div>
+    </div>
+
+    {# Boutons de simulation #}
+    <div class="space-y-4">
+      <form method="post" action="{% url 'store:orange_mock_success' provider_ref=payment.provider_ref %}">
+        {% csrf_token %}
+        <button type="submit" 
+                class="w-full py-4 rounded-xl font-semibold text-lg transition-all
+                       bg-green-600 hover:bg-green-700 text-white
+                       ring-1 ring-green-700/20 focus:outline-none focus:ring-2 focus:ring-green-600
+                       shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 om-button-success"
+                style="background-color: #16a34a; color: #ffffff;"
+                onmouseover="this.style.backgroundColor='#15803d';"
+                onmouseout="this.style.backgroundColor='#16a34a';">
+          <div class="flex items-center justify-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Simuler un paiement réussi
+          </div>
+        </button>
+      </form>
+
+      <form method="post" action="{% url 'store:orange_mock_failure' provider_ref=payment.provider_ref %}">
+        {% csrf_token %}
+        <button type="submit" 
+                class="w-full py-3 rounded-xl font-semibold transition-all
+                       bg-red-600 hover:bg-red-700 text-white
+                       ring-1 ring-red-700/20 focus:outline-none focus:ring-2 focus:ring-red-600 om-button-failure"
+                style="background-color: #dc2626; color: #ffffff;"
+                onmouseover="this.style.backgroundColor='#b91c1c';"
+                onmouseout="this.style.backgroundColor='#dc2626';">
+          <div class="flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Simuler un paiement échoué
+          </div>
+        </button>
+      </form>
+    </div>
+
+    {# Note de sécurité #}
+    <div class="mt-6 text-center rounded-xl border p-4 om-note-card" style="background-color: #f9fafb;">
+      <p class="text-xs text-gray-500">
+        Paiement simulé en mode test (sandbox). Vous recevrez votre ebook immédiatement après la confirmation du paiement.
+      </p>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
