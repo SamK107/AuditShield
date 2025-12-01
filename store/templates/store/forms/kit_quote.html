@@ -1,0 +1,105 @@
+{% extends "store/base.html" %}
+{% load humanize %}
+{% block title %}Devis – Kit complet personnalisé{% endblock %}
+{% block store_content %}
+
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 py-8 px-6 md:px-12 lg:px-24">
+  <div class="max-w-3xl mx-auto">
+    <a href="{% url 'store:kit_inquiry' %}" class="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-4">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      <span>Modifier ma demande</span>
+    </a>
+    <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-8 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Votre devis – Kit complet</h1>
+          <p class="text-sm text-slate-600 mt-1">
+            Offre sélectionnée : <span class="font-semibold">{{ tier.name }}</span> ({{ tier.docs_range }})
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs uppercase tracking-wide text-slate-400">Montant TTC</p>
+          <p class="text-3xl font-extrabold text-emerald-600">
+            {{ inquiry.estimated_price_fcfa|default:estimate.suggested_price|intcomma }} FCFA
+          </p>
+          <p class="text-xs text-slate-500 mt-1">
+            Fourchette de référence : {{ estimate.min_price|intcomma }} – {{ estimate.max_price|intcomma }} FCFA
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-slate-200 pt-4 grid md:grid-cols-2 gap-4 text-sm text-slate-700">
+        <div>
+          <h2 class="font-semibold mb-2 flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4 text-blue-600"></i> Coordonnées
+          </h2>
+          <p>{{ inquiry.contact_name }}</p>
+          <p class="text-slate-500 text-xs">{{ inquiry.email }}</p>
+          {% if inquiry.organization_name %}
+          <p class="mt-1">{{ inquiry.organization_name }}</p>
+          {% endif %}
+          {% if inquiry.location %}
+          <p class="text-slate-500 text-xs">{{ inquiry.location }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <h2 class="font-semibold mb-2 flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4 text-emerald-600"></i> Paramètres de la demande
+          </h2>
+          <p>Nombre de documents : <span class="font-semibold">{{ inquiry.docs_count }}</span></p>
+          <p>Complexité : 
+            {% if inquiry.complexity == "simple" %}Dossiers simples
+            {% elif inquiry.complexity == "complexe" %}Dossiers complexes / sensibles
+            {% else %}Standard{% endif %}
+          </p>
+          <p>Offre : {{ tier.name }} ({{ tier.delay }})</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
+        Ce que vous obtenez avec ce kit
+      </h2>
+      <ul class="list-disc ml-5 text-sm text-slate-700 space-y-1">
+        {% if tier.features %}
+          {% for feature in tier.features %}
+            <li>{{ feature }}</li>
+          {% endfor %}
+        {% else %}
+          <li>Analyse de vos documents de référence (textes, procédures, manuels).</li>
+          <li>Kit de préparation personnalisé (tableaux d'irrégularités, questions d'audit, réponses conseillées).</li>
+          <li>Plan d'action priorisé pour sécuriser vos prochains audits.</li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <p class="text-xs text-slate-500 md:max-w-md">
+          En cliquant sur "Confirmer et procéder au paiement", vous serez redirigé vers une page de paiement
+          sécurisée où vous devrez saisir vos informations (nom, prénom, email, téléphone). Votre demande est traitée sous 24–48 h après validation du paiement.
+        </p>
+        <a href="{% url 'store:kit_checkout' inquiry.id %}"
+           class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 text-white text-sm font-semibold shadow-lg hover:bg-emerald-700 hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+          <i data-lucide="credit-card" class="w-5 h-5"></i>
+          <span>Confirmer et procéder au paiement</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  });
+</script>
+{% endblock %}
+
+
+

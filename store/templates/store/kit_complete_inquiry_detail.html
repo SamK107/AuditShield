@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block title %}Détail de la demande - Kit complet{% endblock %}
+
+{% block content %}
+<main class="max-w-5xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <a href="{% url 'store:kit_complete_processing' %}" class="text-blue-600 hover:underline">
+      ← Retour à la liste
+    </a>
+  </div>
+
+  <h1 class="text-2xl md:text-3xl font-extrabold mb-6">Détail de la demande</h1>
+
+  {% if messages %}
+    <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900">
+      <ul class="list-disc pl-5 space-y-1">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <!-- Informations client -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow mb-6 p-6">
+    <h2 class="text-xl font-bold mb-4 text-slate-800">Informations client</h2>
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Nom & Prénom</dt>
+        <dd class="text-slate-900">{{ inquiry.contact_name|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Email</dt>
+        <dd class="text-slate-900">{{ inquiry.email }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Téléphone</dt>
+        <dd class="text-slate-900">{{ inquiry.phone|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Statut de traitement</dt>
+        <dd>
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold
+            {% if inquiry.processing_state == 'PAID' %} bg-blue-50 text-blue-700 ring-1 ring-blue-200
+            {% elif inquiry.processing_state == 'IA_RUNNING' %} bg-amber-50 text-amber-700 ring-1 ring-amber-200
+            {% elif inquiry.processing_state == 'DRAFT_DONE' %} bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200
+            {% elif inquiry.processing_state == 'FINAL_UPLOADED' %} bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-200
+            {% elif inquiry.processing_state == 'PUBLISHED' %} bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200
+            {% else %} bg-slate-100 text-slate-700 ring-1 ring-slate-200 {% endif %}">
+            {{ inquiry.get_processing_state_display|default:inquiry.processing_state }}
+          </span>
+        </dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Date de création</dt>
+        <dd class="text-slate-900">{{ inquiry.created_at|date:"d/m/Y H:i" }}</dd>
+      </div>
+      {% if inquiry.selected_tier_code %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Offre sélectionnée</dt>
+        <dd class="text-slate-900">{{ inquiry.selected_tier_code }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </div>
+
+  <!-- Organisation -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow mb-6 p-6">
+    <h2 class="text-xl font-bold mb-4 text-slate-800">Organisation</h2>
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Nom de l'organisation</dt>
+        <dd class="text-slate-900">{{ inquiry.organization_name|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Statut juridique</dt>
+        <dd class="text-slate-900">{{ inquiry.statut_juridique|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Localisation</dt>
+        <dd class="text-slate-900">{{ inquiry.location|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Secteur</dt>
+        <dd class="text-slate-900">{{ inquiry.sector|default:"—" }}</dd>
+      </div>
+      {% if inquiry.budget_range %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Budget</dt>
+        <dd class="text-slate-900">{{ inquiry.budget_range }}</dd>
+      </div>
+      {% endif %}
+      {% if inquiry.staff_size %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600">Taille de l'organisation</dt>
+        <dd class="text-slate-900">{{ inquiry.staff_size }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </div>
+
+  <!-- Message / Contexte -->
+  {% if inquiry.mission_text or inquiry.context_text %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow mb-6 p-6">
+    <h2 class="text-xl font-bold mb-4 text-slate-800">Message & Contexte</h2>
+    {% if inquiry.mission_text %}
+    <div class="mb-4">
+      <h3 class="text-sm font-semibold text-slate-600 mb-2">Missions</h3>
+      <p class="text-slate-900 whitespace-pre-wrap">{{ inquiry.mission_text }}</p>
+    </div>
+    {% endif %}
+    {% if inquiry.context_text %}
+    <div>
+      <h3 class="text-sm font-semibold text-slate-600 mb-2">Contexte</h3>
+      <p class="text-slate-900 whitespace-pre-wrap">{{ inquiry.context_text }}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Documents joints -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow mb-6 p-6">
+    <h2 class="text-xl font-bold mb-4 text-slate-800">Documents joints</h2>
+    {% if attachments %}
+      <ul class="space-y-3">
+        {% for attachment in attachments %}
+          <li class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex-1">
+              <p class="font-medium text-slate-900">{{ attachment.original_name|default:attachment.file.name }}</p>
+              <p class="text-xs text-slate-500">Uploadé le {{ attachment.uploaded_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            <a href="{{ attachment.file.url }}" 
+               class="ml-4 inline-flex items-center px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm"
+               download>
+              Télécharger
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-slate-500 italic">Aucun document joint.</p>
+    {% endif %}
+  </div>
+
+  <!-- Informations supplémentaires -->
+  {% if inquiry.funding_sources or inquiry.audits_types or inquiry.notes_text %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow mb-6 p-6">
+    <h2 class="text-xl font-bold mb-4 text-slate-800">Informations supplémentaires</h2>
+    <dl class="space-y-4">
+      {% if inquiry.funding_sources %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600 mb-1">Sources de financement</dt>
+        <dd class="text-slate-900">{{ inquiry.funding_sources|join:", " }}</dd>
+      </div>
+      {% endif %}
+      {% if inquiry.audits_types %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600 mb-1">Types d'audit</dt>
+        <dd class="text-slate-900">{{ inquiry.audits_types|join:", " }}</dd>
+      </div>
+      {% endif %}
+      {% if inquiry.audits_frequency %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600 mb-1">Fréquence des audits</dt>
+        <dd class="text-slate-900">{{ inquiry.audits_frequency }}</dd>
+      </div>
+      {% endif %}
+      {% if inquiry.org_chart_text %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600 mb-1">Organigramme</dt>
+        <dd class="text-slate-900 whitespace-pre-wrap">{{ inquiry.org_chart_text }}</dd>
+      </div>
+      {% endif %}
+      {% if inquiry.notes_text %}
+      <div>
+        <dt class="text-sm font-semibold text-slate-600 mb-1">Notes</dt>
+        <dd class="text-slate-900 whitespace-pre-wrap">{{ inquiry.notes_text }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow mb-6 p-6">
+    <h2 class="text-xl font-bold mb-4 text-slate-800">Actions</h2>
+    
+    {% if inquiry.processing_state == 'INQUIRY_RECEIVED' or inquiry.processing_state == 'PAID' %}
+      {% with last_task=inquiry.tasks.all|first %}
+        {% if not last_task or last_task.status == 'DONE' or last_task.status == 'FAILED' %}
+          <form method="post"
+                action="{% url 'store:kit_complete_process' inquiry.pk %}"
+                x-data="{ loading: false }"
+                @submit="loading = true">
+            {% csrf_token %}
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    :disabled="loading">
+              <span x-show="!loading">Traiter avec l'IA</span>
+              <span x-show="loading" class="flex items-center gap-2">
+                <span class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>En cours…</span>
+              </span>
+            </button>
+          </form>
+        {% endif %}
+      {% endwith %}
+    {% endif %}
+
+    <!-- Polling et statut dynamique -->
+    <div
+      x-data="{
+        state: '{{ inquiry.processing_state }}',
+        statusUrl: '{% url 'store:kit_complete_status' pk=inquiry.pk %}',
+        draftUrl: '{% if inquiry.generated_draft and inquiry.generated_draft.docx %}{% url 'store:kit_generated_draft_download' pk=inquiry.pk %}{% else %}''{% endif %}',
+        pollingInterval: null
+      }"
+      x-init="
+        if (state === 'IA_RUNNING') {
+          pollingInterval = setInterval(async () => {
+            try {
+              const resp = await fetch(statusUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+              });
+              if (!resp.ok) return;
+              const data = await resp.json();
+              state = data.state;
+              if (data.draft_url) {
+                draftUrl = data.draft_url;
+              }
+              if (state !== 'IA_RUNNING') {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+              }
+            } catch (error) {
+              console.error('Erreur polling:', error);
+            }
+          }, 5000);
+        }
+        return () => {
+          if (pollingInterval) clearInterval(pollingInterval);
+        }
+      "
+      class="mt-4"
+    >
+      <template x-if="state === 'IA_RUNNING'">
+        <div class="inline-flex items-center gap-2 text-sm text-slate-600">
+          <span class="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+          <span>Traitement IA en cours… Vous pourrez télécharger le brouillon dès qu'il sera prêt.</span>
+        </div>
+      </template>
+
+      <template x-if="state === 'DRAFT_DONE' && draftUrl">
+        <a :href="draftUrl"
+           class="inline-flex items-center mt-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+          Télécharger le brouillon Word généré
+        </a>
+      </template>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+

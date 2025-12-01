@@ -1,0 +1,126 @@
+{% extends "store/base.html" %}
+{% load static %}
+
+{% block title %}Paiement confirmé – Kit personnalisé{% endblock %}
+
+{% block store_content %}
+<section class="py-16 bg-gradient-to-b from-green-50 to-white">
+  <div class="max-w-3xl mx-auto px-4">
+    <!-- Confirmation principale -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
+        <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
+        ✅ Paiement confirmé
+      </h1>
+      <p class="text-lg text-gray-700">
+        Merci <strong>{{ order.full_name }}</strong>, votre demande de Kit personnalisé est bien enregistrée.
+      </p>
+    </div>
+
+    <!-- Carte principale avec les détails -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 mb-6">
+      <div class="space-y-4">
+        <!-- Tracking ID -->
+        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+          <span class="text-gray-600 font-medium">Numéro de suivi</span>
+          <span class="font-mono text-lg font-bold text-gray-900">{{ order.tracking_id }}</span>
+        </div>
+
+        <!-- Offre -->
+        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+          <span class="text-gray-600 font-medium">Offre choisie</span>
+          <span class="font-semibold text-gray-900">{{ order.get_offer_display }}</span>
+        </div>
+
+        <!-- Montant -->
+        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+          <span class="text-gray-600 font-medium">Montant payé</span>
+          <span class="font-semibold text-gray-900">{{ order.amount|floatformat:0 }} FCFA</span>
+        </div>
+
+        <!-- Délai estimé -->
+        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+          <span class="text-gray-600 font-medium">Délai estimé</span>
+          <span class="font-semibold text-gray-900">
+            {% if order.estimated_delay_hours == 72 %}
+              3 jours ouvrables
+            {% elif order.estimated_delay_hours == 96 %}
+              4-5 jours ouvrables
+            {% elif order.estimated_delay_hours == 120 %}
+              5-7 jours ouvrables
+            {% else %}
+              {{ order.estimated_delay_hours }} heures ouvrables
+            {% endif %}
+          </span>
+        </div>
+
+        <!-- Date de livraison -->
+        {% if order.delivery_date %}
+        <div class="flex items-center justify-between py-3">
+          <span class="text-gray-600 font-medium">Livraison prévue</span>
+          <span class="font-semibold text-blue-600">
+            {{ order.delivery_date|date:"d/m/Y" }}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+      <!-- Télécharger Starter Pack -->
+      <a
+        href="{% url 'store:kit_starter_pack' %}"
+        class="flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Télécharger le Starter Pack immédiat
+      </a>
+
+      <!-- Voir le suivi -->
+      <a
+        href="{{ order.get_tracking_url }}"
+        class="flex items-center justify-center gap-3 px-6 py-4 bg-white hover:bg-gray-50 text-gray-900 font-semibold rounded-xl border-2 border-gray-300 hover:border-gray-400 transition-all"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Voir le suivi de ma commande
+      </a>
+    </div>
+
+    <!-- Informations supplémentaires -->
+    <div class="bg-blue-50 rounded-xl p-6 border border-blue-100">
+      <h3 class="font-semibold text-gray-900 mb-2">📧 Email de confirmation</h3>
+      <p class="text-sm text-gray-700">
+        Un email de confirmation avec votre numéro de suivi et le lien de téléchargement
+        du Starter Pack a été envoyé à <strong>{{ order.email }}</strong>.
+      </p>
+    </div>
+
+    <!-- Liens de navigation -->
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+      <a
+        href="{% url 'store:offers' %}"
+        class="text-gray-600 hover:text-gray-900 font-medium"
+      >
+        ← Retour aux offres
+      </a>
+      <span class="text-gray-300">|</span>
+      <a
+        href="{% url 'core:home' %}"
+        class="text-gray-600 hover:text-gray-900 font-medium"
+      >
+        Revenir à l'accueil
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock store_content %}
+

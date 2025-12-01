@@ -416,6 +416,43 @@ class ClientInquiry(models.Model):
     )
     ai_done_at = models.DateTimeField(blank=True, null=True)
 
+    # Pricing & Estimation fields
+    docs_count = models.PositiveIntegerField(
+        default=1,
+        help_text="Nombre de documents transmis / à traiter."
+    )
+    complexity = models.CharField(
+        max_length=20,
+        choices=[
+            ("simple", "Dossiers simples"),
+            ("standard", "Standard"),
+            ("complexe", "Complexes / sensibles"),
+        ],
+        default="standard",
+        blank=True,
+    )
+    estimated_price_fcfa = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text="Montant TTC estimé en FCFA au moment du devis."
+    )
+    inquiry_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("DRAFT", "Brouillon"),
+            ("QUOTED", "Devis généré"),
+            ("PAID", "Payé"),
+        ],
+        default="DRAFT",
+        help_text="Statut de la demande de kit (distinct du status général).",
+        blank=True,
+    )
+    selected_tier_code = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Code interne du palier (essentiel_plus / complete_pro / expert_audit)."
+    )
+
     def __str__(self):
         who = self.organization_name or self.contact_name or self.email or str(self.pk)
         return f"{self.get_kind_display()} – {who}"

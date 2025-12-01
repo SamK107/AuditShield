@@ -13,22 +13,52 @@ from django.urls import reverse
 # =========================
 #  Config & constantes
 # =========================
-API_URL = os.getenv("CINETPAY_API_URL", "https://api-checkout.cinetpay.com")
+# Fonction pour obtenir les variables d'environnement à la volée
+# (plus fiable que charger au niveau du module)
+def _get_config():
+    """Récupère les variables de configuration CinetPay depuis l'environnement."""
+    return {
+        "API_URL": os.getenv("CINETPAY_API_URL", "https://api-checkout.cinetpay.com"),
+        "API_KEY": os.getenv("CINETPAY_API_KEY"),
+        "SITE_ID": os.getenv("CINETPAY_SITE_ID"),
+        "RETURN_URL_ENV": os.getenv("CINETPAY_RETURN_URL"),
+        "NOTIFY_URL_ENV": os.getenv("CINETPAY_NOTIFY_URL"),
+        "ENV_MODE": os.getenv("CINETPAY_ENV", "sandbox").lower(),
+        "CHANNELS": os.getenv("CINETPAY_CHANNELS", "CREDIT_CARD"),
+    }
+
+# Variables au niveau module (pour compatibilité, mais rechargées à l'utilisation)
+_config_cache = None
+
+def _reload_config():
+    """Recharge la configuration depuis l'environnement."""
+    global _config_cache
+    _config_cache = _get_config()
+    return _config_cache
+
+# Charger la config initiale
+_config_cache = _reload_config()
+
+# Variables pour compatibilité avec code existant (rechargées dynamiquement)
+def _get_api_url(): return _reload_config()["API_URL"]
+def _get_api_key(): return _reload_config()["API_KEY"]
+def _get_site_id(): return _reload_config()["SITE_ID"]
+def _get_return_url_env(): return _reload_config()["RETURN_URL_ENV"]
+def _get_notify_url_env(): return _reload_config()["NOTIFY_URL_ENV"]
+def _get_channels(): return _reload_config()["CHANNELS"]
+
+API_URL = _get_api_url()
 INIT_URL = f"{API_URL}/v2/payment"
 CHECK_URL = f"{API_URL}/v2/payment/check"
 # Centralise tout sous le namespace "cinetpay"
 logger = logging.getLogger("cinetpay.services")  # ou "cinetpay.store"
 
-
-API_KEY = os.getenv("CINETPAY_API_KEY")
-SITE_ID = os.getenv("CINETPAY_SITE_ID")
-
-# Ces deux-là peuvent contenir des placeholders en dev ; on les filtrera.
-RETURN_URL_ENV = os.getenv("CINETPAY_RETURN_URL")
-NOTIFY_URL_ENV = os.getenv("CINETPAY_NOTIFY_URL")
-
-ENV_MODE = os.getenv("CINETPAY_ENV", "sandbox").lower()  # "sandbox" | "production"
-CHANNELS = os.getenv("CINETPAY_CHANNELS", "CREDIT_CARD")  # "ALL", "CREDIT_CARD", etc.
+API_KEY = _get_api_key()
+SITE_ID = _get_site_id()
+RETURN_URL_ENV = _get_return_url_env()
+NOTIFY_URL_ENV = _get_notify_url_env()
+CHANNELS = _get_channels()
+ENV_MODE = _reload_config()["ENV_MODE"]
 
 
 
@@ -43,6 +73,16 @@ class CinetPayError(Exception):
 # =========================
 #  Utils
 # =========================
+def _mask_sensitive_data(data: dict) -> dict:
+    """Masque les données sensibles pour les logs."""
+    masked = data.copy()
+    if "apikey" in masked:
+        masked["apikey"] = masked["apikey"][:8] + "..." if masked["apikey"] else None
+    if "customer_phone_number" in masked:
+        masked["customer_phone_number"] = "***" if masked["customer_phone_number"] else None
+    return masked
+
+
 def _is_placeholder_url(url: str) -> bool:
     """Détecte un placeholder du style '<ton-ngrok-ici>' dans l'URL .env."""
     if not url:
@@ -106,11 +146,15 @@ def _amount_to_int(value) -> int:
 
 
 def _post(path: str, json_payload: dict, timeout: int = 25) -> dict:
-    """POST JSON avec gestion d’erreurs lisibles."""
-    url = f"{API_URL.rstrip('/')}{path}"
+    """POST JSON avec gestion d'erreurs lisibles."""
+    # Recharger la config pour avoir la bonne API_URL
+    api_url = _reload_config()["API_URL"]
+    url = f"{api_url.rstrip('/')}{path}"
     headers = {"Content-Type": "application/json"}
 
     try:
+        logger.info(f"[CinetPay][_post] Calling API: {url}")
+        logger.info(f"[CinetPay][_post] Payload (masked): {_mask_sensitive_data(json_payload)}")
         
         r = requests.post(url, json=json_payload, headers=headers, timeout=timeout)
         
@@ -160,36 +204,47 @@ def init_payment(
     - Force 'amount' en ENTIER, comme exigé par CinetPay
       (évite l'erreur 'amount must be an integer').
     """
-    if not API_KEY or not SITE_ID:
-        raise CinetPayError("CINETPAY_API_KEY / CINETPAY_SITE_ID manquants dans l'environnement.")
+    # Recharger la config pour avoir les dernières valeurs
+    config = _reload_config()
+    api_key = config["API_KEY"]
+    site_id = config["SITE_ID"]
+    return_url_env = config["RETURN_URL_ENV"]
+    notify_url_env = config["NOTIFY_URL_ENV"]
+    default_channels = config["CHANNELS"]
+    
+    if not api_key or not site_id:
+        logger.error(f"[CinetPay][init_payment] API_KEY={'présente' if api_key else 'MANQUANTE'}, SITE_ID={'présent' if site_id else 'MANQUANT'}")
+        raise CinetPayError("CINETPAY_API_KEY / CINETPAY_SITE_ID manquants dans l'environnement. Vérifiez votre fichier .env")
+
+    logger.info(f"[CinetPay][init_payment] Configuration: API_URL={config['API_URL']}, SITE_ID={'***' + str(site_id)[-4:] if site_id else 'MANQUANT'}, API_KEY={'***' if api_key else 'MANQUANT'}")
 
     amount_int = _amount_to_int(amount)
 
     payload = {
-        "apikey": API_KEY.strip(),
-        "site_id": str(SITE_ID).strip(),
+        "apikey": api_key.strip(),
+        "site_id": str(site_id).strip(),
         "transaction_id": str(transaction_id),
         "amount": amount_int,
         "currency": currency,
         "description": description,
         # on met déjà les URLs si dispo ici
-        "return_url": return_url or (RETURN_URL_ENV if not _is_placeholder_url(RETURN_URL_ENV) else None),
-        "notify_url": notify_url or (NOTIFY_URL_ENV if not _is_placeholder_url(NOTIFY_URL_ENV) else None),
+        "return_url": return_url or (return_url_env if not _is_placeholder_url(return_url_env) else None),
+        "notify_url": notify_url or (notify_url_env if not _is_placeholder_url(notify_url_env) else None),
     }
 
-    # (Optionnel) Si tu veux envoyer le canal, fais-le en local et NON dans payload pour l’instant
-    ch = (channels or CHANNELS)
+    # (Optionnel) Si tu veux envoyer le canal, fais-le en local et NON dans payload pour l'instant
+    ch = (channels or default_channels)
 
     # Écrasement des URLs (redondant mais OK si tu préfères garder)
     if return_url:
         payload["return_url"] = return_url
-    elif RETURN_URL_ENV and not _is_placeholder_url(RETURN_URL_ENV):
-        payload["return_url"] = RETURN_URL_ENV
+    elif return_url_env and not _is_placeholder_url(return_url_env):
+        payload["return_url"] = return_url_env
 
     if notify_url:
         payload["notify_url"] = notify_url
-    elif NOTIFY_URL_ENV and not _is_placeholder_url(NOTIFY_URL_ENV):
-        payload["notify_url"] = NOTIFY_URL_ENV
+    elif notify_url_env and not _is_placeholder_url(notify_url_env):
+        payload["notify_url"] = notify_url_env
 
     # Données client (optionnelles)
     if customer:
@@ -237,10 +292,14 @@ def init_payment(
 
 def check_transaction(transaction_id: str) -> dict:
     """Vérifie l'état d'une transaction CinetPay (serveur à serveur)."""
-    if not API_KEY or not SITE_ID:
+    config = _reload_config()
+    api_key = config["API_KEY"]
+    site_id = config["SITE_ID"]
+    
+    if not api_key or not site_id:
         raise CinetPayError("CINETPAY_API_KEY / CINETPAY_SITE_ID manquants dans l'environnement.")
 
-    payload = {"transaction_id": str(transaction_id), "site_id": SITE_ID, "apikey": API_KEY}
+    payload = {"transaction_id": str(transaction_id), "site_id": site_id, "apikey": api_key}
     logger.info(f"[CinetPay][check] tx={transaction_id}")
     return _post("/v2/payment/check", payload)
 
@@ -410,9 +469,21 @@ except NameError:
 def _is_mock_enabled() -> bool:
     # Autoriser l'override par settings pour les tests
     from django.conf import settings
-    if getattr(settings, "CINETPAY_MOCK", False):
+    settings_mock = getattr(settings, "CINETPAY_MOCK", False)
+    env_mock = os.getenv("CINETPAY_MOCK", "0") == "1"
+    
+    # Log pour debug
+    logger.info(f"[CinetPay][_is_mock_enabled] Settings CINETPAY_MOCK={settings_mock}, Env CINETPAY_MOCK={os.getenv('CINETPAY_MOCK', 'non défini')}")
+    
+    if settings_mock:
+        logger.warning("[CinetPay] Mode MOCK activé via settings.CINETPAY_MOCK")
         return True
-    return os.getenv("CINETPAY_MOCK", "0") == "1"
+    if env_mock:
+        logger.warning("[CinetPay] Mode MOCK activé via CINETPAY_MOCK=1 dans .env")
+        return True
+    
+    logger.info("[CinetPay] Mode MOCK désactivé - Utilisation de l'API réelle")
+    return False
 
 
 def _mock_checkout_url(transaction_id: str) -> str:
@@ -446,8 +517,13 @@ def init_payment(*, transaction_id: str, amount, currency: str = "XOF", descript
 def init_payment_auto(order, request) -> str:  # type: ignore[override]
     """
     Wrapper de init_payment_auto : en mode mock, renvoie directement une URL de mock.
+    Sinon, appelle l'API CinetPay réelle.
     """
-    if _is_mock_enabled():
+    # Vérifier si le mode MOCK est activé
+    mock_enabled = _is_mock_enabled()
+    logger.info(f"[CinetPay][init_payment_auto] Mode MOCK: {mock_enabled}")
+    
+    if mock_enabled:
         import uuid as _uuid
         tx = getattr(order, "provider_ref", None) or getattr(order, "cinetpay_payment_id", None)
         if not tx:
@@ -458,10 +534,32 @@ def init_payment_auto(order, request) -> str:  # type: ignore[override]
             except Exception:
                 order.provider_ref = tx
                 order.save()
-        logger.info(f"[CINETPAY MOCK] init_payment_auto -> order_id={order.id} tx={tx}")
+        logger.warning(f"[CINETPAY MOCK MODE] init_payment_auto -> order_id={order.id} tx={tx}")
+        logger.warning(f"[CINETPAY MOCK MODE] Redirection vers: {_mock_checkout_url(tx)}")
         return _mock_checkout_url(tx)
+    
+    # Mode PRODUCTION : utiliser l'API réelle
     if not _REAL_init_payment_auto:
         raise RuntimeError("init_payment_auto réel non défini pour CinetPay")
+    
+    # Recharger la config pour vérifier les clés API
+    config = _reload_config()
+    api_key = config["API_KEY"]
+    site_id = config["SITE_ID"]
+    api_url = config["API_URL"]
+    
+    # Vérifier que les clés API sont configurées
+    if not api_key or not site_id:
+        logger.error(f"[CinetPay] Configuration manquante - API_KEY: {'présente' if api_key else 'MANQUANTE'}, SITE_ID: {'présent' if site_id else 'MANQUANT'}")
+        logger.error("[CinetPay] Vérifiez que CINETPAY_API_KEY et CINETPAY_SITE_ID sont définis dans votre fichier .env")
+        raise CinetPayError(
+            "Configuration CinetPay incomplète. Vérifiez que CINETPAY_API_KEY et "
+            "CINETPAY_SITE_ID sont définis dans votre fichier .env"
+        )
+    
+    logger.info(f"[CinetPay] Mode PRODUCTION - API URL: {api_url}")
+    logger.info(f"[CinetPay] Mode PRODUCTION - Appel API réelle pour order_id={order.id}")
+    logger.info(f"[CinetPay] Configuration validée: SITE_ID={'***' + str(site_id)[-4:] if site_id else 'MANQUANT'}")
     return _REAL_init_payment_auto(order=order, request=request)
 
 

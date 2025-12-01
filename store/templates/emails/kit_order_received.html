@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de commande Kit personnalisé</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(to bottom, #10b981, #059669); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">✅ Paiement confirmé</h1>
+    </div>
+    
+    <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            Bonjour <strong>{{ order.full_name }}</strong>,
+        </p>
+        
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            Nous vous confirmons la réception de votre paiement et l'enregistrement de votre commande de <strong>Kit personnalisé</strong>.
+        </p>
+
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #111827; font-size: 18px; margin-top: 0;">Détails de votre commande</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Numéro de suivi :</td>
+                    <td style="padding: 8px 0; font-weight: bold; font-family: monospace;">{{ order.tracking_id }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Offre :</td>
+                    <td style="padding: 8px 0; font-weight: bold;">{{ order.get_offer_display }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Montant :</td>
+                    <td style="padding: 8px 0; font-weight: bold;">{{ order.amount|floatformat:0 }} FCFA</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Délai estimé :</td>
+                    <td style="padding: 8px 0; font-weight: bold;">{{ order.estimated_delay_hours }} heures ouvrables</td>
+                </tr>
+                {% if order.delivery_date %}
+                <tr>
+                    <td style="padding: 8px 0; color: #6b7280;">Livraison prévue :</td>
+                    <td style="padding: 8px 0; font-weight: bold; color: #2563eb;">{{ order.delivery_date|date:"d/m/Y" }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <div style="margin: 30px 0;">
+            <h2 style="color: #111827; font-size: 18px; margin-bottom: 15px;">Prochaines étapes</h2>
+            <p style="font-size: 15px; margin-bottom: 15px;">
+                Vous pouvez dès maintenant :
+            </p>
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin: 10px 0; padding-left: 25px; position: relative;">
+                    <span style="position: absolute; left: 0; color: #10b981;">✓</span>
+                    <strong>Télécharger votre Starter Pack</strong> : un document PDF contenant des ressources immédiates pour commencer votre préparation à l'audit.
+                </li>
+                <li style="margin: 10px 0; padding-left: 25px; position: relative;">
+                    <span style="position: absolute; left: 0; color: #10b981;">✓</span>
+                    <strong>Suivre l'avancement</strong> de votre commande en temps réel via votre page de suivi personnalisée.
+                </li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ order.get_starter_pack_url }}" style="display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 5px;">
+                📥 Télécharger le Starter Pack
+            </a>
+            <a href="{{ order.get_tracking_url }}" style="display: inline-block; background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 5px;">
+                🔍 Voir le suivi de ma commande
+            </a>
+        </div>
+
+        <div style="background: #eff6ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #1e40af;">
+                <strong>💡 Note importante :</strong> Votre kit personnalisé sera préparé selon vos besoins spécifiques et vous sera envoyé par email à l'adresse <strong>{{ order.email }}</strong> dans les délais indiqués.
+            </p>
+        </div>
+    </div>
+
+    <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
+        <p style="margin: 0; font-size: 14px; color: #6b7280;">
+            Si vous avez des questions, n'hésitez pas à nous contacter à 
+            <a href="mailto:contact@auditsanspeur.com" style="color: #2563eb;">contact@auditsanspeur.com</a>
+        </p>
+        <p style="margin: 10px 0 0 0; font-size: 12px; color: #9ca3af;">
+            L'équipe AuditSansPeur
+        </p>
+    </div>
+</body>
+</html>
+

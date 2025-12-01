@@ -101,9 +101,24 @@ urlpatterns = [
         ),
     path("kit/inquiry/", views.kit_inquiry, name="kit_inquiry"),
     path(
+        "kit/inquiry/<int:inquiry_id>/devis/",
+        views.kit_inquiry_quote,
+        name="kit_inquiry_quote",
+    ),
+    path(
+        "kit/inquiry/<int:inquiry_id>/checkout/",
+        views.kit_checkout,
+        name="kit_checkout",
+    ),
+    path(
         "kit/inquiry/merci/",
         views.kit_inquiry_success,
         name="kit_inquiry_success",
+    ),
+    path(
+        "kit/inquiry/<int:inquiry_id>/paiement-confirme/",
+        views.kit_payment_success,
+        name="kit_payment_success",
     ),
     path(
         "training/inquiry/",

@@ -210,7 +210,8 @@ def cinetpay_mock_checkout(request):
     tx = request.GET.get("transaction_id") or ""
     if not tx:
         return HttpResponse("transaction_id manquant", status=400)
-    logger.info(f"[CINETPAY MOCK] checkout page for tx={tx}")
+    logger.warning(f"[CINETPAY MOCK] ⚠️ MODE MOCK ACTIVÉ - checkout page for tx={tx}")
+    logger.warning(f"[CINETPAY MOCK] ⚠️ Redirection automatique vers cinetpay_return (simulation)")
     # Redirection immédiate vers la vue de retour
     # (peut être remplacée par une page avec bouton)
     from django.urls import reverse

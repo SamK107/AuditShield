@@ -1,0 +1,38 @@
+✅ PAIEMENT CONFIRMÉ
+
+Bonjour {{ order.full_name }},
+
+Nous vous confirmons la réception de votre paiement et l'enregistrement de votre commande de Kit personnalisé.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DÉTAILS DE VOTRE COMMANDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Numéro de suivi : {{ order.tracking_id }}
+Offre          : {{ order.get_offer_display }}
+Montant        : {{ order.amount|floatformat:0 }} FCFA
+Délai estimé   : {{ order.estimated_delay_hours }} heures ouvrables
+{% if order.delivery_date %}Livraison prévue : {{ order.delivery_date|date:"d/m/Y" }}{% endif %}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROCHAINES ÉTAPES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Télécharger votre Starter Pack
+  Un document PDF contenant des ressources immédiates pour commencer votre préparation à l'audit.
+  
+  Lien : {{ order.get_starter_pack_url }}
+
+✓ Suivre l'avancement de votre commande
+  Consultez en temps réel l'état d'avancement de votre kit personnalisé.
+  
+  Lien : {{ order.get_tracking_url }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Note importante : Votre kit personnalisé sera préparé selon vos besoins spécifiques et vous sera envoyé par email à l'adresse {{ order.email }} dans les délais indiqués.
+
+Si vous avez des questions, n'hésitez pas à nous contacter à contact@auditsanspeur.com
+
+L'équipe AuditSansPeur
+

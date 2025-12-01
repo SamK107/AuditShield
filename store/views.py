@@ -68,6 +68,7 @@ def downloads_irregularites(request):
   # ta logique d'entitlement
 
 from .models import (
+    ClientInquiry,
     DownloadToken,
     ExampleSlide,
     InquiryDocument,
@@ -252,6 +253,23 @@ def kit_inquiry(request):
             for err in file_errors:
                 form.add_error("documents", err)
         if form.is_valid() and not file_errors:
+            # Calculer automatiquement le nombre de documents
+            docs_count = len(files) if files else 1
+            form.cleaned_data['docs_count'] = docs_count
+            
+            # Calculer automatiquement la complexité
+            from store.utils import calculate_complexity_score
+            complexity = calculate_complexity_score(
+                context_text=form.cleaned_data.get('context_text', ''),
+                audits_types=form.cleaned_data.get('audits_types', []),
+                funding_sources=form.cleaned_data.get('funding_sources', []),
+                sector=form.cleaned_data.get('sector', ''),
+                staff_size=form.cleaned_data.get('staff_size', ''),
+                notes_text=form.cleaned_data.get('notes_text', ''),
+                docs_count=docs_count,
+            )
+            form.cleaned_data['complexity'] = complexity
+            
             inquiry = form.save()
             for f in files:
                 InquiryDocument.objects.create(inquiry=inquiry, file=f, original_name=f.name)
@@ -309,9 +327,8 @@ def kit_inquiry(request):
                     "Votre demande est enregistrée. "
                     "Un souci d'email est survenu ; nous vous recontactons vite.",
                 )
-            success_url = reverse("store:kit_inquiry_success")
-            # propagate selected tier to success page
-            return redirect(f"{success_url}?tier={selected_tier_code}")
+            # Rediriger vers la page de devis calculé
+            return redirect("store:kit_inquiry_quote", inquiry_id=inquiry.id)
     else:
         form = KitInquiryForm()
     return render(
@@ -330,6 +347,246 @@ def kit_inquiry_success(request):
     code = (request.GET.get("tier") or "").strip()
     tier = next((t for t in tiers if t["code"] == code), None)
     return render(request, "store/forms/kit_inquiry_success.html", {"tier": tier})
+
+
+def kit_payment_success(request, inquiry_id):
+    """
+    Page de confirmation après paiement réussi d'un kit personnalisé.
+    """
+    inquiry = get_object_or_404(ClientInquiry, id=inquiry_id, kind=ClientInquiry.KIND_KIT)
+    
+    # Récupérer le tier pour affichage
+    from store.utils import determine_tier_by_docs_count
+    docs_count = inquiry.docs_count or 1
+    tier_code = determine_tier_by_docs_count(docs_count)
+    if tier_code == "sur_mesure":
+        tier_code = "expert_audit"
+    
+    tiers = _get_kit_tiers()
+    tier = next((t for t in tiers if t["code"] == tier_code), tiers[1])
+    
+    return render(
+        request,
+        "store/forms/kit_payment_success.html",
+        {
+            "inquiry": inquiry,
+            "tier": tier,
+            "paid": True,
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def kit_checkout(request, inquiry_id):
+    """
+    Vue de checkout pour le paiement d'un kit personnalisé.
+    Affiche un formulaire de collecte des informations de paiement (nom, prénom, email, téléphone).
+    """
+    from store.services import orange_money
+    from store.forms import PaymentForm
+    # Utiliser l'import global de cinetpay déjà présent
+    
+    inquiry = get_object_or_404(ClientInquiry, id=inquiry_id, kind=ClientInquiry.KIND_KIT)
+    
+    # Vérifier que le devis a été généré
+    if inquiry.inquiry_status != "QUOTED" or not inquiry.estimated_price_fcfa:
+        messages.error(request, "Le devis n'a pas été généré. Veuillez recommencer.")
+        return redirect("store:kit_inquiry")
+    
+    # Déterminer le tier
+    docs_count = inquiry.docs_count or 1
+    from store.utils import determine_tier_by_docs_count
+    tier_code = determine_tier_by_docs_count(docs_count)
+    if tier_code == "sur_mesure":
+        tier_code = "expert_audit"
+    
+    tiers = _get_kit_tiers()
+    tier = next((t for t in tiers if t["code"] == tier_code), tiers[1])
+    
+    provider_key = request.POST.get("provider", "cinetpay")
+    
+    if request.method == "POST":
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            amount_xof = inquiry.estimated_price_fcfa
+            
+            # Récupérer ou créer un produit par défaut pour les kits
+            # (les kits personnalisés n'ont pas de produit standard)
+            default_product = Product.objects.filter(
+                slug="audit-sans-peur"
+            ).first() or Product.objects.filter(
+                is_published=True
+            ).first()
+            
+            if not default_product:
+                messages.error(request, "Erreur de configuration : aucun produit disponible.")
+                return redirect("store:kit_inquiry_quote", inquiry_id=inquiry_id)
+            
+            # Créer une Order liée à l'inquiry
+            order = Order.objects.create(
+                product=default_product,
+                amount_fcfa=amount_xof,
+                currency="XOF",
+                status="PENDING",
+                email=cd["email"],
+                first_name=cd.get("first_name") or "",
+                last_name=cd.get("last_name") or "",
+                phone=cd.get("phone") or "",
+            )
+            # Le provider_ref est généré automatiquement dans save(), mais on s'assure qu'il existe
+            if not order.provider_ref:
+                order.save()  # Force la génération du provider_ref
+            
+            # Lier l'order à l'inquiry
+            inquiry.order = order
+            inquiry.payment_status = "PENDING"
+            inquiry.save()
+            
+            try:
+                if provider_key == "orange":
+                    redirect_url, external_ref = orange_money.create_checkout(
+                        inquiry_id=order.id,
+                        amount=order.amount_fcfa,
+                        currency="XOF",
+                        request=request,
+                    )
+                    order.provider_ref = external_ref
+                    order.save(update_fields=["provider_ref"])
+                    return redirect(redirect_url)
+                elif provider_key == "cinetpay":
+                    # CinetPay: utilise provider_ref auto et init_payment_auto
+                    # Appelle l'API CinetPay réelle (ou mock si CINETPAY_MOCK=1)
+                    try:
+                        redirect_url = cinetpay.init_payment_auto(
+                            order=order,
+                            request=request,
+                        )
+                        # Vérifier si c'est une URL mock ou réelle
+                        if redirect_url.startswith("/payments/cinetpay/mock/"):
+                            logger.error(f"[KIT_CHECKOUT] ⚠️ ATTENTION: Redirection vers MOCK au lieu de l'API réelle!")
+                            logger.error(f"[KIT_CHECKOUT] Vérifiez que CINETPAY_MOCK n'est pas défini ou est à '0' dans .env")
+                        else:
+                            logger.info(f"[KIT_CHECKOUT] ✅ Redirection vers API CinetPay réelle: {redirect_url[:100]}...")
+                        return redirect(redirect_url)
+                    except Exception as e:
+                        logger.exception(f"[KIT_CHECKOUT] Erreur lors de l'appel CinetPay: {e}")
+                        messages.error(
+                            request,
+                            f"Erreur lors de l'initialisation du paiement CinetPay: {e}. "
+                            "Vérifiez votre configuration dans le fichier .env"
+                        )
+                        return redirect("store:kit_inquiry_quote", inquiry_id=inquiry_id)
+                else:
+                    # Par défaut, utiliser CinetPay
+                    redirect_url = cinetpay.init_payment_auto(
+                        order=order,
+                        request=request,
+                    )
+                    return redirect(redirect_url)
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"Erreur de paiement {provider_key}: {e}",
+                )
+                logging.getLogger(__name__).exception(e)
+        else:
+            messages.error(request, "Formulaire invalide. Veuillez vérifier vos informations.")
+    else:
+        # Pré-remplir avec les données de l'inquiry
+        form = PaymentForm(initial={
+            "email": inquiry.email,
+            "phone": inquiry.phone or "",
+            # Essayer d'extraire nom/prénom du contact_name
+            "first_name": inquiry.contact_name.split()[0] if inquiry.contact_name else "",
+            "last_name": " ".join(inquiry.contact_name.split()[1:]) if inquiry.contact_name and len(inquiry.contact_name.split()) > 1 else (inquiry.contact_name or ""),
+        })
+    
+    return render(
+        request,
+        "store/forms/kit_checkout.html",
+        {
+            "form": form,
+            "inquiry": inquiry,
+            "tier": tier,
+            "provider": provider_key,
+        },
+    )
+
+
+def kit_inquiry_quote(request, inquiry_id):
+    """
+    Affiche le devis calculé pour une demande de kit.
+    """
+    from store.utils import (
+        determine_tier_by_docs_count,
+        calculate_estimated_price,
+    )
+    
+    inquiry = get_object_or_404(ClientInquiry, id=inquiry_id, kind=ClientInquiry.KIND_KIT)
+    
+    # Déterminer le tier selon le nombre de documents
+    docs_count = inquiry.docs_count or 1
+    tier_code = determine_tier_by_docs_count(docs_count)
+    
+    # Si le tier est "sur_mesure", utiliser expert_audit comme référence
+    if tier_code == "sur_mesure":
+        tier_code = "expert_audit"
+    
+    # Récupérer les tiers et trouver celui correspondant
+    tiers = _get_kit_tiers()
+    tier = next((t for t in tiers if t["code"] == tier_code), tiers[1])  # Default: Complet Pro
+    
+    # Calculer le prix estimé
+    estimate = calculate_estimated_price(
+        docs_count=docs_count,
+        complexity=inquiry.complexity or "standard",
+        price_range_str=tier["price_range_fcfa"],
+    )
+    
+    # Sauvegarder le prix estimé et le tier sélectionné dans l'inquiry
+    inquiry.estimated_price_fcfa = estimate["suggested_price"]
+    inquiry.selected_tier_code = tier_code
+    inquiry.inquiry_status = "QUOTED"
+    inquiry.save()
+    
+    # Ajouter les features du tier selon le document de référence
+    tier_features = []
+    if tier_code == "essentiel_plus":
+        tier_features = [
+            "Résumé analytique par document",
+            "≥ 25 questions de préparation par document",
+            "≥ 20 irrégularités détaillées par document",
+            "Recommandations générales + plan d'action simplifié",
+        ]
+    elif tier_code == "complete_pro":
+        tier_features = [
+            "Résumé analytique par document",
+            "≥ 25 questions de préparation par document",
+            "≥ 20 irrégularités par document",
+            "Tableaux de conformité consolidés",
+            "Plan d'action structuré par thématique",
+        ]
+    elif tier_code == "expert_audit":
+        tier_features = [
+            "Analyse approfondie par texte",
+            "≥ 30 questions par document",
+            "≥ 25 irrégularités par document",
+            "Synthèse comparative et plan d'amélioration global",
+            "Recommandations stratégiques par service",
+        ]
+    
+    tier["features"] = tier_features
+    
+    return render(
+        request,
+        "store/forms/kit_quote.html",
+        {
+            "inquiry": inquiry,
+            "tier": tier,
+            "estimate": estimate,
+        },
+    )
 
 
 MAX_ATTACH_TOTAL = 15 * 1024 * 1024  # 15 Mo
@@ -1025,7 +1282,22 @@ def cinetpay_return(request):
     paid = set(request.session.get("paid_orders", []))
     paid.add(str(order.uuid))
     request.session["paid_orders"] = list(paid)
-    # Rediriger vers la page sécurisée (liens directs A4/6x9)
+    
+    # Vérifier si cette commande est liée à une inquiry de kit
+    inquiry = order.inquiries.filter(kind=ClientInquiry.KIND_KIT).first()
+    if inquiry:
+        # Mettre à jour le statut de l'inquiry
+        inquiry.payment_status = "PAID"
+        inquiry.inquiry_status = "PAID"
+        inquiry.save(update_fields=["payment_status", "inquiry_status"])
+        # Rediriger vers la page de confirmation pour les kits
+        messages.success(
+            request,
+            "✅ Paiement confirmé avec succès ! Votre demande de kit personnalisé va être traitée."
+        )
+        return redirect("store:kit_payment_success", inquiry_id=inquiry.id)
+    
+    # Sinon, comportement standard pour les ebooks (téléchargement)
     try:
         return redirect("downloads:secure", order_uuid=order.uuid)
     except Exception:
@@ -1065,6 +1337,12 @@ def cinetpay_notify(request):
     if paid_ok:
         try:
             order.mark_paid(provider="cinetpay", provider_tx=payload.get("provider_tx_id") or ref)
+            # Si cette commande est liée à une inquiry de kit, mettre à jour son statut
+            inquiry = order.inquiries.filter(kind=ClientInquiry.KIND_KIT).first()
+            if inquiry:
+                inquiry.payment_status = "PAID"
+                inquiry.inquiry_status = "PAID"
+                inquiry.save(update_fields=["payment_status", "inquiry_status"])
         except Exception:
             logger.exception("[CINETPAY_NOTIFY] mark_paid error for %s", ref)
     return JsonResponse({"ok": True})

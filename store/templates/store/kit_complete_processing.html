@@ -46,23 +46,51 @@
               </span>
             </td>
             <td class="px-4 py-3">
-              <a href="#" class="text-blue-600 hover:underline opacity-60 pointer-events-none" title="À relier à une vue détail existante">Voir la demande</a>
+              <a href="{% url 'store:kit_complete_inquiry_detail' inquiry.pk %}" class="text-blue-600 hover:underline">
+                Voir la demande
+              </a>
             </td>
             <td class="px-4 py-3">
-              {% if inquiry.processing_state in 'PAID,IA_RUNNING' %}
-                <form method="post" action="{% url 'store:kit_complete_process' inquiry.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                    Traiter
-                  </button>
-                </form>
+              {% if inquiry.processing_state == 'INQUIRY_RECEIVED' or inquiry.processing_state == 'PAID' %}
+                {% with last_task=inquiry.tasks.all|first %}
+                  {% if not last_task or last_task.status == 'DONE' or last_task.status == 'FAILED' %}
+                    <form method="post"
+                          action="{% url 'store:kit_complete_process' inquiry.pk %}"
+                          x-data="{ loading: false }"
+                          @submit="loading = true">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                              :disabled="loading">
+                        <span x-show="!loading">Traiter avec l'IA</span>
+                        <span x-show="loading" class="flex items-center gap-2">
+                          <span class="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                          <span>En cours…</span>
+                        </span>
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="text-xs text-slate-500">Tâche en cours ({{ last_task.status }})</span>
+                  {% endif %}
+                {% endwith %}
+              {% elif inquiry.processing_state == 'IA_RUNNING' %}
+                <div class="inline-flex items-center gap-2 text-xs text-amber-600">
+                  <span class="inline-block w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></span>
+                  <span>IA en cours…</span>
+                </div>
               {% else %}
                 <span class="text-xs text-slate-500">—</span>
               {% endif %}
             </td>
             <td class="px-4 py-3">
-              {% if inquiry.generated_draft and inquiry.generated_draft.docx %}
-                <a href="{{ inquiry.generated_draft.docx.url }}" class="text-blue-600 hover:underline">Télécharger (IA)</a>
+              {% if inquiry.processing_state == 'DRAFT_DONE' and inquiry.generated_draft and inquiry.generated_draft.docx %}
+                <a href="{% url 'store:kit_generated_draft_download' inquiry.pk %}" 
+                   class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+                  Télécharger le brouillon
+                </a>
+              {% elif inquiry.generated_draft and inquiry.generated_draft.docx %}
+                <a href="{% url 'store:kit_generated_draft_download' inquiry.pk %}" 
+                   class="text-blue-600 hover:underline">Télécharger (IA)</a>
               {% elif inquiry.ai_doc %}
                 <a href="{{ inquiry.ai_doc.url }}" class="text-blue-600 hover:underline">Télécharger (IA)</a>
               {% else %}
@@ -79,13 +107,24 @@
               </form>
             </td>
             <td class="px-4 py-3">
-              {% if inquiry.processing_state == 'FINAL_UPLOADED' and (inquiry.human_pdf or (inquiry.generated_draft and inquiry.generated_draft.docx)) %}
-                <form method="post" action="{% url 'store:kit_complete_publish' inquiry.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
-                    Publier
-                  </button>
-                </form>
+              {% if inquiry.processing_state == 'FINAL_UPLOADED' %}
+                {% if inquiry.human_pdf %}
+                  <form method="post" action="{% url 'store:kit_complete_publish' inquiry.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+                      Publier
+                    </button>
+                  </form>
+                {% elif inquiry.generated_draft and inquiry.generated_draft.docx %}
+                  <form method="post" action="{% url 'store:kit_complete_publish' inquiry.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+                      Publier
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="text-xs text-slate-400">En attente</span>
+                {% endif %}
               {% else %}
                 <span class="text-xs text-slate-400">En attente</span>
               {% endif %}

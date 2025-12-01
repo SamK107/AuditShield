@@ -4,8 +4,17 @@
 <section class="py-16">
   <div class="max-w-xl mx-auto px-4 text-center">
     <h1 class="text-2xl font-extrabold">Merci !</h1>
+    {% if paid %}
+      <div class="mt-4 mb-4 p-4 rounded-xl bg-green-50 border border-green-200">
+        <p class="text-green-800 font-semibold">✅ Paiement confirmé avec succès</p>
+      </div>
+    {% endif %}
     <p class="mt-2 text-slate-600">
-      Votre demande de Kit personnalisé a bien été envoyée.<br>
+      {% if paid %}
+        Votre paiement a été confirmé et votre demande de Kit personnalisé a bien été enregistrée.<br>
+      {% else %}
+        Votre demande de Kit personnalisé a bien été envoyée.<br>
+      {% endif %}
       {% if tier %}
         Offre choisie: <span class="font-semibold">{{ tier.name }}</span> — délai indicatif: <span class="font-semibold">{{ tier.delay }}</span>.<br>
         Le document personnalisé vous sera envoyé par email conformément à ce délai, après validation de la proposition.
