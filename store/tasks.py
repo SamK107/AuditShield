@@ -14,6 +14,167 @@ from store.models import ClientInquiry, InquiryDocument
 logger = logging.getLogger(__name__)
 
 
+@shared_task
+def generate_kit_complete_draft_task(inquiry_id: int) -> None:
+    """
+    Celery task to generate a Kit Complete draft.
+    This task is triggered when clicking "Traiter" button.
+    
+    Args:
+        inquiry_id: ID of the ClientInquiry instance
+    """
+    from store.models import ClientInquiry
+    from store.services.kit_complete_ai import generate_kit_draft_for_inquiry
+    
+    try:
+        inquiry = ClientInquiry.objects.get(pk=inquiry_id)
+    except ClientInquiry.DoesNotExist:
+        logger.error(f"Inquiry {inquiry_id} not found")
+        return
+    
+    # Optional: only proceed if state is IA_RUNNING
+    if inquiry.processing_state != "IA_RUNNING":
+        logger.warning(
+            f"Inquiry {inquiry_id} is not in IA_RUNNING state "
+            f"(current: {inquiry.processing_state})"
+        )
+        return
+    
+    try:
+        generate_kit_draft_for_inquiry(inquiry)
+        logger.info(f"Kit draft generated successfully for inquiry {inquiry_id}")
+    except Exception as e:
+        logger.exception(f"Error generating kit draft for inquiry {inquiry_id}: {e}")
+        # State will be reverted by the service function
+        raise
+
+
+@shared_task
+def run_kit_ai_pipeline(task_id: str):
+    """
+    Tâche de fond qui :
+    - charge la KitProcessingTask + ClientInquiry,
+    - construit les textes (consignes + extraits docs),
+    - appelle l'IA,
+    - génère un DOCX,
+    - enregistre un GeneratedDraft,
+    - met à jour les états (KitProcessingTask + ClientInquiry).
+    
+    Args:
+        task_id: UUID de la KitProcessingTask (en string)
+    """
+    import traceback
+    from django.core.files import File
+    from store.models import KitProcessingTask, ClientInquiry, GeneratedDraft
+    
+    try:
+        # Récupérer la tâche avec l'inquiry
+        task = KitProcessingTask.objects.select_related("inquiry").get(id=task_id)
+        inquiry = task.inquiry
+        
+        # Passer le statut à RUNNING
+        task.status = "RUNNING"
+        task.started_at = timezone.now()
+        task.save(update_fields=["status", "started_at"])
+        
+        # Charger le fichier de consignes
+        consignes_path = Path(settings.BASE_DIR) / "assets" / "Modele_Consignes_Kit_Complet.md"
+        if not consignes_path.exists():
+            raise FileNotFoundError(
+                f"Fichier de consignes introuvable: {consignes_path}"
+            )
+        
+        consignes_md = consignes_path.read_text(encoding="utf-8")
+        
+        # Extraire les textes des documents
+        from core.ai.kit_utils import extract_texts_from_inquiry_docs
+        documents_payload = extract_texts_from_inquiry_docs(inquiry)
+        
+        # Appeler l'IA pour générer le Markdown
+        from core.ai.kit_builder import build_kit_markdown
+        markdown, usage_dict = build_kit_markdown(consignes_md, inquiry, documents_payload)
+        
+        # Convertir le Markdown en DOCX
+        from core.ai.kit_utils import markdown_to_docx
+        docx_path = markdown_to_docx(markdown, inquiry_id=inquiry.pk)
+        
+        # Créer ou mettre à jour le GeneratedDraft
+        draft, created = GeneratedDraft.objects.get_or_create(
+            inquiry=inquiry,
+            defaults={
+                "model_name": usage_dict.get("model", ""),
+                "token_usage": usage_dict.get("total_tokens"),
+                "log": (
+                    f"Généré à {timezone.now()}\n\n"
+                    f"Modèle: {usage_dict.get('model', 'N/A')}\n"
+                    f"Tokens: {usage_dict.get('total_tokens', 'N/A')}\n"
+                    f"Prompt tokens: {usage_dict.get('prompt_tokens', 'N/A')}\n"
+                    f"Completion tokens: {usage_dict.get('completion_tokens', 'N/A')}\n\n"
+                    f"Longueur Markdown généré: {len(markdown)} caractères"
+                ),
+            }
+        )
+        
+        if not created:
+            draft.model_name = usage_dict.get("model", "")
+            draft.token_usage = usage_dict.get("total_tokens")
+            draft.log = (
+                f"Régénéré à {timezone.now()}\n\n"
+                f"Modèle: {usage_dict.get('model', 'N/A')}\n"
+                f"Tokens: {usage_dict.get('total_tokens', 'N/A')}\n"
+                f"Prompt tokens: {usage_dict.get('prompt_tokens', 'N/A')}\n"
+                f"Completion tokens: {usage_dict.get('completion_tokens', 'N/A')}\n\n"
+                f"Longueur Markdown généré: {len(markdown)} caractères"
+            )
+        
+        # Lire le fichier DOCX et l'enregistrer dans le champ docx
+        with open(docx_path, "rb") as f:
+            docx_file = File(f, name=f"kit_inquiry_{inquiry.pk}.docx")
+            draft.docx.save(f"kit_inquiry_{inquiry.pk}.docx", docx_file, save=True)
+        
+        # Mettre à jour la tâche
+        task.status = "DONE"
+        task.word_file = draft.docx
+        task.finished_at = timezone.now()
+        task.save(update_fields=["status", "word_file", "finished_at"])
+        
+        # Mettre à jour l'inquiry
+        inquiry.processing_state = "DRAFT_DONE"
+        inquiry.ai_status = ClientInquiry.AI_STATUS_DONE
+        inquiry.ai_done_at = timezone.now()
+        inquiry.save(update_fields=["processing_state", "ai_status", "ai_done_at"])
+        
+        logger.info(
+            f"[run_kit_ai_pipeline] Traitement terminé avec succès pour "
+            f"task {task_id}, inquiry {inquiry.pk}"
+        )
+        
+    except Exception as e:
+        error_msg = str(e)
+        
+        logger.exception(
+            f"[run_kit_ai_pipeline] Erreur pour task {task_id}: {e}"
+        )
+        
+        # Mettre à jour la tâche en erreur
+        try:
+            task = KitProcessingTask.objects.get(id=task_id)
+            task.status = "FAILED"
+            task.error = f"{error_msg}\n\n{traceback.format_exc()}"
+            task.finished_at = timezone.now()
+            task.save(update_fields=["status", "error", "finished_at"])
+            
+            # Revenir à l'état précédent pour l'inquiry
+            inquiry = task.inquiry
+            inquiry.processing_state = "PAID"
+            inquiry.ai_status = ClientInquiry.AI_STATUS_ERROR
+            inquiry.save(update_fields=["processing_state", "ai_status"])
+        except Exception:
+            logger.exception("Erreur lors de la mise à jour de l'état d'erreur")
+        
+        raise
+
+
 def _normalize_ascii(value):
     """
     Normalise une valeur pour qu'elle soit ASCII-safe.
@@ -360,4 +521,68 @@ L'équipe AuditSansPeur
         [inquiry.email],
         fail_silently=False
     )
+
+
+@shared_task
+def send_kit_progress_update(kit_order_id: int) -> None:
+    """
+    Tâche Celery pour envoyer une mise à jour de progression au client.
+
+    Si le statut actuel est ANALYSIS, le passe à WRITING et envoie un email.
+
+    Args:
+        kit_order_id: ID de l'instance KitOrder
+    """
+    from store.models import KitOrder
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    try:
+        kit_order = KitOrder.objects.get(id=kit_order_id)
+    except KitOrder.DoesNotExist:
+        logger.error(f"[send_kit_progress_update] KitOrder {kit_order_id} introuvable")
+        return
+
+    # Si le statut est ANALYSIS, passer à WRITING
+    if kit_order.status == KitOrder.STATUS_ANALYSIS:
+        kit_order.status = KitOrder.STATUS_WRITING
+        kit_order.save(update_fields=["status"])
+        logger.info(
+            f"[send_kit_progress_update] Statut mis à jour: "
+            f"{kit_order.tracking_id} → WRITING"
+        )
+
+        # Envoyer l'email de progression
+        try:
+            subject = "Mise à jour de votre Kit personnalisé"
+            message = f"""Bonjour {kit_order.full_name},
+
+Votre Kit personnalisé avance bien ! Nous sommes maintenant à l'étape "Rédaction en cours".
+
+Vous pouvez suivre l'avancement en temps réel sur votre page de suivi :
+{kit_order.get_tracking_url()}
+
+Bien cordialement,
+L'équipe AuditSansPeur
+"""
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[kit_order.email],
+                fail_silently=False,
+            )
+            logger.info(
+                f"[send_kit_progress_update] Email envoyé pour "
+                f"KitOrder {kit_order.tracking_id}"
+            )
+        except Exception as e:
+            logger.exception(
+                f"[send_kit_progress_update] Erreur envoi email: {e}"
+            )
+    else:
+        logger.info(
+            f"[send_kit_progress_update] Statut actuel {kit_order.status} "
+            f"ne nécessite pas de mise à jour automatique"
+        )
 

@@ -189,6 +189,39 @@ CINETPAY_ENV = env.str("CINETPAY_ENV", "sandbox")
 CINETPAY_MOCK = os.getenv("CINETPAY_MOCK", "0") == "1"
 
 # -----------------------------------------------------------------------------
+# Orange Money Mali - Configuration
+# -----------------------------------------------------------------------------
+# Configuration Orange Money Mali (sandbox et production)
+# Toutes les variables sont lues depuis .env via os.getenv
+ORANGE_MONEY_CONFIG = {
+    "CLIENT_ID": os.getenv("OM_CLIENT_ID", ""),
+    "CLIENT_SECRET": os.getenv("OM_CLIENT_SECRET", ""),
+    "MERCHANT_ID": os.getenv("OM_MERCHANT_ID", ""),
+    "MERCHANT_KEY": os.getenv("OM_MERCHANT_KEY", ""),
+    "MSISDN_TEST": os.getenv("OM_MSISDN_TEST", "77011011234"),
+    "API_BASE_URL": os.getenv("OM_API_BASE_URL", "https://api.orange.com"),
+    # URL de collecte (endpoint pour initier un paiement)
+    # IMPORTANT: L'URL exacte peut varier selon la doc officielle OM Mali
+    # Rendre 100% paramétrable via .env
+    "COLLECT_URL": os.getenv("OM_COLLECT_URL", ""),
+    # URLs de callback et retour
+    "CALLBACK_URL": os.getenv("OM_CALLBACK_URL", ""),
+    "RETURN_URL_SUCCESS": os.getenv("OM_RETURN_URL_SUCCESS", ""),
+    "RETURN_URL_FAILED": os.getenv("OM_RETURN_URL_FAILED", ""),
+}
+
+# Validation de la configuration en production
+# En dev/sandbox, on peut être plus permissif
+if not DEBUG:
+    required_vars = ["CLIENT_ID", "CLIENT_SECRET"]
+    missing = [var for var in required_vars if not ORANGE_MONEY_CONFIG.get(var)]
+    if missing:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            f"Orange Money: variables manquantes dans .env: {', '.join(missing)}"
+        )
+
+# -----------------------------------------------------------------------------
 # Kit Complet - Configuration
 # -----------------------------------------------------------------------------
 import os

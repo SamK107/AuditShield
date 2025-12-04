@@ -478,12 +478,19 @@ def _is_mock_enabled() -> bool:
     if settings_mock:
         logger.warning("[CinetPay] Mode MOCK activé via settings.CINETPAY_MOCK")
         return True
+<<<<<<< HEAD
     if env_mock:
         logger.warning("[CinetPay] Mode MOCK activé via CINETPAY_MOCK=1 dans .env")
         return True
     
     logger.info("[CinetPay] Mode MOCK désactivé - Utilisation de l'API réelle")
     return False
+=======
+    # Vérifier dans les variables d'environnement (peut être chargé via load_dotenv)
+    mock_value = os.getenv("CINETPAY_MOCK", "0")
+    # Accepter "1", "true", "True", "yes", "Yes"
+    return str(mock_value).lower() in ("1", "true", "yes")
+>>>>>>> feat/orange-sx-payment-test
 
 
 def _mock_checkout_url(transaction_id: str) -> str:
@@ -519,9 +526,14 @@ def init_payment_auto(order, request) -> str:  # type: ignore[override]
     Wrapper de init_payment_auto : en mode mock, renvoie directement une URL de mock.
     Sinon, appelle l'API CinetPay réelle.
     """
+<<<<<<< HEAD
     # Vérifier si le mode MOCK est activé
     mock_enabled = _is_mock_enabled()
     logger.info(f"[CinetPay][init_payment_auto] Mode MOCK: {mock_enabled}")
+=======
+    mock_enabled = _is_mock_enabled()
+    logger.info(f"[CINETPAY] init_payment_auto -> mock_enabled={mock_enabled} order_id={order.id}")
+>>>>>>> feat/orange-sx-payment-test
     
     if mock_enabled:
         import uuid as _uuid
@@ -534,11 +546,19 @@ def init_payment_auto(order, request) -> str:  # type: ignore[override]
             except Exception:
                 order.provider_ref = tx
                 order.save()
+<<<<<<< HEAD
         logger.warning(f"[CINETPAY MOCK MODE] init_payment_auto -> order_id={order.id} tx={tx}")
         logger.warning(f"[CINETPAY MOCK MODE] Redirection vers: {_mock_checkout_url(tx)}")
         return _mock_checkout_url(tx)
     
     # Mode PRODUCTION : utiliser l'API réelle
+=======
+        mock_url = _mock_checkout_url(tx)
+        logger.info(f"[CINETPAY MOCK] init_payment_auto -> order_id={order.id} tx={tx} url={mock_url}")
+        return mock_url
+    
+    logger.warning(f"[CINETPAY] Mode RÉEL activé (pas de mock) -> order_id={order.id}")
+>>>>>>> feat/orange-sx-payment-test
     if not _REAL_init_payment_auto:
         raise RuntimeError("init_payment_auto réel non défini pour CinetPay")
     

@@ -26,3 +26,12 @@ repos:
     rev: v8.18.4
     hooks:
       - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: pytest-on-push
+        name: Run pytest before push
+        entry: bash -c 'if [ "$SKIP_TESTS" != "1" ]; then pytest; else echo "Skipping tests (SKIP_TESTS=1)"; fi'
+        language: system
+        stages: [push]
+        pass_filenames: false

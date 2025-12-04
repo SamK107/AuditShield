@@ -1,5 +1,5 @@
 # Structure Hiérarchique du Projet AUDITSHIELD
-**Généré le:** 2025-11-03 21:47:02
+**Généré le:** 2025-11-17 18:06:58
 ---
 
 ```
@@ -18,6 +18,14 @@ auditshield/
 │   ├── urls.py
 │   └── wsgi.py
 ├── core
+│   ├── management
+│   │   ├── commands
+│   │   │   ├── __init__.py
+│   │   │   └── check_env.py
+│   │   └── __init__.py
+│   ├── migrations
+│   │   ├── 0001_initial.py
+│   │   └── __init__.py
 │   ├── templates
 │   │   └── core
 │   │       ├── about.html
@@ -25,7 +33,8 @@ auditshield/
 │   │       ├── contact.html
 │   │       ├── home.html
 │   │       ├── landing_comingsoon.html
-│   │       └── policy.html
+│   │       ├── policy.html
+│   │       └── waitlist_success.html
 │   ├── __init__.py
 │   ├── admin.py
 │   ├── apps.py
@@ -37,10 +46,14 @@ auditshield/
 ├── docs
 │   ├── CINETPAY.md
 │   ├── DEPLOY.md
+│   ├── ETAT_DES_LIEUX_KIT_COMPLET.md
 │   ├── EXPLICATION_CONFIG_CINETPAY.md
 │   ├── GO_LIVE_CINETPAY.md
+│   ├── KIT_COMPLET_IMPLEMENTATION.md
 │   ├── PAYMENT_CINETPAY.md
-│   └── RECETTE_CINETPAY.md
+│   ├── RECETTE_CINETPAY.md
+│   ├── RESUME_ETAT_LIEUX_KIT_COMPLET.md
+│   └── tarifs_kit_complet_reference.md
 ├── downloads
 │   ├── management
 │   │   ├── commands
@@ -61,7 +74,9 @@ auditshield/
 │   │   ├── 0008_secure_phase1_slugs.py
 │   │   ├── 0009_externalentitlement.py
 │   │   ├── 0010_remove_selar_platform.py
+│   │   ├── 0011_external_entitlement_imap_fields.py
 │   │   └── __init__.py
+│   ├── services
 │   ├── templates
 │   │   └── downloads
 │   │       ├── _asset_grid.html
@@ -73,6 +88,8 @@ auditshield/
 │   │       ├── kit_preparation_start.html
 │   │       ├── kit_preparation_thanks.html
 │   │       ├── manual_claim.html
+│   │       ├── resend_links_form.html
+│   │       ├── resources_overview.html
 │   │       ├── secure.html
 │   │       └── secure_downloads.html
 │   ├── tests
@@ -123,22 +140,70 @@ auditshield/
 │   │   └── a4
 │   │       ├── Audit_Sans_Peur_PDFA4.pdf
 │   │       └── Audit_Sans_Peur_PDFA4_4UFKOzs.pdf
-│   └── downloads
-│       └── 2025
-│           ├── 09
-│           │   ├── Audit_Sans_Peur_PDFA4.pdf
-│           │   ├── Audit_Sans_Peur_PDFA4_9PDmFZk.pdf
-│           │   ├── Checklist_Audit_Collectivites.xlsx
-│           │   ├── Checklist_Audit_Collectivites_8IB3rpX.xlsx
-│           │   ├── Checklist_Audit_Projets.xlsx
-│           │   ├── Checklist_Audit_Projets_yIGpj5c.xlsx
-│           │   └── Checklist_Audit_Structures_Publiques.xlsx
-│           └── 10
-│               ├── Audit_Sans_Peur_PDF6X9.pdf
-│               ├── Audit_Sans_Peur_PDF6X9_Z7z8OV9.pdf
-│               ├── Comptabilite_Matieres_Irregularites.pdf
-│               ├── DFM_Irregularites.pdf
-│               └── EPIC_Irregularites.pdf
+│   ├── downloads
+│   │   └── 2025
+│   │       ├── 09
+│   │       │   ├── Audit_Sans_Peur_PDFA4.pdf
+│   │       │   ├── Audit_Sans_Peur_PDFA4_9PDmFZk.pdf
+│   │       │   ├── Checklist_Audit_Collectivites.xlsx
+│   │       │   ├── Checklist_Audit_Collectivites_8IB3rpX.xlsx
+│   │       │   ├── Checklist_Audit_Projets.xlsx
+│   │       │   ├── Checklist_Audit_Projets_yIGpj5c.xlsx
+│   │       │   └── Checklist_Audit_Structures_Publiques.xlsx
+│   │       ├── 10
+│   │       │   ├── Audit_Sans_Peur_PDF6X9.pdf
+│   │       │   ├── Audit_Sans_Peur_PDF6X9_Z7z8OV9.pdf
+│   │       │   ├── Comptabilite_Matieres_Irregularites.pdf
+│   │       │   ├── DFM_Irregularites.pdf
+│   │       │   └── EPIC_Irregularites.pdf
+│   │       └── 11
+│   │           ├── Audit_Sans_Peur_PDF6X9.pdf
+│   │           ├── Audit_Sans_Peur_PDF6X9_SIy0TLe.pdf
+│   │           ├── Audit_Sans_Peur_PDFA4.pdf
+│   │           ├── bonus_reponses.txt
+│   │           ├── checklist_projets.csv
+│   │           ├── checklist_publiques.txt
+│   │           ├── Extrait_Complet_Audit_Sans_Peur2.pdf
+│   │           ├── irregs.csv
+│   │           ├── plan_action.txt
+│   │           ├── testfile.txt
+│   │           ├── testfile_pzg82t6.txt
+│   │           └── testfile_TvGuHAm.txt
+│   └── inquiries
+│       ├── 1
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 10
+│       │   ├── mali-code-2015-marches-publics.pdf
+│       │   └── mali-code-2015-marches-publics_p8kAIUJ.pdf
+│       ├── 11
+│       │   ├── mali-code-2015-marches-publics.pdf
+│       │   └── mali-code-2015-marches-publics_ZZ7eZYk.pdf
+│       ├── 12
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 13
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 14
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 2
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 3
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 4
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 5
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 6
+│       │   ├── Kit_Complet_Preparation_Couverture_BSG.docx
+│       │   └── mali-code-2015-marches-publics.pdf
+│       ├── 7
+│       │   ├── mali-code-2015-marches-publics.pdf
+│       │   └── mali-code-2015-marches-publics_Am7OScE.pdf
+│       ├── 8
+│       │   ├── mali-code-2015-marches-publics.pdf
+│       │   └── mali-code-2015-marches-publics_jVIJdhN.pdf
+│       └── 9
+│           ├── mali-code-2015-marches-publics.pdf
+│           └── mali-code-2015-marches-publics_k6GIqKf.pdf
 ├── private_media
 │   └── downloads
 │       └── 2025
@@ -158,6 +223,8 @@ auditshield/
 │   ├── enrich_buy_links.sh
 │   ├── recipe_cinetpay_local.ps1
 │   └── recipe_cinetpay_local.sh
+├── security
+│   └── links.py
 ├── static
 │   ├── admin
 │   │   ├── css
@@ -700,6 +767,7 @@ auditshield/
 │   │   └── bundle.js
 │   ├── partners
 │   │   ├── chariow.svg
+│   │   ├── Orange_logo.webp
 │   │   ├── publiseer.svg
 │   │   └── youscribe.svg
 │   └── styles
@@ -712,7 +780,10 @@ auditshield/
 │   │   ├── commands
 │   │   │   ├── __init__.py
 │   │   │   ├── cinetpay_simulate_webhook.py
+│   │   │   ├── create_missing_kit_tasks.py
+│   │   │   ├── process_bonus_queue.py
 │   │   │   ├── process_kit_tasks.py
+│   │   │   ├── reconcile_payments.py
 │   │   │   ├── seed_download_assets.py
 │   │   │   ├── seed_download_pages.py
 │   │   │   ├── seed_ir_categories.py
@@ -737,6 +808,7 @@ auditshield/
 │   │   ├── 0012_bonusrequest_and_more.py
 │   │   ├── 0013_clientinquiry_context_text_kitprocessingtask.py
 │   │   ├── 0014_clientinquiry_ai_doc_clientinquiry_ai_done_at_and_more.py
+│   │   ├── 0015_add_kit_complet_models.py
 │   │   └── __init__.py
 │   ├── seeds
 │   │   ├── __init__.py
@@ -745,8 +817,14 @@ auditshield/
 │   │   ├── __init__.py
 │   │   ├── access.py
 │   │   ├── cinetpay.py
-│   │   └── kit_builder.py
+│   │   ├── fulfillment.py
+│   │   ├── kit_builder.py
+│   │   ├── mailing.py
+│   │   └── orange_money.py
 │   ├── templates
+│   │   ├── emails
+│   │   │   ├── paid_links.html
+│   │   │   └── paid_links.txt
 │   │   ├── store
 │   │   │   ├── forms
 │   │   │   │   ├── kit_inquiry.html
@@ -764,19 +842,25 @@ auditshield/
 │   │   │   ├── bonus_submit.html
 │   │   │   ├── bonus_thanks.html
 │   │   │   ├── bonus_upload.html
+│   │   │   ├── buy_cinetpay.html
 │   │   │   ├── buy_other_methods.html
 │   │   │   ├── checkout.html
 │   │   │   ├── download_options.html
 │   │   │   ├── downloads_list.html
 │   │   │   ├── examples.html
 │   │   │   ├── examples_prelim.html
+│   │   │   ├── kit_checkout.html
+│   │   │   ├── kit_complete_processing.html
 │   │   │   ├── kit_inquiry.html
 │   │   │   ├── kit_processing_list.html
+│   │   │   ├── kit_staff_list.html
 │   │   │   ├── offers.html
+│   │   │   ├── om_mock_checkout.html
 │   │   │   ├── payment_error.html
 │   │   │   ├── payment_return.html
 │   │   │   ├── payment_success.html
 │   │   │   ├── product_detail.html
+│   │   │   ├── tariffs_kit.html
 │   │   │   ├── thank_you.html
 │   │   │   ├── training_inquiry.html
 │   │   │   ├── training_inquiry_success.html
@@ -793,34 +877,49 @@ auditshield/
 │   │   ├── test_links_and_carousel.py
 │   │   ├── test_payment_callback_idempotent.py
 │   │   ├── test_payment_return_paid_redirects.py
-│   │   └── test_payment_return_unpaid.py
+│   │   ├── test_payment_return_unpaid.py
+│   │   └── test_tariffs_kit.py
 │   ├── utils
 │   │   ├── __init__.py
-│   │   └── docx_builder.py
+│   │   ├── docx_builder.py
+│   │   └── tokens.py
+│   ├── views
 │   ├── __init__.py
 │   ├── admin.py
 │   ├── apps.py
+│   ├── emails.py
 │   ├── forms.py
 │   ├── forms_bonus.py
 │   ├── models.py
+│   ├── payment_views.py
+│   ├── quotas.py
 │   ├── services.py
 │   ├── tasks.py
 │   ├── urls.py
 │   ├── views.py
 │   ├── views_admin_bonus.py
+│   ├── views_admin_kit.py
 │   ├── views_bonus.py
 ├── templates
 │   ├── ai
 │   │   └── prompts
 │   │       └── kit_complet_consigne.md
+│   ├── emails
+│   │   ├── bonus_published.html
+│   │   ├── bonus_published.txt
+│   │   ├── fulfilment_purchase.html
+│   │   └── fulfilment_purchase.txt
 │   ├── 404.html
 │   ├── 500.html
 │   ├── base.html
 │   └── base_error_min.html
 ├── tests
+│   ├── test_cinetpay_mock.py
 │   ├── test_commands.py
 │   ├── test_integrations_cinetpay.py
-│   └── test_smoke.py
+│   ├── test_smoke.py
+│   ├── test_webhooks_and_links.py
+│   └── test_workflows.py
 ├── tmp
 │   └── restart.txt
 ├── var
@@ -831,6 +930,8 @@ auditshield/
 ├── .htaccess
 ├── .pre-commit-config.yaml
 ├── body.json
+├── BONUS_KIT_STATUS.md
+├── CELERY_DEV_SETUP.md
 ├── CHANGEMENTS_2025-10-21.md
 ├── check_entitlements.py
 ├── conftest.py
@@ -841,10 +942,12 @@ auditshield/
 ├── docker-compose.yml
 ├── DOCUMENTATION_INDEX.md
 ├── ENV_TEMPLATE.txt
+├── ETAPES_POSTGRESQL.md
 ├── FETCH_RECEIPTS_README.md
 ├── generate_structure.py
 ├── IMPLEMENTATION_COMPLETE.md
 ├── manage.py
+├── ORANGE_MONEY_CONFIG.md
 ├── package-lock.json
 ├── package.json
 ├── passenger_wsgi.py
@@ -854,6 +957,7 @@ auditshield/
 ├── pytest.ini
 ├── QUICK_START.md
 ├── README.md
+├── README_DEV_NOTES.md
 ├── README_SQUELETTE_EBOOK.md
 ├── REFACTORING_SUMMARY.md
 ├── requirements.txt

@@ -2,10 +2,13 @@
 from django.contrib import admin
 
 from .models import (
+    ClientInquiry,
     DownloadToken,
     ExampleSlide,
+    GeneratedDraft,
     IrregularityCategory,
     IrregularityRow,
+    KitOrder,
     MediaAsset,
     OfferTier,
     Order,
@@ -102,11 +105,14 @@ class ClientInquiryAdmin(admin.ModelAdmin):
         "organization_name",
         "contact_name",
         "email",
+        "processing_state",
+        "payment_status",
         "created_at",
         "status",
     )
-    list_filter = ("kind", "status", "statut_juridique", "sector")
+    list_filter = ("kind", "status", "processing_state", "payment_status", "statut_juridique", "sector", "created_at")
     search_fields = ("organization_name", "contact_name", "email", "phone")
+    readonly_fields = ("created_at",)
     inlines = [InquiryDocumentInline]
 
 
@@ -137,5 +143,76 @@ class KitProcessingTaskAdmin(admin.ModelAdmin):
         }),
         ("Publication", {
             "fields": ("published_at", "published_by")
+        }),
+    )
+
+
+@admin.register(KitOrder)
+class KitOrderAdmin(admin.ModelAdmin):
+    list_display = (
+        "tracking_id",
+        "full_name",
+        "email",
+        "offer",
+        "status",
+        "amount",
+        "created_at",
+        "delivery_date",
+    )
+    list_filter = ("status", "offer", "created_at", "delivery_date")
+    search_fields = ("tracking_id", "email", "full_name")
+    readonly_fields = ("tracking_id", "created_at", "updated_at")
+    
+    fieldsets = (
+        ("Informations générales", {
+            "fields": (
+                "tracking_id",
+                "full_name",
+                "email",
+                "offer",
+                "amount",
+            )
+        }),
+        ("Suivi", {
+            "fields": (
+                "status",
+                "estimated_delay_hours",
+                "delivery_date",
+                "starter_pack_delivered",
+            )
+        }),
+        ("Relations", {
+            "fields": ("inquiry", "order"),
+            "classes": ("collapse",),
+        }),
+        ("Dates", {
+            "fields": ("created_at", "updated_at"),
+        }),
+    )
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Rendre tracking_id readonly uniquement si l'objet existe."""
+        readonly = list(self.readonly_fields)
+        if obj:  # Si l'objet existe déjà
+            readonly.append("tracking_id")
+        return readonly
+
+
+@admin.register(GeneratedDraft)
+class GeneratedDraftAdmin(admin.ModelAdmin):
+    list_display = ("id", "inquiry", "model_name", "token_usage", "created_at")
+    list_filter = ("created_at", "model_name")
+    search_fields = ("inquiry__contact_name", "inquiry__email", "inquiry__organization_name")
+    readonly_fields = ("created_at", "built_at")
+    
+    fieldsets = (
+        ("Informations générales", {
+            "fields": ("inquiry", "created_at", "built_at")
+        }),
+        ("Génération IA", {
+            "fields": ("model_name", "token_usage", "log")
+        }),
+        ("Fichier", {
+            "fields": ("docx",)
         }),
     )
