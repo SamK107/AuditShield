@@ -7,6 +7,7 @@ import base64
 import json
 import logging
 import os
+import re
 from typing import Dict, Any, Optional
 
 import requests
@@ -14,6 +15,63 @@ from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
+
+
+def _mask_sensitive_data(data: dict, keys_to_mask: list = None) -> dict:
+    """
+    Masque les données sensibles dans un dict pour le logging.
+    
+    Args:
+        data: Dictionnaire à masquer
+        keys_to_mask: Liste des clés à masquer (défaut: token, secret, key, password)
+    
+    Returns:
+        Copie du dict avec les valeurs sensibles masquées
+    """
+    if keys_to_mask is None:
+        keys_to_mask = ["token", "secret", "key", "password", "auth"]
+    
+    # Clés à ne jamais masquer (whitelist)
+    never_mask = ["token_type", "grant_type", "status", "message", "currency", 
+                  "order_id", "amount", "lang", "reference"]
+    
+    masked = data.copy()
+    for key, value in masked.items():
+        # Ne jamais masquer les clés whitelistées
+        if key in never_mask:
+            continue
+            
+        if isinstance(value, dict):
+            masked[key] = _mask_sensitive_data(value, keys_to_mask)
+        elif isinstance(value, str):
+            # Masquer si la clé contient un mot sensible (mais pas dans la whitelist)
+            if any(sensitive in key.lower() for sensitive in keys_to_mask):
+                # Garder les 4 premiers caractères pour debug
+                masked[key] = f"{value[:4]}***masked***" if len(value) > 4 else "***masked***"
+    return masked
+
+
+def _mask_authorization_header(headers: dict) -> dict:
+    """
+    Masque le header Authorization pour le logging.
+    
+    Args:
+        headers: Dict des headers HTTP
+    
+    Returns:
+        Copie des headers avec Authorization masqué
+    """
+    masked = headers.copy()
+    if "Authorization" in masked:
+        auth_value = masked["Authorization"]
+        # Extraire le type (Bearer, Basic, etc.) et masquer le token
+        parts = auth_value.split(" ", 1)
+        if len(parts) == 2:
+            auth_type, token = parts
+            masked["Authorization"] = f"{auth_type} ***masked***"
+        else:
+            masked["Authorization"] = "***masked***"
+    return masked
 
 # Cache pour le token OAuth (durée de vie ~90 jours selon guide)
 _TOKEN_CACHE_KEY = "orange_money_access_token"
@@ -120,13 +178,38 @@ def get_access_token() -> str:
     }
     
     try:
-        logger.info(f"[OM][OAuth] Requesting token from {oauth_url}")
+        # === LOGGING DÉTAILLÉ DE LA REQUÊTE ===
+        masked_headers = _mask_authorization_header(headers)
+        logger.info(
+            f"ORANGE_WEBPAY_REQUEST | OAuth Token | "
+            f"url={oauth_url} | "
+            f"headers={json.dumps(masked_headers)} | "
+            f"body={json.dumps(data)}"
+        )
+        
         response = requests.post(
             oauth_url,
             data=data,
             headers=headers,
             timeout=30,
         )
+        
+        # === LOGGING DÉTAILLÉ DE LA RÉPONSE ===
+        try:
+            response_json = response.json()
+            # Masquer les données sensibles dans la réponse (access_token)
+            masked_response = _mask_sensitive_data(response_json, ["token"])
+            logger.info(
+                f"ORANGE_WEBPAY_RESPONSE | OAuth Token | "
+                f"status={response.status_code} | "
+                f"body={json.dumps(masked_response, ensure_ascii=False)}"
+            )
+        except json.JSONDecodeError:
+            logger.info(
+                f"ORANGE_WEBPAY_RESPONSE | OAuth Token | "
+                f"status={response.status_code} | "
+                f"body={response.text}"
+            )
         
         if response.status_code != 200:
             logger.error(
@@ -308,11 +391,21 @@ def create_payment_request(payment, request=None) -> Dict[str, Any]:
     webpay_url = config["WEBPAY_URL"]
     
     try:
+        # === LOGGING DÉTAILLÉ DE LA REQUÊTE ===
+        # Masquer merchant_key dans le payload pour le logging
+        masked_payload = _mask_sensitive_data(payload, ["key"])
+        masked_headers = _mask_authorization_header(headers)
+        
+        logger.info(
+            f"ORANGE_WEBPAY_REQUEST | WebPayment Init | "
+            f"url={webpay_url} | "
+            f"headers={json.dumps(masked_headers)} | "
+            f"body={json.dumps(masked_payload, ensure_ascii=False)}"
+        )
         logger.info(
             f"[OM][create_payment] Initiating payment: order_id={order_id}, "
             f"amount={amount} XOF"
         )
-        logger.debug(f"[OM][create_payment] Payload: {json.dumps(payload, indent=2)}")
         
         response = requests.post(
             webpay_url,
@@ -320,6 +413,23 @@ def create_payment_request(payment, request=None) -> Dict[str, Any]:
             headers=headers,
             timeout=30,
         )
+        
+        # === LOGGING DÉTAILLÉ DE LA RÉPONSE ===
+        try:
+            response_json = response.json()
+            # Masquer les tokens sensibles (pay_token, notif_token)
+            masked_response = _mask_sensitive_data(response_json, ["token"])
+            logger.info(
+                f"ORANGE_WEBPAY_RESPONSE | WebPayment Init | "
+                f"status={response.status_code} | "
+                f"body={json.dumps(masked_response, ensure_ascii=False, indent=2)}"
+            )
+        except json.JSONDecodeError:
+            logger.info(
+                f"ORANGE_WEBPAY_RESPONSE | WebPayment Init | "
+                f"status={response.status_code} | "
+                f"body={response.text}"
+            )
         
         # Vérifier le status_code selon le guide (201 attendu pour succès)
         if response.status_code != 201:
@@ -459,6 +569,16 @@ def check_transaction_status(order_id: str, amount: Optional[int] = None, pay_to
     status_url = config["TRANSACTION_STATUS_URL"]
     
     try:
+        # === LOGGING DÉTAILLÉ DE LA REQUÊTE ===
+        masked_payload = _mask_sensitive_data(payload, ["key", "token"])
+        masked_headers = _mask_authorization_header(headers)
+        
+        logger.info(
+            f"ORANGE_WEBPAY_REQUEST | Transaction Status | "
+            f"url={status_url} | "
+            f"headers={json.dumps(masked_headers)} | "
+            f"body={json.dumps(masked_payload, ensure_ascii=False)}"
+        )
         logger.info(
             f"[OM][check_status] Checking status | order_id={order_id} | "
             f"amount={amount} | pay_token={pay_token[:20] if pay_token else 'N/A'}..."
@@ -470,6 +590,21 @@ def check_transaction_status(order_id: str, amount: Optional[int] = None, pay_to
             headers=headers,
             timeout=30,
         )
+        
+        # === LOGGING DÉTAILLÉ DE LA RÉPONSE ===
+        try:
+            response_json = response.json()
+            logger.info(
+                f"ORANGE_WEBPAY_RESPONSE | Transaction Status | "
+                f"status={response.status_code} | "
+                f"body={json.dumps(response_json, ensure_ascii=False, indent=2)}"
+            )
+        except json.JSONDecodeError:
+            logger.info(
+                f"ORANGE_WEBPAY_RESPONSE | Transaction Status | "
+                f"status={response.status_code} | "
+                f"body={response.text}"
+            )
         
         if response.status_code != 201:
             logger.error(

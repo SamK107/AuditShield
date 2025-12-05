@@ -290,3 +290,52 @@ import os
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+# Créer le dossier logs/ s'il n'existe pas
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} | {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "level": "INFO",
+        },
+        "orange_money_file": {
+            "class": "logging.FileHandler",
+            "filename": str(LOGS_DIR / "orange_money.log"),
+            "formatter": "verbose",
+            "level": "INFO",
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "store.services.orange_money": {
+            "handlers": ["console", "orange_money_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Logger racine pour capturer les logs non spécifiés
+        "": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+    },
+}

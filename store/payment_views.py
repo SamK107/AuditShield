@@ -174,18 +174,42 @@ def start_checkout(request, slug):
                     request,
                     "Erreur d'authentification Orange Money. Veuillez réessayer plus tard."
                 )
+                # Supprimer l'ordre créé si l'authentification échoue
+                order.delete()
             except orange_money.OrangeMoneyAPIError as e:
-                logger.error(f"[OM][start_checkout] Erreur API: {e}")
-                messages.error(
-                    request,
-                    f"Erreur lors de l'initialisation du paiement: {e}"
+                # Log détaillé de l'erreur API avec status_code et response_data
+                logger.error(
+                    f"[OM][start_checkout] Erreur API (status={getattr(e, 'status_code', 'N/A')}): {e}"
                 )
+                if hasattr(e, 'response_data') and e.response_data:
+                    logger.error(
+                        f"[OM][start_checkout] Response data: {json.dumps(e.response_data, ensure_ascii=False)}"
+                    )
+                
+                # Message utilisateur convivial selon le code d'erreur
+                status_code = getattr(e, 'status_code', None)
+                if status_code and status_code != 201:
+                    messages.error(
+                        request,
+                        f"Le service de paiement Orange Money a retourné une erreur (code {status_code}). "
+                        f"Veuillez vérifier vos informations et réessayer."
+                    )
+                else:
+                    messages.error(
+                        request,
+                        f"Erreur lors de l'initialisation du paiement Orange Money. "
+                        f"Veuillez réessayer ou contacter le support."
+                    )
+                # Supprimer l'ordre créé si l'API échoue
+                order.delete()
             except Exception as e:
                 messages.error(
                     request,
                     f"Erreur de paiement {provider_key}: {e}",
                 )
                 logger.exception(e)
+                # Supprimer l'ordre créé en cas d'erreur inattendue
+                order.delete()
         else:
             messages.error(request, "Formulaire invalide.")
     else:
@@ -544,6 +568,38 @@ def kit_pay_om_start(request, inquiry_id):
         
         return redirect(payment_url)
         
+    except orange_money.OrangeMoneyAuthError as e:
+        logger.error(f"[OM][kit_pay_om_start] Erreur OAuth: {e}")
+        messages.error(
+            request,
+            "Erreur d'authentification Orange Money. Veuillez réessayer plus tard."
+        )
+        return redirect("store:kit_quote", pk=inquiry.id)
+    except orange_money.OrangeMoneyAPIError as e:
+        # Log détaillé de l'erreur API avec status_code et response_data
+        logger.error(
+            f"[OM][kit_pay_om_start] Erreur API (status={getattr(e, 'status_code', 'N/A')}): {e}"
+        )
+        if hasattr(e, 'response_data') and e.response_data:
+            logger.error(
+                f"[OM][kit_pay_om_start] Response data: {json.dumps(e.response_data, ensure_ascii=False)}"
+            )
+        
+        # Message utilisateur convivial selon le code d'erreur
+        status_code = getattr(e, 'status_code', None)
+        if status_code and status_code != 201:
+            messages.error(
+                request,
+                f"Le service de paiement Orange Money a retourné une erreur (code {status_code}). "
+                f"Veuillez réessayer ou utiliser un autre moyen de paiement."
+            )
+        else:
+            messages.error(
+                request,
+                "Le paiement Orange Money n'est pas disponible pour le moment. "
+                "Veuillez réessayer plus tard ou utiliser un autre moyen de paiement."
+            )
+        return redirect("store:kit_quote", pk=inquiry.id)
     except orange_money.OrangeMoneyError as e:
         logger.error(f"[OM][kit_pay_om_start] Erreur OM: {e}")
         messages.error(
@@ -779,18 +835,42 @@ def orange_start_payment(request, product_slug):
                     request,
                     "Erreur d'authentification Orange Money. Veuillez réessayer plus tard."
                 )
+                # Supprimer l'ordre créé si l'authentification échoue
+                order.delete()
             except orange_money.OrangeMoneyAPIError as e:
-                logger.error(f"[OM][start] Erreur API: {e}")
-                messages.error(
-                    request,
-                    f"Erreur lors de l'initialisation du paiement: {e}"
+                # Log détaillé de l'erreur API avec status_code et response_data
+                logger.error(
+                    f"[OM][start] Erreur API (status={getattr(e, 'status_code', 'N/A')}): {e}"
                 )
+                if hasattr(e, 'response_data') and e.response_data:
+                    logger.error(
+                        f"[OM][start] Response data: {json.dumps(e.response_data, ensure_ascii=False)}"
+                    )
+                
+                # Message utilisateur convivial selon le code d'erreur
+                status_code = getattr(e, 'status_code', None)
+                if status_code and status_code != 201:
+                    messages.error(
+                        request,
+                        f"Le service de paiement Orange Money a retourné une erreur (code {status_code}). "
+                        f"Veuillez vérifier vos informations et réessayer."
+                    )
+                else:
+                    messages.error(
+                        request,
+                        "Erreur lors de l'initialisation du paiement Orange Money. "
+                        "Veuillez réessayer ou contacter le support."
+                    )
+                # Supprimer l'ordre créé si l'API échoue
+                order.delete()
             except Exception as e:
                 logger.exception(f"[OM][start] Erreur inattendue: {e}")
                 messages.error(
                     request,
                     "Une erreur est survenue. Veuillez réessayer ou contacter le support."
                 )
+                # Supprimer l'ordre créé en cas d'erreur inattendue
+                order.delete()
         else:
             messages.error(request, "Formulaire invalide.")
     else:
@@ -1188,4 +1268,3 @@ def orange_callback(request):
     except Exception as e:
         logger.exception(f"[ORANGE_CALLBACK] Erreur traitement webhook: {e}")
         return HttpResponse("Internal error", status=500)
->>>>>>> feat/orange-sx-payment-test

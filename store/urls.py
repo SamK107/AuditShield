@@ -42,7 +42,14 @@ urlpatterns = [
         name="kit_pay_om_start",
     ),
     # Orange Money: nouvelles routes modulaires (payments/orange_money/)
-    path("payments/", include(("store.payments.orange_money.urls", "store"), namespace="orange_money")),
+    path(
+        "payments/",
+        include(
+            ("store.payments.orange_money.urls", "store"),
+            namespace="orange_money",
+        ),
+    ),
+
     # CinetPay: retours & webhook
     path(
         "payments/cinetpay/return/",
@@ -59,6 +66,7 @@ urlpatterns = [
         pay.cinetpay_mock_checkout,
         name="cinetpay_mock_checkout",
     ),
+
     # Backoffice Kit Complet
     path(
         "kit-complet-traitement/",
@@ -95,9 +103,11 @@ urlpatterns = [
         views_admin_kit.kit_generated_draft_download,
         name="kit_generated_draft_download",
     ),
+
     # Tarifs Kit complet
     path("tarifs/kit-complet/", views.tariffs_kit, name="tariffs_kit"),
     path("api/estimate-kit/", views.estimate_kit, name="estimate_kit"),
+
     # ----- BONUS Kit de préparation -----
     path(
         "bonus/kit-preparation/",
@@ -138,15 +148,15 @@ urlpatterns = [
         views.start_checkout,
         name="start_checkout",
     ),
-
     path(
         "buy/other-methods/<slug:product_key>/",
         views.buy_other_methods,
         name="buy_other_methods",
-        ),
+    ),
+
+    # Kit inquiry & paiement
     path("kit/inquiry/", views.kit_inquiry, name="kit_inquiry"),
     path(
-# <<<<<<< HEAD
         "kit/inquiry/<int:inquiry_id>/devis/",
         views.kit_inquiry_quote,
         name="kit_inquiry_quote",
@@ -155,11 +165,6 @@ urlpatterns = [
         "kit/inquiry/<int:inquiry_id>/checkout/",
         views.kit_checkout,
         name="kit_checkout",
-# =======
-        "kit/inquiry/<int:pk>/devis/",
-        views.kit_quote,
-        name="kit_quote",
-# >>>>>>> feat/orange-sx-payment-test
     ),
     path(
         "kit/inquiry/merci/",
@@ -171,11 +176,14 @@ urlpatterns = [
         views.kit_payment_success,
         name="kit_payment_success",
     ),
+
+    # Training
     path(
         "training/inquiry/",
         views.training_inquiry,
         name="training_inquiry",
     ),
+
     # Kit Order Tracking & Success
     path(
         "kit/payment/success/<str:tracking_id>/",
