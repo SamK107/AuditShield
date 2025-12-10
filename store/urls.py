@@ -9,7 +9,7 @@ app_name = "store"
 urlpatterns = [
     # Checkout unifié (CinetPay + Orange Money)
     path("buy/<slug:slug>/", pay.start_checkout, name="buy"),
-    path("buy/", pay.start_checkout, {"slug": "cinetpay"}, name="buy_default"),
+    path("buy/", pay.start_checkout, {"slug": "cinetpay-orange"}, name="buy_default"),
     
     # Orange Money: checkout ebook (nouveau flux API réel)
     path("buy/om/<slug:product_slug>/", pay.orange_start_payment, name="orange_start"),
@@ -29,6 +29,7 @@ urlpatterns = [
     
     # Orange Money: retours & webhook (nouveau flux API réel - conforme PDF)
     path("payments/om/return/", pay.orange_return, name="orange_return"),
+    path("payments/om/cancel/", pay.orange_cancel, name="orange_cancel"),
     path("payments/om/notify/", pay.orange_notify, name="orange_notify"),
     # Orange Money: retours & webhook (legacy pour Kit - gardé pour compatibilité)
     path("payments/om/return-legacy/", pay.om_return, name="om_return"),
@@ -102,6 +103,21 @@ urlpatterns = [
         "kit-complet/demande/<int:pk>/draft/",
         views_admin_kit.kit_generated_draft_download,
         name="kit_generated_draft_download",
+    ),
+    path(
+        "kit-complet/<int:pk>/download-zip/",
+        views_admin_kit.download_kit_package,
+        name="kit_download_package",
+    ),
+    path(
+        "kit-complet/<int:pk>/upload-final/",
+        views_admin_kit.upload_final_ai_document,
+        name="kit_upload_final_ai",
+    ),
+    path(
+        "kit-complet/<int:pk>/delete/",
+        views_admin_kit.kit_complete_delete,
+        name="kit_complete_delete",
     ),
 
     # Tarifs Kit complet
