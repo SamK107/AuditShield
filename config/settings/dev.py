@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 """
 Configuration Django pour l'environnement de développement
 """
-
+from .base import *  # noqa: F403, F401
 
 # === DEBUG & HOSTS ===
 DEBUG = True
@@ -16,7 +16,6 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '[::1]']
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_DIR / ".env")
 
-from .base import *
 # === BASE DE DONNÉES (PostgreSQL) ===
 DATABASES = {
     'default': {
