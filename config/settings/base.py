@@ -6,6 +6,7 @@ import importlib.util
 from environs import Env
 import os
 
+
 # -----------------------------------------------------------------------------
 # Base & .env
 # -----------------------------------------------------------------------------
@@ -14,6 +15,20 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 env = Env()
 # Lecture du fichier .env à la racine
 env.read_env(path=str(BASE_DIR / ".env"))
+
+
+########################
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# ---------------- Redis / Celery ----------------
+REDIS_HOST = env("REDIS_HOST", default="127.0.0.1")
+REDIS_PORT = env("REDIS_PORT", default="6379")
+REDIS_CELERY_DB = env("REDIS_CELERY_DB", default="0")
+REDIS_CELERY_RESULT_DB = env("REDIS_CELERY_RESULT_DB", default="1")
+
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_DB}"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_RESULT_DB}"
+######################
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
@@ -189,32 +204,70 @@ CINETPAY_ENV = env.str("CINETPAY_ENV", "sandbox")
 CINETPAY_MOCK = os.getenv("CINETPAY_MOCK", "0") == "1"
 
 # -----------------------------------------------------------------------------
-# Orange Money Mali - Configuration
+# Orange Money WebPay DEV - Configuration
 # -----------------------------------------------------------------------------
-# Configuration Orange Money Mali (sandbox et production)
-# Toutes les variables sont lues depuis .env via os.getenv
-ORANGE_MONEY_CONFIG = {
-    "CLIENT_ID": os.getenv("OM_CLIENT_ID", ""),
-    "CLIENT_SECRET": os.getenv("OM_CLIENT_SECRET", ""),
-    "MERCHANT_ID": os.getenv("OM_MERCHANT_ID", ""),
-    "MERCHANT_KEY": os.getenv("OM_MERCHANT_KEY", ""),
-    "MSISDN_TEST": os.getenv("OM_MSISDN_TEST", "77011011234"),
-    "API_BASE_URL": os.getenv("OM_API_BASE_URL", "https://api.orange.com"),
-    # URL de collecte (endpoint pour initier un paiement)
-    # IMPORTANT: L'URL exacte peut varier selon la doc officielle OM Mali
-    # Rendre 100% paramétrable via .env
-    "COLLECT_URL": os.getenv("OM_COLLECT_URL", ""),
-    # URLs de callback et retour
-    "CALLBACK_URL": os.getenv("OM_CALLBACK_URL", ""),
-    "RETURN_URL_SUCCESS": os.getenv("OM_RETURN_URL_SUCCESS", ""),
-    "RETURN_URL_FAILED": os.getenv("OM_RETURN_URL_FAILED", ""),
-}
+# Configuration Orange Money WebPay DEV (Mali, Sandbox)
+# Conforme au guide officiel Orange Money WebPay Dev
+# Toutes les variables sont lues depuis .env
+
+# OAuth & API Configuration
+ORANGE_CLIENT_ID = os.getenv("ORANGE_CLIENT_ID", "")
+ORANGE_CLIENT_SECRET = os.getenv("ORANGE_CLIENT_SECRET", "")
+ORANGE_APPLICATION_ID = os.getenv("ORANGE_APPLICATION_ID", "")
+
+# OAuth Token URL (section 2 du guide)
+ORANGE_OAUTH_TOKEN_URL = os.getenv(
+    "ORANGE_OAUTH_TOKEN_URL",
+    "https://api.orange.com/oauth/v3/token"
+)
+
+# WebPay DEV URL (section 3 du guide)
+ORANGE_WEBPAY_DEV_URL = os.getenv(
+    "ORANGE_WEBPAY_DEV_URL",
+    "https://api.orange.com/orange-money-webpay/dev/v1/webpayment"
+)
+
+# Transaction Status URL (section 4 du guide)
+ORANGE_TRANSACTION_STATUS_URL = os.getenv(
+    "ORANGE_TRANSACTION_STATUS_URL",
+    "https://api.orange.com/orange-money-webpay/dev/v1/transactionstatus"
+)
+
+# Merchant Configuration
+ORANGE_MERCHANT_KEY = os.getenv("ORANGE_MERCHANT_KEY", "")
+ORANGE_MERCHANT_MSISDN = os.getenv("ORANGE_MERCHANT_MSISDN", "")
+ORANGE_MERCHANT_AGENT_CODE = os.getenv("ORANGE_MERCHANT_AGENT_CODE", "")
+
+# Callback URLs
+ORANGE_RETURN_URL = os.getenv(
+    "ORANGE_RETURN_URL",
+    "http://127.0.0.1:8000/payments/om/return/"
+)
+ORANGE_CANCEL_URL = os.getenv(
+    "ORANGE_CANCEL_URL",
+    "http://127.0.0.1:8000/payments/om/return/"
+)
+ORANGE_NOTIFY_URL = os.getenv(
+    "ORANGE_NOTIFY_URL",
+    "http://127.0.0.1:8000/payments/om/notify/"
+)
+
+# Test/Sandbox Configuration
+ORANGE_TEST_SUBSCRIBER_MSISDN = os.getenv("ORANGE_TEST_SUBSCRIBER_MSISDN", "77011011234")
+ORANGE_TEST_SUBSCRIBER_PIN = os.getenv("ORANGE_TEST_SUBSCRIBER_PIN", "4940")
+
+# Code pays pour les URLs Orange Money (ml = Mali, ow = Guinée, ci = Côte d'Ivoire, etc.)
+ORANGE_COUNTRY_CODE = os.getenv("ORANGE_COUNTRY_CODE", "ml")
 
 # Validation de la configuration en production
 # En dev/sandbox, on peut être plus permissif
 if not DEBUG:
-    required_vars = ["CLIENT_ID", "CLIENT_SECRET"]
-    missing = [var for var in required_vars if not ORANGE_MONEY_CONFIG.get(var)]
+    required_vars = {
+        "ORANGE_CLIENT_ID": ORANGE_CLIENT_ID,
+        "ORANGE_CLIENT_SECRET": ORANGE_CLIENT_SECRET,
+        "ORANGE_MERCHANT_KEY": ORANGE_MERCHANT_KEY,
+    }
+    missing = [var for var, val in required_vars.items() if not val]
     if missing:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured(

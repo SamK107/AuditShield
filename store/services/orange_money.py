@@ -40,23 +40,40 @@ class OrangeMoneyAPIError(OrangeMoneyError):
 
 def _get_config() -> Dict[str, str]:
     """
-    Récupère la configuration Orange Money depuis les variables d'environnement.
+    Récupère la configuration Orange Money depuis Django settings.
     Lève ImproperlyConfigured si les variables essentielles manquent.
+    
+    Conforme au guide officiel Orange Money WebPay Dev.
     """
+    from django.conf import settings
+    
     config = {
-        "CLIENT_ID": os.getenv("OM_CLIENT_ID", ""),
-        "CLIENT_SECRET": os.getenv("OM_CLIENT_SECRET", ""),
-        "MERCHANT_KEY": os.getenv("OM_MERCHANT_KEY", ""),
-        "MERCHANT_MSISDN": os.getenv("OM_MERCHANT_MSISDN", ""),
-        "MERCHANT_ID": os.getenv("OM_MERCHANT_ID", ""),
-        "AGENT_CODE": os.getenv("OM_AGENT_CODE", ""),
-        "TEST_SUBSCRIBER_MSISDN": os.getenv("OM_TEST_SUBSCRIBER_MSISDN", "77011011234"),
-        "TEST_SUBSCRIBER_PIN": os.getenv("OM_TEST_SUBSCRIBER_PIN", "4940"),
-        "OAUTH_URL": os.getenv("OM_OAUTH_URL", "https://api.orange.com/oauth/v2/token"),
-        "WEBPAY_URL": os.getenv("OM_WEBPAY_URL", "https://api.orange.com/orange-money-webpay/dev/v1/webpayment"),
-        "TRANSACTION_STATUS_URL": os.getenv("OM_TRANSACTION_STATUS_URL", "https://api.orange.com/orange-money-webpay/dev/v1/transactionstatus"),
-        "RETURN_URL": os.getenv("OM_RETURN_URL", "http://127.0.0.1:8000/payments/om/return/"),
-        "NOTIFY_URL": os.getenv("OM_NOTIFY_URL", "http://127.0.0.1:8000/payments/om/notify/"),
+        # OAuth & API
+        "CLIENT_ID": getattr(settings, "ORANGE_CLIENT_ID", ""),
+        "CLIENT_SECRET": getattr(settings, "ORANGE_CLIENT_SECRET", ""),
+        "APPLICATION_ID": getattr(settings, "ORANGE_APPLICATION_ID", ""),
+        
+        # URLs API
+        "OAUTH_URL": getattr(settings, "ORANGE_OAUTH_TOKEN_URL", "https://api.orange.com/oauth/v3/token"),
+        "WEBPAY_URL": getattr(settings, "ORANGE_WEBPAY_DEV_URL", "https://api.orange.com/orange-money-webpay/dev/v1/webpayment"),
+        "TRANSACTION_STATUS_URL": getattr(settings, "ORANGE_TRANSACTION_STATUS_URL", "https://api.orange.com/orange-money-webpay/dev/v1/transactionstatus"),
+        
+        # Merchant
+        "MERCHANT_KEY": getattr(settings, "ORANGE_MERCHANT_KEY", ""),
+        "MERCHANT_MSISDN": getattr(settings, "ORANGE_MERCHANT_MSISDN", ""),
+        "AGENT_CODE": getattr(settings, "ORANGE_MERCHANT_AGENT_CODE", ""),
+        
+        # Callback URLs
+        "RETURN_URL": getattr(settings, "ORANGE_RETURN_URL", "http://127.0.0.1:8000/payments/om/return/"),
+        "CANCEL_URL": getattr(settings, "ORANGE_CANCEL_URL", "http://127.0.0.1:8000/payments/om/return/"),
+        "NOTIFY_URL": getattr(settings, "ORANGE_NOTIFY_URL", "http://127.0.0.1:8000/payments/om/notify/"),
+        
+        # Test/Sandbox
+        "TEST_SUBSCRIBER_MSISDN": getattr(settings, "ORANGE_TEST_SUBSCRIBER_MSISDN", "77011011234"),
+        "TEST_SUBSCRIBER_PIN": getattr(settings, "ORANGE_TEST_SUBSCRIBER_PIN", "4940"),
+        
+        # Code pays (ml = Mali, ow = Guinée, ci = Côte d'Ivoire, etc.)
+        "COUNTRY_CODE": getattr(settings, "ORANGE_COUNTRY_CODE", "ml"),
     }
     
     # Validation des variables essentielles
@@ -299,6 +316,11 @@ def create_payment_request(payment, request=None) -> Dict[str, Any]:
         "reference": "AuditShield",  # Limité à 30 chars selon guide
     }
     
+    # Ajouter applicationId si configuré (certaines versions de l'API le requièrent)
+    if config.get("APPLICATION_ID"):
+        payload["applicationId"] = config["APPLICATION_ID"]
+        logger.info(f"[OM][create_payment] applicationId ajouté: {config['APPLICATION_ID']}")
+    
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
@@ -359,30 +381,32 @@ def create_payment_request(payment, request=None) -> Dict[str, Any]:
                 response_data=result,
             )
         
-        # IMPORTANT : En mode sandbox (API /dev/v1/webpayment), utiliser l'URL sandbox correcte
-        # selon le guide (ligne 119-121) : https://webpayment-ow-sb.orange-money.com/payment/pay_token/...
-        # L'API peut retourner une URL différente (ex: webpayment-qualif), donc on reconstruit l'URL sandbox
-        if "/dev/v1/webpayment" in webpay_url:
-            # Mode sandbox : utiliser le domaine sandbox correct
-            sandbox_payment_url = f"https://webpayment-ow-sb.orange-money.com/payment/pay_token/{pay_token}"
-            logger.info(
-                f"[OM][create_payment] Mode sandbox détecté | "
-                f"URL API originale: {payment_url} | "
-                f"URL sandbox corrigée: {sandbox_payment_url}"
-            )
-            payment_url = sandbox_payment_url
-        else:
-            # Mode production : utiliser l'URL retournée par l'API telle quelle
-            if not payment_url:
+        # IMPORTANT: Utiliser l'URL retournée par l'API Orange Money
+        # L'API retourne déjà l'URL correcte selon le pays et l'environnement
+        # Ne PAS reconstruire l'URL nous-mêmes car les domaines varient selon les pays
+        if not payment_url:
+            # Si l'API ne retourne pas d'URL, construire une URL de fallback
+            # En mode sandbox (/dev/v1/), utiliser le domaine sandbox universel
+            if "/dev/v1/webpayment" in webpay_url:
+                # Sandbox: utiliser le domaine universel ow-sb (qui semble être partagé)
+                payment_url = f"https://webpayment-ow-sb.orange-money.com/payment/pay_token/{pay_token}"
+                logger.warning(
+                    f"[OM][create_payment] payment_url manquant dans la réponse API | "
+                    f"Utilisation de l'URL sandbox par défaut: {payment_url}"
+                )
+            else:
+                # Production: erreur si pas d'URL
                 logger.error(f"[OM][create_payment] payment_url manquant dans la réponse: {result}")
                 raise OrangeMoneyAPIError(
                     "payment_url manquant dans la réponse Orange Money",
                     response_data=result,
                 )
-            logger.info(
-                f"[OM][create_payment] Mode production | "
-                f"Utilisation de l'URL API: {payment_url}"
-            )
+        
+        # Log de l'URL finale
+        logger.info(
+            f"[OM][create_payment] URL de paiement: {payment_url} | "
+            f"Source: {'API response' if result.get('payment_url') else 'Fallback'}"
+        )
         
         logger.info(
             f"[OM][create_payment] Payment créé avec succès | "

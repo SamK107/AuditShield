@@ -72,12 +72,12 @@ def _get_product_for_slug(slug: str) -> Product:
     """
     Resolve product for given slug.
     - If slug matches a real product → return it
-    - If slug is an alias like 'cinetpay' → fallback to first published product
+    - If slug is an alias like 'cinetpay-orange' → fallback to first published product
     """
     try:
         return Product.objects.get(slug=slug, is_published=True)
     except Product.DoesNotExist:
-        if slug in {"cinetpay", "default"}:
+        if slug in {"cinetpay-orange", "cinetpay", "default"}:
             p = Product.objects.filter(is_published=True).first()
             if p:
                 return p
@@ -90,6 +90,12 @@ def start_checkout(request, slug):
     product = _get_product_for_slug(slug)
     provider_key = request.POST.get("provider", "cinetpay")
     tier_id = request.POST.get("tier_id")
+
+    # Debug logging
+    logger.info(f"[start_checkout] Request method: {request.method}")
+    logger.info(f"[start_checkout] Product slug: {slug}")
+    logger.info(f"[start_checkout] Provider key: {provider_key}")
+    logger.info(f"[start_checkout] POST data: {dict(request.POST)}")
 
     if request.method == "POST":
         form = PaymentForm(request.POST)
@@ -806,14 +812,17 @@ def orange_return(request):
     Page de retour après paiement Orange Money (return_url).
     
     IMPORTANT: Ne pas valider le paiement ici. Le webhook (notify_url) est la seule source de vérité.
-    Afficher simplement une page "Paiement en cours de validation".
+    Affiche une page de succès professionnelle avec liens de téléchargement si payé,
+    sinon une page "en cours de validation".
     """
+    from store.utils.downloads import build_download_urls_for_order
+    
     order_id = request.GET.get("order_id") or request.GET.get("orderId")
     
     if not order_id:
         return render(
             request,
-            "store/payment_pending.html",
+            "store/payments/orange_unknown.html",
             {"error": "Référence de commande manquante"},
         )
     
@@ -833,23 +842,92 @@ def orange_return(request):
         logger.warning(f"[OM][return] Order introuvable pour order_id={order_id}")
         return render(
             request,
-            "store/payment_pending.html",
+            "store/payments/orange_unknown.html",
             {"error": "Commande introuvable", "order_id": order_id},
         )
     
     # Vérifier si le paiement est déjà validé (via webhook)
     if order.status == "PAID":
         # Le webhook a déjà traité le paiement
-        return redirect("downloads:secure", order_uuid=order.uuid)
+        # Stocker les infos en session pour accès sécurisé
+        request.session["order_email"] = order.email
+        paid_orders = set(request.session.get("paid_orders", []))
+        paid_orders.add(str(order.uuid))
+        request.session["paid_orders"] = list(paid_orders)
+        request.session.modified = True
+        
+        # Construire les URLs de téléchargement
+        download_urls = build_download_urls_for_order(order)
+        
+        # Afficher la page de succès avec tous les liens
+        return render(
+            request,
+            "store/payments/orange_success.html",
+            {
+                "order": order,
+                "product": order.product,
+                "payment_ref": order.provider_ref,
+                "amount": order.amount_fcfa,
+                **download_urls,
+            },
+        )
     
     # Sinon, afficher la page "en cours de validation"
     return render(
         request,
-        "store/payment_pending.html",
+        "store/payments/orange_pending.html",
         {
             "order": order,
             "order_id": order_id,
+            "product": order.product,
             "message": "Votre paiement est en cours de validation. Vous recevrez une confirmation par email sous peu.",
+        },
+    )
+
+
+def orange_cancel(request):
+    """
+    Page d'annulation de paiement Orange Money (cancel_url).
+    
+    Affiche un message informatif et propose de réessayer le paiement.
+    """
+    order_id = request.GET.get("order_id") or request.GET.get("orderId")
+    
+    order = None
+    product = None
+    retry_url = None
+    
+    if order_id:
+        # Retrouver l'Order
+        order = Order.objects.filter(provider_ref=order_id).first()
+        if not order:
+            # Essayer avec uuid
+            try:
+                import uuid as uuid_module
+                order = Order.objects.filter(
+                    uuid=uuid_module.UUID(order_id)
+                ).first()
+            except (ValueError, TypeError):
+                pass
+        
+        if order:
+            product = order.product
+            # Construire l'URL de retry vers la page de checkout
+            if product:
+                retry_url = reverse("store:buy", kwargs={"slug": product.slug}) + "?provider=orange_money_ml"
+    
+    # Si pas de produit identifié, lien vers la page d'offres
+    if not retry_url:
+        retry_url = reverse("store:offers")
+    
+    return render(
+        request,
+        "store/payments/orange_cancel.html",
+        {
+            "order": order,
+            "product": product,
+            "order_id": order_id,
+            "retry_url": retry_url,
         },
     )
 
