@@ -1,0 +1,297 @@
+================================================================================
+  🚀 AIDE-MÉMOIRE : COMMANDES RAPIDES - Système IA Kit Complet
+================================================================================
+
+📌 CONFIGURATION INITIALE (À faire une seule fois)
+================================================================================
+
+1. OPENAI : Ajouter la clé dans .env
+-----------------------------------
+notepad C:\Users\Lenovo X1Yoga\Documents\AUDITSHIELD-DEV\auditshield\.env
+
+Ajoutez :
+OPENAI_API_KEY=sk-votre-clé-complète
+OPENAI_CHAT_MODEL=gpt-4o-mini
+
+Sauvegardez (Ctrl+S)
+
+
+2. REDIS : Installer avec Docker
+---------------------------------
+docker run -d -p 6379:6379 --name auditshield-redis redis:alpine
+
+Vérification :
+docker exec -it auditshield-redis redis-cli ping
+# Résultat attendu : PONG
+
+
+================================================================================
+🎬 DÉMARRAGE DU SYSTÈME (3 Terminaux)
+================================================================================
+
+TERMINAL 1 : Redis (Docker)
+---------------------------
+docker start auditshield-redis
+
+
+TERMINAL 2 : Django Server
+---------------------------
+cd "C:\Users\Lenovo X1Yoga\Documents\AUDITSHIELD-DEV"
+.\.venv\Scripts\Activate.ps1
+cd auditshield
+python manage.py runserver
+
+
+TERMINAL 3 : Celery Worker
+---------------------------
+cd "C:\Users\Lenovo X1Yoga\Documents\AUDITSHIELD-DEV"
+.\.venv\Scripts\Activate.ps1
+cd auditshield
+celery -A config worker -l info
+
+Attendez le message : "celery@... ready."
+
+
+================================================================================
+🧪 CRÉER UNE DEMANDE DE TEST
+================================================================================
+
+TERMINAL 4 : Shell Django
+-------------------------
+cd "C:\Users\Lenovo X1Yoga\Documents\AUDITSHIELD-DEV"
+.\.venv\Scripts\Activate.ps1
+cd auditshield
+python manage.py shell
+
+Copiez-collez :
+--------------
+from store.models import ClientInquiry, InquiryDocument
+from django.core.files.base import ContentFile
+
+inquiry = ClientInquiry.objects.create(
+    kind="KIT",
+    contact_name="Alice Martin",
+    email="test@example.com",
+    organization_name="Mairie de Test",
+    context_text="Administration publique, 50 agents",
+    payment_status="PAID",
+    processing_state="PAID"
+)
+
+doc_text = """RÈGLEMENT INTÉRIEUR
+
+Article 1 : Organisation
+- Service finances
+- Service urbanisme  
+- Service état civil
+
+Article 2 : Contrôles
+Audits annuels obligatoires.
+
+Article 3 : Documents obligatoires
+- Registre des délibérations
+- Livre de comptes
+- Inventaire du patrimoine
+"""
+
+doc = InquiryDocument.objects.create(inquiry=inquiry, original_name="reglement.txt")
+doc.file.save("reglement.txt", ContentFile(doc_text.encode()))
+
+print(f"\n✅ Demande #{inquiry.pk} créée !\n")
+exit()
+
+
+================================================================================
+🎯 LANCER LE TEST
+================================================================================
+
+1. Ouvrez : http://localhost:8000/kit-complet-traitement/
+
+2. Connectez-vous (compte staff/admin)
+
+3. Cliquez sur "Traiter avec l'IA" (bouton bleu)
+
+4. Observez :
+   - Statut devient "IA_RUNNING" (orange)
+   - Terminal Celery affiche des logs
+
+5. Attendez 30-60 secondes
+
+6. Rafraîchissez la page (F5)
+
+7. Statut devient "DRAFT_DONE" (violet)
+
+8. Cliquez "Télécharger le brouillon" (bouton vert)
+
+9. Ouvrez le fichier Word téléchargé
+
+✅ Le document devrait contenir un kit structuré avec questionnaires et tableaux
+
+
+================================================================================
+🔍 VÉRIFICATIONS RAPIDES
+================================================================================
+
+Vérifier OpenAI
+---------------
+python manage.py shell -c "import os; print('OK' if os.getenv('OPENAI_API_KEY') else 'KO')"
+
+
+Vérifier Redis
+--------------
+docker exec auditshield-redis redis-cli ping
+# Résultat : PONG
+
+
+Vérifier Django
+---------------
+python manage.py check
+# Résultat : System check identified no issues
+
+
+Voir les demandes KIT
+---------------------
+python manage.py shell
+
+from store.models import ClientInquiry
+kits = ClientInquiry.objects.filter(kind='KIT')
+for k in kits[:5]:
+    print(f"#{k.pk} - {k.contact_name} - {k.processing_state}")
+exit()
+
+
+Voir les brouillons générés
+---------------------------
+from store.models import GeneratedDraft
+for d in GeneratedDraft.objects.all():
+    print(f"Inquiry #{d.inquiry_id} - {d.model_name} - {d.token_usage} tokens")
+exit()
+
+
+================================================================================
+🐛 DÉPANNAGE EXPRESS
+================================================================================
+
+Erreur "OPENAI_API_KEY not configured"
+---------------------------------------
+→ Vérifiez .env et redémarrez Django
+
+
+Erreur "Cannot connect to redis"
+---------------------------------
+→ docker start auditshield-redis
+→ docker ps (vérifier que Redis tourne)
+
+
+Task bloquée en "IA_RUNNING"
+-----------------------------
+→ Vérifiez Terminal Celery (logs d'erreur)
+→ Vérifiez OpenAI usage : https://platform.openai.com/account/usage
+
+
+Celery ne démarre pas
+----------------------
+→ Vérifiez Redis : docker exec auditshield-redis redis-cli ping
+→ Vérifiez .env : CELERY_BROKER_URL=redis://localhost:6379/0
+
+
+Brouillon vide ou mal formaté
+------------------------------
+→ Consultez les logs dans GeneratedDraft.log
+→ Vérifiez le modèle utilisé (doit être gpt-4o-mini ou supérieur)
+
+
+================================================================================
+🔄 COMMANDES DOCKER UTILES
+================================================================================
+
+Démarrer Redis
+--------------
+docker start auditshield-redis
+
+
+Arrêter Redis
+-------------
+docker stop auditshield-redis
+
+
+Redémarrer Redis
+----------------
+docker restart auditshield-redis
+
+
+Voir les logs Redis
+-------------------
+docker logs auditshield-redis
+
+
+Supprimer et recréer
+--------------------
+docker rm -f auditshield-redis
+docker run -d -p 6379:6379 --name auditshield-redis redis:alpine
+
+
+Redis au démarrage Windows
+---------------------------
+docker update --restart=always auditshield-redis
+
+
+================================================================================
+📖 DOCUMENTATION
+================================================================================
+
+START_HERE.md                          → Démarrage rapide
+SETUP_OPENAI_KEY.md                    → Config OpenAI détaillée
+SETUP_REDIS.md                         → Installation Redis
+QUICK_TEST_GUIDE.md                    → Test en 5 minutes
+TEST_KIT_IA_GUIDE.md                   → Guide complet
+IMPLEMENTATION_IA_GPT_KIT_COMPLET.md   → Architecture technique
+GUIDE_COMPLET_SETUP_ET_TEST.md         → Vue d'ensemble
+
+
+================================================================================
+💡 WORKFLOW QUOTIDIEN
+================================================================================
+
+1. Démarrer Redis       → docker start auditshield-redis
+2. Démarrer Django      → python manage.py runserver
+3. Démarrer Celery      → celery -A config worker -l info
+4. Accéder à la page    → http://localhost:8000/kit-complet-traitement/
+5. Traiter les demandes → Clic "Traiter avec l'IA"
+
+
+================================================================================
+📊 MONITORING
+================================================================================
+
+Voir l'usage OpenAI
+-------------------
+https://platform.openai.com/account/usage
+
+
+Voir les tokens utilisés (Django)
+----------------------------------
+python manage.py shell
+
+from store.models import GeneratedDraft
+total = sum(d.token_usage or 0 for d in GeneratedDraft.objects.all())
+print(f"Total tokens : {total:,}")
+exit()
+
+
+Voir les tâches en cours
+-------------------------
+from store.models import KitProcessingTask
+running = KitProcessingTask.objects.filter(status='RUNNING')
+print(f"Tâches en cours : {running.count()}")
+exit()
+
+
+================================================================================
+🎯 FIN
+================================================================================
+
+Pour plus de détails, consultez START_HERE.md
+
+Bon test ! 🚀
+
